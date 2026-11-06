@@ -14,7 +14,7 @@ fn clean_val(v: String) -> String {
     v.trim().trim_matches('"').trim_matches('\'').trim().to_string()
 }
 
-pub (crate) fn get_clean_env(key: &str) -> Option<String> {
+pub(crate) fn get_clean_env(key: &str) -> Option<String> {
     env::var(key).ok().map(clean_val).filter(|s| !s.is_empty())
 }
 
@@ -22,22 +22,23 @@ fn load_env_file(path: &Path) -> Result<(), String> {
     let content = fs::read_to_string(path).map_err(|error| error.to_string())?;
     let mut normalized = String::with_capacity(content.len());
 
-    for line in content.lines () {
+    for line in content.lines() {
         normalized.push_str(line);
         normalized.push('\n');
     }
 
-    dotenvy::from_read(Cursor::new(normalized))
-        .map_err(|error| error.to_string())
+    dotenvy::from_read(Cursor::new(normalized)).map_err(|error| error.to_string())
 }
 
 impl Config {
     pub fn load() -> Self {
-        // From repository root path
-        let path = Path::new("../.env");
-        if path.exists() {
-            if let Err(error) = load_env_file(path) {
-                tracing::warn!("Failed to load env file {}: {error}", path.display());
+        for candidate in &[".env", "../.env"] {
+            let path = Path::new(candidate);
+            if path.exists() {
+                if let Err(error) = load_env_file(path) {
+                    tracing::warn!("Failed to load env file {}: {error}", path.display());
+                }
+                break;
             }
         }
 
@@ -45,17 +46,19 @@ impl Config {
         let port = get_clean_env("PORT")
             .and_then(|p| p.parse().ok())
             .unwrap_or(8000);
-        let jwt_secret = get_clean_env("JWT_SECRET").unwrap();
-        
+        let jwt_secret = get_clean_env("JWT_SECRET").unwrap_or_else(|| {
+            "default-secret-key-silantas-mimika-replace-in-production".to_string()
+        });
+
         Self {
             port,
             database_url,
-            jwt_secret
+            jwt_secret,
         }
     }
 
     fn resolve_database_url() -> String {
-        if let Some(url) = get_clean_env("POSTGRESQL_DATABASE_URL").or_else(|| get_clean_env("DATABASE_URL")){
+        if let Some(url) = get_clean_env("POSTGRESQL_DATABASE_URL").or_else(|| get_clean_env("DATABASE_URL")) {
             return url;
         }
 

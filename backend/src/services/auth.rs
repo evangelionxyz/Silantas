@@ -2,7 +2,7 @@ use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String,
     pub role: String,
@@ -36,7 +36,7 @@ pub fn create_jwt(user_id: &str, role: &str, secret: &str) -> anyhow::Result<Str
         sub: user_id.to_string(),
         role: role.to_string(),
         iat: now,
-        exp: now + 7 * 24 * 3600, // 7 days expiration
+        exp: now + 7 * 24 * 3600,
     };
 
     encode(
@@ -51,17 +51,17 @@ pub fn verify_jwt(token: &str, secret: &str) -> anyhow::Result<Claims> {
     let token_data = decode::<Claims>(
         token,
         &DecodingKey::from_secret(secret.as_bytes()),
-        &Validation::default()
+        &Validation::default(),
     )
     .map_err(|e| anyhow::anyhow!("Invalid token: {e}"))?;
 
     Ok(token_data.claims)
 }
 
-pub fn extract_user_id_from_headers(
+pub fn extract_claims_from_headers(
     headers: &axum::http::HeaderMap,
     secret: &str,
-) -> Result<uuid::Uuid, &'static str> {
+) -> Result<Claims, &'static str> {
     let auth_header = headers
         .get(axum::http::header::AUTHORIZATION)
         .and_then(|v| v.to_str().ok())
@@ -72,9 +72,18 @@ pub fn extract_user_id_from_headers(
         .map(str::trim)
         .ok_or("INVALID_TOKEN_FORMAT")?;
 
-    let claims = verify_jwt(token, secret)
-        .map_err(|_| "INVALID_TOKEN")?;
-    
-    uuid::Uuid::parse_str(&claims.sub)
-        .map_err(|_| "INVALID_USER_ID")
+    verify_jwt(token, secret).map_err(|_| "INVALID_TOKEN")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_password_hashing() {
+        let hash = hash_password("admin123").unwrap();
+        println!("HASH_ADMIN123: {hash}");
+        assert!(verify_password("admin123", &hash));
+    }
+}
+
