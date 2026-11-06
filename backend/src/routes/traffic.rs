@@ -50,7 +50,7 @@ pub async fn list_traffic_handler(
     let offset = (page - 1) * per_page;
 
     let mut query_builder = sqlx::QueryBuilder::new(
-        "SELECT id, record_number, traffic_type, category, item_name, quantity, unit, origin, destination, 
+        "SELECT id, record_number, traffic_type, category, item_name, quantity::double precision AS quantity, unit, origin, destination,
                 transport_type, applicant_name, health_certificate_no, inspection_status, notes, recorded_by, 
                 traffic_date, created_at, updated_at 
          FROM silantas.traffic_records WHERE 1=1"
@@ -165,10 +165,10 @@ pub async fn get_traffic_summary_handler(
             item_name, 
             category, 
             unit,
-            COALESCE(SUM(CASE WHEN traffic_type = 'IMPORT' THEN quantity ELSE 0 END), 0) AS total_import,
-            COALESCE(SUM(CASE WHEN traffic_type = 'EXPORT' THEN quantity ELSE 0 END), 0) AS total_export,
-            COALESCE(SUM(quantity), 0) AS total_volume,
-            COALESCE(SUM(CASE WHEN traffic_type = 'IMPORT' THEN quantity ELSE 0 END) - SUM(CASE WHEN traffic_type = 'EXPORT' THEN quantity ELSE 0 END), 0) AS current_storage,
+            COALESCE(SUM(CASE WHEN traffic_type = 'IMPORT' THEN quantity ELSE 0 END), 0)::double precision AS total_import,
+            COALESCE(SUM(CASE WHEN traffic_type = 'EXPORT' THEN quantity ELSE 0 END), 0)::double precision AS total_export,
+            COALESCE(SUM(quantity), 0)::double precision AS total_volume,
+            COALESCE(SUM(CASE WHEN traffic_type = 'IMPORT' THEN quantity ELSE 0 END) - SUM(CASE WHEN traffic_type = 'EXPORT' THEN quantity ELSE 0 END), 0)::double precision AS current_storage,
             COUNT(*) AS record_count
         FROM silantas.traffic_records
         GROUP BY item_name, category, unit
@@ -180,8 +180,8 @@ pub async fn get_traffic_summary_handler(
     let overall = db::query_as::<sqlx::Postgres, (i64, Option<f64>, Option<f64>)>(
         "SELECT 
             COUNT(*),
-            SUM(CASE WHEN traffic_type = 'IMPORT' THEN quantity ELSE 0 END),
-            SUM(CASE WHEN traffic_type = 'EXPORT' THEN quantity ELSE 0 END)
+            SUM(CASE WHEN traffic_type = 'IMPORT' THEN quantity ELSE 0 END)::double precision,
+            SUM(CASE WHEN traffic_type = 'EXPORT' THEN quantity ELSE 0 END)::double precision
          FROM silantas.traffic_records;"
     )
     .fetch_one(&state.pool)
@@ -231,7 +231,7 @@ pub async fn get_traffic_handler(
     };
 
     let record = db::query_as::<sqlx::Postgres, TrafficRecord>(
-        "SELECT id, record_number, traffic_type, category, item_name, quantity, unit, origin, destination, 
+        "SELECT id, record_number, traffic_type, category, item_name, quantity::double precision AS quantity, unit, origin, destination,
                 transport_type, applicant_name, health_certificate_no, inspection_status, notes, recorded_by, 
                 traffic_date, created_at, updated_at 
          FROM silantas.traffic_records WHERE id = $1;"
@@ -289,7 +289,7 @@ pub async fn create_traffic_handler(
         (id, record_number, traffic_type, category, item_name, quantity, unit, origin, destination, 
          transport_type, applicant_name, health_certificate_no, inspection_status, notes, recorded_by, 
          traffic_date, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18);"
+        VALUES ($1, $2, $3, $4, $5, $6::numeric, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18);"
     )
     .bind(new_id)
     .bind(&payload.record_number)
@@ -384,7 +384,7 @@ pub async fn update_traffic_handler(
     }
 
     let existing = db::query_as::<sqlx::Postgres, TrafficRecord>(
-        "SELECT id, record_number, traffic_type, category, item_name, quantity, unit, origin, destination, 
+        "SELECT id, record_number, traffic_type, category, item_name, quantity::double precision AS quantity, unit, origin, destination,
                 transport_type, applicant_name, health_certificate_no, inspection_status, notes, recorded_by, 
                 traffic_date, created_at, updated_at 
          FROM silantas.traffic_records WHERE id = $1;"
@@ -430,7 +430,7 @@ pub async fn update_traffic_handler(
 
     let update_res = db::query(
         "UPDATE silantas.traffic_records 
-        SET record_number = $1, traffic_type = $2, category = $3, item_name = $4, quantity = $5, unit = $6, 
+        SET record_number = $1, traffic_type = $2, category = $3, item_name = $4, quantity = $5::numeric, unit = $6,
             origin = $7, destination = $8, transport_type = $9, applicant_name = $10, health_certificate_no = $11, 
             inspection_status = $12, notes = $13, traffic_date = $14, updated_at = $15
         WHERE id = $16;"
