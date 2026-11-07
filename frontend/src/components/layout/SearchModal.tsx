@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 
 interface SearchItem {
   title: string;
@@ -94,6 +95,9 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
 
+  // Lock body scroll while modal is active
+  useBodyScrollLock(isOpen);
+
   const filtered = query.trim()
     ? SEARCH_INDEX.filter((item) => {
         const text = `${item.title} ${item.category} ${item.keywords}`.toLowerCase();
@@ -148,40 +152,45 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/40 flex items-start justify-center pt-20 px-4"
+      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-start justify-center pt-16 sm:pt-24 px-3 sm:px-4"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="search-modal-title"
     >
       <div
-        className="bg-white rounded-md border border-[#d0d7de] shadow-xl max-w-xl w-full overflow-hidden flex flex-col"
+        className="bg-white rounded-lg border border-[#d0d7de] shadow-2xl max-w-xl w-full overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative border-b border-[#d0d7de]">
+        <div className="relative border-b border-[#d0d7de] flex items-center">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#656d76]">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
           <input
+            id="search-modal-title"
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Cari artikel, dokumen, pos, komoditas..."
-            className="w-full pl-10 pr-12 py-3 text-sm text-[#1f2328] placeholder-[#656d76] focus:outline-none bg-white"
+            className="w-full pl-10 sm:pl-11 pr-14 py-3 sm:py-3.5 text-sm sm:text-base text-[#1f2328] placeholder-[#656d76] focus:outline-none bg-white"
           />
           <button
             type="button"
             onClick={onClose}
-            className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-xs font-mono text-[#656d76] hover:text-[#1f2328]"
+            className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-xs font-mono font-medium text-[#656d76] hover:text-[#1f2328]"
           >
-            ESC
+            <span className="hidden sm:inline bg-[#f6f8fa] border border-[#d0d7de] px-1.5 py-0.5 rounded text-[11px]">ESC</span>
+            <span className="sm:hidden text-base">&times;</span>
           </button>
         </div>
 
-        <div className="max-h-80 overflow-y-auto divide-y divide-[#d0d7de]/40 p-1 text-xs">
+        <div className="max-h-80 overflow-y-auto divide-y divide-[#d0d7de]/40 p-1.5">
           {filtered.length === 0 ? (
-            <div className="py-8 text-center text-[#656d76]">
+            <div className="py-8 text-center text-sm text-[#656d76]">
               Tidak ada hasil pencarian untuk "{query}"
             </div>
           ) : (
@@ -193,29 +202,36 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
                   type="button"
                   onClick={() => handleSelect(item)}
                   onMouseEnter={() => setSelectedIndex(idx)}
-                  className={`w-full text-left p-2.5 rounded transition-colors flex flex-col ${
+                  className={`w-full text-left p-3 rounded-md transition-colors flex flex-col gap-0.5 ${
                     isSelected ? 'bg-[#f6f8fa] text-[#0969da]' : 'text-[#1f2328] hover:bg-[#f6f8fa]/60'
                   }`}
                 >
-                  <div className="font-semibold text-xs leading-snug">{item.title}</div>
-                  <div className="text-[10px] text-[#656d76] mt-0.5">{item.category}</div>
+                  <div className="font-semibold text-sm leading-snug">{item.title}</div>
+                  <div className="text-xs text-[#656d76] font-medium">{item.category}</div>
                 </button>
               );
             })
           )}
         </div>
 
-        <div className="p-2.5 bg-[#f6f8fa] border-t border-[#d0d7de] flex items-center justify-between text-[11px] text-[#656d76]">
-          <div className="flex items-center gap-3">
+        <div className="p-3 bg-[#f6f8fa] border-t border-[#d0d7de] flex items-center justify-between text-xs text-[#656d76]">
+          <div className="hidden sm:flex items-center gap-3">
             <span>
-              <kbd className="px-1 py-0.5 bg-white border border-[#d0d7de] rounded text-[10px]">&uarr;</kbd>{' '}
-              <kbd className="px-1 py-0.5 bg-white border border-[#d0d7de] rounded text-[10px]">&darr;</kbd> Navigasi
+              <kbd className="px-1.5 py-0.5 bg-white border border-[#d0d7de] rounded text-[11px]">&uarr;</kbd>{' '}
+              <kbd className="px-1.5 py-0.5 bg-white border border-[#d0d7de] rounded text-[11px]">&darr;</kbd> Navigasi
             </span>
             <span>
-              <kbd className="px-1.5 py-0.5 bg-white border border-[#d0d7de] rounded text-[10px]">ENTER</kbd> Buka
+              <kbd className="px-1.5 py-0.5 bg-white border border-[#d0d7de] rounded text-[11px]">ENTER</kbd> Buka
             </span>
           </div>
-          <span>SI-LANTAS Mimika</span>
+          <span className="text-[11px] sm:text-xs text-[#656d76]">SI-LANTAS Kabupaten Mimika</span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="sm:hidden text-xs font-semibold text-[#0969da]"
+          >
+            Tutup
+          </button>
         </div>
       </div>
     </div>

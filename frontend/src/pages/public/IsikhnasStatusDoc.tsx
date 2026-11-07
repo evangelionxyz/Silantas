@@ -10,27 +10,27 @@ export const IsikhnasStatusDoc: React.FC = () => {
         { label: 'Status Integrasi iSIKHNAS' }
       ]} />
 
-      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex">
+      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex items-start">
         <DocsSidebar className="hidden lg:block" />
 
         <main className="flex-1 py-8 px-0 lg:px-10 docs-prose">
           <div className="border-b border-[#d0d7de] pb-6 mb-8">
-            <h1 className="text-3xl font-semibold tracking-tight text-[#1f2328] mb-2">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1f2328] mb-3">
               Status & Informasi Prosedur Portal lalin.isikhnas.co.id
             </h1>
-            <p className="text-sm text-[#656d76]">
+            <p className="text-base sm:text-lg text-[#57606a] leading-relaxed">
               Pemberitahuan resmi mengenai status operasional sistem lalu lintas ternak nasional iSIKHNAS dan tata cara pelayanan alternatif di Kabupaten Mimika.
             </p>
           </div>
 
           {/* Service Outage Notice Banner */}
-          <div className="p-4 rounded-md border border-[#d0d7de] bg-[#f6f8fa] mb-8">
-            <div className="flex items-center gap-2 font-semibold text-xs text-[#1f2328] mb-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#9a6700]"></span>
+          <div className="p-4 sm:p-5 rounded-lg border border-[#d0d7de] bg-[#f6f8fa] mb-8 shadow-2xs">
+            <div className="flex items-center gap-2.5 font-bold text-sm sm:text-base text-[#1f2328] mb-2">
+              <span className="w-3 h-3 rounded-full bg-[#9a6700] shrink-0"></span>
               <span>Status Sistem Nasional: Tidak Dapat Diakses (Web Not Available)</span>
             </div>
-            <p className="text-xs text-[#656d76] m-0 leading-relaxed">
-              Domain dan portal layanan lalu lintas hewan daring nasional pada alamat <code>lalin.isikhnas.co.id</code> saat ini dalam kondisi nonaktif/tidak tersedia dari pusat Kementerian Pertanian.
+            <p className="text-sm sm:text-base text-[#57606a] m-0 leading-relaxed">
+              Domain dan portal layanan lalu lintas hewan daring nasional pada alamat <code className="text-xs sm:text-sm font-mono">lalin.isikhnas.co.id</code> saat ini dalam kondisi nonaktif/tidak tersedia dari pusat Kementerian Pertanian.
             </p>
           </div>
 
@@ -51,7 +51,7 @@ export const IsikhnasStatusDoc: React.FC = () => {
           </ul>
 
           <h2>Langkah Bagi Pelaku Usaha</h2>
-          <ol className="list-decimal pl-5 space-y-2 text-xs text-[#31373d]">
+          <ol className="list-decimal pl-6 space-y-3 text-sm sm:text-base text-[#24292f] leading-relaxed">
             <li>Pelaku usaha tidak perlu menunggu aktivasi portal <code>lalin.isikhnas.co.id</code> untuk mengajukan izin.</li>
             <li>Silakan menghubungi petugas pelayanan Dinas Peternakan Mimika via loket kantor atau melalui layanan <strong>WhatsApp Business Resmi SI-LANTAS</strong>.</li>
             <li>Kirimkan softcopy berkas SKKH dan dokumen pendukung kepada petugas untuk diproses verifikasinya.</li>

@@ -39,38 +39,38 @@ export const WhatsAppConsultation: React.FC = () => {
         { label: 'Konsultasi WhatsApp Business' }
       ]} />
 
-      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex">
+      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex items-start">
         <DocsSidebar className="hidden lg:block" />
 
         <main className="flex-1 py-8 px-0 lg:px-10 docs-prose">
           <div className="border-b border-[#d0d7de] pb-6 mb-8">
-            <h1 className="text-3xl font-semibold tracking-tight text-[#1f2328] mb-2">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1f2328] mb-3">
               Konsultasi & Chatting WhatsApp Business SI-LANTAS
             </h1>
-            <p className="text-sm text-[#656d76]">
+            <p className="text-base sm:text-lg text-[#57606a] leading-relaxed">
               Saluran komunikasi langsung dengan Tim Verifikator dan Administrator Dinas Peternakan dan Kesehatan Hewan Kabupaten Mimika.
             </p>
           </div>
 
-          <div className="p-5 rounded-md border border-[#d0d7de] bg-[#f6f8fa] mb-8">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="p-5 sm:p-6 rounded-lg border border-[#d0d7de] bg-[#f6f8fa] mb-8 shadow-2xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
               <div>
-                <span className="text-xs uppercase tracking-wider font-bold text-[#656d76]">
+                <span className="text-xs uppercase tracking-wider font-bold text-[#57606a]">
                   Nomor Resmi Pelayanan WhatsApp
                 </span>
-                <div className="text-xl font-mono font-bold text-[#1f2328] mt-1">
+                <div className="text-2xl sm:text-3xl font-mono font-bold text-[#1f2328] mt-1.5">
                   +{config.whatsappNumber}
                 </div>
-                <div className="text-xs text-[#1a7f37] font-medium flex items-center gap-1.5 mt-1">
-                  <span className="w-2 h-2 rounded-full bg-[#1a7f37]"></span>
-                  <span>Jam Layanan: Senin - Jumat (08.00 - 16.00 WIT)</span>
+                <div className="text-xs sm:text-sm text-[#1a7f37] font-medium flex items-center gap-2 mt-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#1a7f37]"></span>
+                  <span>Jam Pelayanan: Senin - Jumat (08.00 - 16.00 WIT)</span>
                 </div>
               </div>
 
               <button
                 type="button"
                 onClick={handleOpenWhatsApp}
-                className="px-4 py-2.5 rounded-md text-xs font-semibold text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 transition-colors flex items-center justify-center gap-2 shadow-xs"
+                className="px-5 py-3 rounded-md text-sm font-semibold text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 transition-colors flex items-center justify-center gap-2 shadow-2xs cursor-pointer shrink-0"
               >
                 <span>Mulai Chatting WhatsApp</span>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,26 +85,26 @@ export const WhatsAppConsultation: React.FC = () => {
             Pilih topik di bawah ini untuk menghasilkan pesan pembuka secara otomatis:
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 my-4 not-prose">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 my-4 not-prose">
             {Object.keys(templates).map((topic) => (
               <button
                 key={topic}
                 type="button"
                 onClick={() => setSelectedTopic(topic)}
-                className={`text-left p-3 rounded-md border text-xs transition-colors ${
+                className={`text-left p-4 rounded-lg border text-sm transition-colors cursor-pointer ${
                   selectedTopic === topic
-                    ? 'border-[#0969da] bg-[#ddf4ff]/40 text-[#0969da] font-medium ring-1 ring-[#0969da]'
+                    ? 'border-[#0969da] bg-[#ddf4ff]/40 text-[#0969da] font-medium ring-2 ring-[#0969da]/30'
                     : 'border-[#d0d7de] bg-white text-[#1f2328] hover:bg-[#f6f8fa]'
                 }`}
               >
-                <div className="font-semibold mb-1">{topic}</div>
-                <div className="text-[11px] text-[#656d76] line-clamp-2">{templates[topic]}</div>
+                <div className="font-bold text-sm mb-1.5">{topic}</div>
+                <div className="text-xs text-[#57606a] line-clamp-2 leading-relaxed">{templates[topic]}</div>
               </button>
             ))}
           </div>
 
-          <div className="my-6 not-prose space-y-3">
-            <label className="block text-xs font-semibold text-[#1f2328]">
+          <div className="my-6 not-prose space-y-2">
+            <label className="block text-xs font-semibold text-[#1f2328] uppercase tracking-wide">
               Nama Pemohon / Pelaku Usaha (Opsional):
             </label>
             <input
@@ -112,15 +112,15 @@ export const WhatsAppConsultation: React.FC = () => {
               value={customApplicantName}
               onChange={(e) => setCustomApplicantName(e.target.value)}
               placeholder="Contoh: Budi - CV Mandiri Ternak Mimika"
-              className="w-full sm:w-96 px-3 py-2 text-xs border border-[#d0d7de] rounded-md focus:outline-none focus:ring-1 focus:ring-[#0969da] focus:border-[#0969da] bg-white text-[#1f2328]"
+              className="w-full sm:w-96 px-3.5 py-2.5 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da] bg-white text-[#1f2328]"
             />
           </div>
 
-          <div className="not-prose">
+          <div className="not-prose pt-2">
             <button
               type="button"
               onClick={handleOpenWhatsApp}
-              className="px-5 py-2.5 rounded-md text-xs font-semibold text-white bg-[#1f2328] hover:bg-[#2f363d] transition-colors"
+              className="px-6 py-3 rounded-md text-sm font-semibold text-white bg-[#1f2328] hover:bg-[#2f363d] transition-colors cursor-pointer shadow-2xs"
             >
               Kirim Pesan ke WhatsApp Admin &rarr;
             </button>

@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { Breadcrumbs, type CrumbItem } from '../../components/layout/Breadcrumbs';
-import { DocsSidebar } from '../../components/layout/DocsSidebar';
+import { InternalHeader } from '../../components/layout/InternalHeader';
+import { InternalSidebar } from '../../components/layout/InternalSidebar';
 import { useAuth } from '../../context/AuthContext';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 
 interface DashboardLayoutProps {
   breadcrumbs?: CrumbItem[];
@@ -10,11 +12,16 @@ interface DashboardLayoutProps {
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ breadcrumbs = [] }) => {
   const { user, loading } = useAuth();
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  // Lock background scroll when mobile sidebar drawer is open
+  useBodyScrollLock(mobileSidebarOpen);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center text-xs text-[#656d76]">
-        Memuat sesi pengguna...
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-3 text-sm text-[#57606a]">
+        <div className="w-8 h-8 border-3 border-[#1a7f37] border-t-transparent rounded-full animate-spin"></div>
+        <span>Memuat sesi petugas...</span>
       </div>
     );
   }
@@ -24,17 +31,59 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ breadcrumbs = 
   }
 
   const defaultCrumbs: CrumbItem[] = [
-    { label: 'Internal Petugas', href: '/dashboard' },
+    { label: 'Portal Internal Petugas', href: '/dashboard' },
     ...breadcrumbs,
   ];
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-[#f6f8fa]/40 flex flex-col">
+      {/* Dedicated Internal Header */}
+      <InternalHeader onToggleMobileSidebar={() => setMobileSidebarOpen(true)} />
+
+      {/* Internal Breadcrumbs */}
       <Breadcrumbs items={defaultCrumbs} />
 
-      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex">
-        <DocsSidebar className="hidden lg:block" />
+      {/* Mobile Sidebar Drawer Modal */}
+      {mobileSidebarOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs lg:hidden flex"
+          onClick={() => setMobileSidebarOpen(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="w-72 max-w-[80vw] bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-left duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-[#d0d7de] flex items-center justify-between bg-[#f6f8fa]">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-md bg-[#1a7f37] text-white flex items-center justify-center font-bold text-xs">
+                  SL
+                </div>
+                <span className="font-bold text-sm text-[#1f2328]">Menu Internal</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileSidebarOpen(false)}
+                className="p-1 text-[#57606a] hover:text-[#1f2328] rounded-md text-lg leading-none cursor-pointer"
+                aria-label="Tutup menu"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4">
+              <InternalSidebar sticky={false} onNavigate={() => setMobileSidebarOpen(false)} className="w-full border-r-0 py-4 pr-0" />
+            </div>
+          </div>
+        </div>
+      )}
 
+      {/* Main Dashboard Workspace */}
+      <div className="w-full mx-auto px-3 sm:px-6 lg:px-8 flex-1 flex items-start">
+        {/* Desktop Sidebar (Sticky, follows content) */}
+        <InternalSidebar className="hidden lg:flex" />
+
+        {/* Dynamic Main Management View */}
         <main className="flex-1 py-6 px-0 lg:px-8 min-w-0">
           <Outlet />
         </main>

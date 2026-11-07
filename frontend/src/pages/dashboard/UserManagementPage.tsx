@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { createUser, deleteUser, fetchUsers, updateUser, type User } from '../../services/api';
 
 export const UserManagementPage: React.FC = () => {
@@ -12,6 +13,9 @@ export const UserManagementPage: React.FC = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
+
+  // Lock background scroll when modal is open
+  useBodyScrollLock(isModalOpen);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -74,11 +78,7 @@ export const UserManagementPage: React.FC = () => {
   };
 
   const handleDelete = async (u: User) => {
-    if (u.id === currentUser?.id) {
-      alert('Anda tidak dapat menghapus akun Anda sendiri.');
-      return;
-    }
-    if (!window.confirm(`Yakin ingin menghapus akun ${u.fullName} (${u.username})?`)) {
+    if (!window.confirm(`Yakin ingin menonaktifkan/menghapus pengguna ${u.fullName} (@${u.username})?`)) {
       return;
     }
     try {
@@ -96,30 +96,18 @@ export const UserManagementPage: React.FC = () => {
 
     try {
       if (editingUser) {
-        await updateUser(editingUser.id, {
-          fullName: formData.fullName,
-          email: formData.email,
-          role: formData.role,
-          isActive: formData.isActive,
-          phoneNumber: formData.phoneNumber,
-          agency: formData.agency,
-          password: formData.password.trim() ? formData.password : undefined,
-        });
+        const payload: Partial<typeof formData> = { ...formData };
+        if (!payload.password) {
+          delete payload.password;
+        }
+        await updateUser(editingUser.id, payload);
       } else {
-        await createUser({
-          fullName: formData.fullName,
-          username: formData.username,
-          email: formData.email,
-          password: formData.password,
-          role: formData.role,
-          phoneNumber: formData.phoneNumber,
-          agency: formData.agency,
-        });
+        await createUser(formData);
       }
       setIsModalOpen(false);
       loadUsers();
     } catch (err: unknown) {
-      setModalError(err instanceof Error ? err.message : 'Gagal memproses data');
+      setModalError(err instanceof Error ? err.message : 'Gagal menyimpan');
     } finally {
       setSubmitting(false);
     }
@@ -127,9 +115,9 @@ export const UserManagementPage: React.FC = () => {
 
   if (currentUser?.role !== 'admin') {
     return (
-      <div className="p-8 text-center bg-white border border-[#d0d7de] rounded-md">
-        <h2 className="text-base font-semibold text-[#d1242f] mb-1">Akses Terbatas</h2>
-        <p className="text-xs text-[#656d76]">
+      <div className="p-8 text-center bg-white border border-[#d0d7de] rounded-lg">
+        <h2 className="text-base font-semibold text-[#cf222e] mb-1">Akses Terbatas</h2>
+        <p className="text-sm text-[#57606a]">
           Manajemen Pengguna hanya dapat diakses oleh Administrator Sistem.
         </p>
       </div>
@@ -140,20 +128,20 @@ export const UserManagementPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#d0d7de] pb-4">
         <div>
-          <h1 className="text-xl font-semibold text-[#1f2328] tracking-tight">
-            Manajemen Pengguna & Hak Akses (RBAC)
+          <h1 className="text-xl sm:text-2xl font-bold text-[#1f2328] tracking-tight">
+            Manajemen Pengguna & Staf Petugas
           </h1>
-          <p className="text-xs text-[#656d76] mt-0.5">
-            Kelola seluruh akun petugas, dokter hewan, dan pimpinan secara terpusat.
+          <p className="text-sm text-[#57606a] mt-1">
+            Pengelolaan akun internal, penugasan peran dokter hewan, petugas pos, dan pimpinan.
           </p>
         </div>
 
         <button
           type="button"
           onClick={openCreateModal}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 rounded-md transition-colors shadow-2xs self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 rounded-md transition-colors shadow-2xs self-start sm:self-auto shrink-0"
         >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
           </svg>
           <span>Tambah Pengguna Baru</span>
@@ -161,56 +149,56 @@ export const UserManagementPage: React.FC = () => {
       </div>
 
       {/* Role Permission Matrix Card */}
-      <div className="p-4 rounded-md border border-[#d0d7de] bg-[#f6f8fa]">
-        <h3 className="font-semibold text-xs text-[#1f2328] uppercase tracking-wide mb-2">
+      <div className="p-4 sm:p-5 rounded-lg border border-[#d0d7de] bg-[#f6f8fa]">
+        <h3 className="font-semibold text-xs sm:text-sm text-[#1f2328] uppercase tracking-wider mb-3">
           Matriks Hak Akses & Peran (Role Permission Matrix)
         </h3>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-[11px] text-[#1f2328]">
-            <thead className="border-b border-[#d0d7de] text-[#656d76]">
+          <table className="w-full min-w-[650px] text-left text-xs sm:text-sm text-[#1f2328]">
+            <thead className="border-b border-[#d0d7de] text-[#57606a] font-semibold">
               <tr>
-                <th className="py-1.5 px-2">Fitur / Hak Akses</th>
-                <th className="py-1.5 px-2 text-center">Admin</th>
-                <th className="py-1.5 px-2 text-center">Petugas (Operator)</th>
-                <th className="py-1.5 px-2 text-center">Dokter Hewan (Inspector)</th>
-                <th className="py-1.5 px-2 text-center">Pimpinan (Viewer)</th>
+                <th className="py-2 px-2.5">Fitur / Hak Akses</th>
+                <th className="py-2 px-2.5 text-center">Admin</th>
+                <th className="py-2 px-2.5 text-center">Petugas (Operator)</th>
+                <th className="py-2 px-2.5 text-center">Dokter Hewan (Inspector)</th>
+                <th className="py-2 px-2.5 text-center">Pimpinan (Viewer)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#d0d7de]/50">
               <tr>
-                <td className="py-1.5 px-2 font-medium">Input & Hapus Data Lalu Lintas</td>
-                <td className="py-1.5 px-2 text-center text-[#1a7f37] font-bold">&#10003; Penuh</td>
-                <td className="py-1.5 px-2 text-center text-[#1a7f37] font-bold">&#10003; Ya</td>
-                <td className="py-1.5 px-2 text-center text-[#656d76]">&#10005; Tidak</td>
-                <td className="py-1.5 px-2 text-center text-[#656d76]">&#10005; Tidak</td>
+                <td className="py-2 px-2.5 font-medium">Input & Hapus Data Lalu Lintas</td>
+                <td className="py-2 px-2.5 text-center text-[#1a7f37] font-semibold">&#10003; Penuh</td>
+                <td className="py-2 px-2.5 text-center text-[#1a7f37] font-semibold">&#10003; Ya</td>
+                <td className="py-2 px-2.5 text-center text-[#57606a]">&#10005; Tidak</td>
+                <td className="py-2 px-2.5 text-center text-[#57606a]">&#10005; Tidak</td>
               </tr>
               <tr>
-                <td className="py-1.5 px-2 font-medium">Verifikasi Kesehatan & SKKH</td>
-                <td className="py-1.5 px-2 text-center text-[#1a7f37] font-bold">&#10003; Penuh</td>
-                <td className="py-1.5 px-2 text-center text-[#656d76]">&#10005; Terbatas</td>
-                <td className="py-1.5 px-2 text-center text-[#1a7f37] font-bold">&#10003; Khusus</td>
-                <td className="py-1.5 px-2 text-center text-[#656d76]">&#10005; Baca-Saja</td>
+                <td className="py-2 px-2.5 font-medium">Verifikasi Kesehatan & SKKH</td>
+                <td className="py-2 px-2.5 text-center text-[#1a7f37] font-semibold">&#10003; Penuh</td>
+                <td className="py-2 px-2.5 text-center text-[#57606a]">&#10005; Terbatas</td>
+                <td className="py-2 px-2.5 text-center text-[#1a7f37] font-semibold">&#10003; Khusus</td>
+                <td className="py-2 px-2.5 text-center text-[#57606a]">&#10005; Baca-Saja</td>
               </tr>
               <tr>
-                <td className="py-1.5 px-2 font-medium">Kalkulasi Otomatis & Rekapitulasi</td>
-                <td className="py-1.5 px-2 text-center text-[#1a7f37] font-bold">&#10003; Penuh</td>
-                <td className="py-1.5 px-2 text-center text-[#1a7f37] font-bold">&#10003; Penuh</td>
-                <td className="py-1.5 px-2 text-center text-[#1a7f37] font-bold">&#10003; Penuh</td>
-                <td className="py-1.5 px-2 text-center text-[#1a7f37] font-bold">&#10003; Penuh</td>
+                <td className="py-2 px-2.5 font-medium">Kalkulasi Otomatis & Rekapitulasi</td>
+                <td className="py-2 px-2.5 text-center text-[#1a7f37] font-semibold">&#10003; Penuh</td>
+                <td className="py-2 px-2.5 text-center text-[#1a7f37] font-semibold">&#10003; Penuh</td>
+                <td className="py-2 px-2.5 text-center text-[#1a7f37] font-semibold">&#10003; Penuh</td>
+                <td className="py-2 px-2.5 text-center text-[#1a7f37] font-semibold">&#10003; Penuh</td>
               </tr>
               <tr>
-                <td className="py-1.5 px-2 font-medium">Log Audit Perubahan</td>
-                <td className="py-1.5 px-2 text-center text-[#1a7f37] font-bold">&#10003; Penuh</td>
-                <td className="py-1.5 px-2 text-center text-[#656d76]">&#10005; Tidak</td>
-                <td className="py-1.5 px-2 text-center text-[#656d76]">&#10005; Tidak</td>
-                <td className="py-1.5 px-2 text-center text-[#1a7f37] font-bold">&#10003; Baca-Saja</td>
+                <td className="py-2 px-2.5 font-medium">Log Audit Perubahan</td>
+                <td className="py-2 px-2.5 text-center text-[#1a7f37] font-semibold">&#10003; Penuh</td>
+                <td className="py-2 px-2.5 text-center text-[#57606a]">&#10005; Tidak</td>
+                <td className="py-2 px-2.5 text-center text-[#57606a]">&#10005; Tidak</td>
+                <td className="py-2 px-2.5 text-center text-[#1a7f37] font-semibold">&#10003; Baca-Saja</td>
               </tr>
               <tr>
-                <td className="py-1.5 px-2 font-medium">Manajemen Pengguna & WhatsApp</td>
-                <td className="py-1.5 px-2 text-center text-[#1a7f37] font-bold">&#10003; Penuh</td>
-                <td className="py-1.5 px-2 text-center text-[#656d76]">&#10005; Tidak</td>
-                <td className="py-1.5 px-2 text-center text-[#656d76]">&#10005; Tidak</td>
-                <td className="py-1.5 px-2 text-center text-[#656d76]">&#10005; Tidak</td>
+                <td className="py-2 px-2.5 font-medium">Manajemen Pengguna & WhatsApp</td>
+                <td className="py-2 px-2.5 text-center text-[#1a7f37] font-semibold">&#10003; Penuh</td>
+                <td className="py-2 px-2.5 text-center text-[#57606a]">&#10005; Tidak</td>
+                <td className="py-2 px-2.5 text-center text-[#57606a]">&#10005; Tidak</td>
+                <td className="py-2 px-2.5 text-center text-[#57606a]">&#10005; Tidak</td>
               </tr>
             </tbody>
           </table>
@@ -218,74 +206,77 @@ export const UserManagementPage: React.FC = () => {
       </div>
 
       {/* User Table */}
-      <div className="border border-[#d0d7de] rounded-md overflow-hidden bg-white">
+      <div className="border border-[#d0d7de] rounded-lg overflow-hidden bg-white shadow-2xs">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-[#1f2328]">
-            <thead className="bg-[#f6f8fa] border-b border-[#d0d7de] font-semibold text-[#1f2328]">
+          <table className="w-full min-w-[750px] text-left text-sm text-[#1f2328]">
+            <thead className="bg-[#f6f8fa] border-b border-[#d0d7de] font-semibold text-[#57606a] text-xs uppercase tracking-wider">
               <tr>
-                <th className="py-2.5 px-3">Nama Lengkap & Username</th>
-                <th className="py-2.5 px-3">Email & Kontak</th>
-                <th className="py-2.5 px-3">Peran (Role)</th>
-                <th className="py-2.5 px-3">Status Akun</th>
-                <th className="py-2.5 px-3">Instansi / Unit</th>
-                <th className="py-2.5 px-3 text-right">Aksi</th>
+                <th className="py-3 px-3.5">Nama Lengkap & Username</th>
+                <th className="py-3 px-3.5">Email & Kontak</th>
+                <th className="py-3 px-3.5">Peran (Role)</th>
+                <th className="py-3 px-3.5">Status Akun</th>
+                <th className="py-3 px-3.5">Instansi / Unit</th>
+                <th className="py-3 px-3.5 text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#d0d7de]">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-xs text-[#656d76]">
-                    Memuat daftar pengguna...
+                  <td colSpan={6} className="py-12 text-center text-sm text-[#57606a]">
+                    <div className="inline-flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-[#1a7f37] border-t-transparent rounded-full animate-spin"></div>
+                      <span>Memuat daftar pengguna...</span>
+                    </div>
                   </td>
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-xs text-[#656d76]">
+                  <td colSpan={6} className="py-12 text-center text-sm text-[#57606a]">
                     Belum ada data pengguna.
                   </td>
                 </tr>
               ) : (
                 users.map((u) => (
-                  <tr key={u.id} className="hover:bg-[#f6f8fa]/60 transition-colors">
-                    <td className="py-2.5 px-3">
+                  <tr key={u.id} className="hover:bg-[#f6f8fa]/70 transition-colors">
+                    <td className="py-3 px-3.5">
                       <div className="font-semibold text-[#1f2328]">{u.fullName}</div>
-                      <div className="text-[11px] font-mono text-[#656d76]">@{u.username}</div>
+                      <div className="text-xs font-mono text-[#57606a]">@{u.username}</div>
                     </td>
 
-                    <td className="py-2.5 px-3 text-[11px]">
-                      <div>{u.email}</div>
-                      <div className="text-[#656d76]">{u.phoneNumber || '-'}</div>
+                    <td className="py-3 px-3.5 text-xs sm:text-sm">
+                      <div className="text-[#1f2328]">{u.email}</div>
+                      <div className="text-[#57606a]">{u.phoneNumber || '-'}</div>
                     </td>
 
-                    <td className="py-2.5 px-3">
-                      <span className="font-mono text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-[#f6f8fa] border border-[#d0d7de] text-[#1f2328]">
+                    <td className="py-3 px-3.5">
+                      <span className="font-mono text-xs uppercase font-semibold px-2.5 py-0.5 rounded-full bg-[#f6f8fa] border border-[#d0d7de] text-[#1f2328]">
                         {u.role}
                       </span>
                     </td>
 
-                    <td className="py-2.5 px-3">
+                    <td className="py-3 px-3.5">
                       {u.isActive ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1a7f37]">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold text-[#1a7f37] bg-[#dafbe1]">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#1a7f37]"></span>
                           <span>Aktif</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#d1242f]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#d1242f]"></span>
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold text-[#cf222e] bg-[#ffebe9]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#cf222e]"></span>
                           <span>Nonaktif</span>
                         </span>
                       )}
                     </td>
 
-                    <td className="py-2.5 px-3 text-[11px] text-[#656d76] truncate max-w-[180px]">
+                    <td className="py-3 px-3.5 text-xs text-[#57606a] truncate max-w-[200px]">
                       {u.agency || '-'}
                     </td>
 
-                    <td className="py-2.5 px-3 text-right space-x-2">
+                    <td className="py-3 px-3.5 text-right space-x-2.5 whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => openEditModal(u)}
-                        className="text-xs text-[#0969da] hover:underline font-medium"
+                        className="text-xs text-[#0969da] hover:underline font-semibold"
                       >
                         Ubah
                       </button>
@@ -293,7 +284,7 @@ export const UserManagementPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleDelete(u)}
-                          className="text-xs text-[#d1242f] hover:underline font-medium"
+                          className="text-xs text-[#cf222e] hover:underline font-semibold"
                         >
                           Hapus
                         </button>
@@ -307,70 +298,79 @@ export const UserManagementPage: React.FC = () => {
         </div>
       </div>
 
-      {/* User Create/Edit Modal */}
+      {/* User Create/Edit Modal with Background Scroll Lock */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white rounded-md border border-[#d0d7de] shadow-lg max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden">
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+          onClick={() => setIsModalOpen(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="bg-white rounded-lg border border-[#d0d7de] shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="px-5 py-3.5 border-b border-[#d0d7de] flex items-center justify-between bg-[#f6f8fa]">
-              <h3 className="font-semibold text-sm text-[#1f2328]">
+              <h3 className="font-semibold text-base text-[#1f2328]">
                 {editingUser ? 'Ubah Data Pengguna' : 'Tambah Pengguna Baru'}
               </h3>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="text-[#656d76] hover:text-[#1f2328] text-base leading-none"
+                className="text-[#57606a] hover:text-[#1f2328] text-xl leading-none"
+                aria-label="Tutup"
               >
                 &times;
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-3.5 text-xs">
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-sm">
               {modalError && (
-                <div className="p-3 rounded bg-[#ffebe9] border border-[#ff8182]/40 text-[#d1242f]">
+                <div className="p-3.5 rounded-md bg-[#ffebe9] border border-[#ff8182]/40 text-sm text-[#cf222e]">
                   {modalError}
                 </div>
               )}
 
               <div>
-                <label className="block font-semibold text-[#1f2328] mb-1">Nama Lengkap</label>
+                <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Nama Lengkap</label>
                 <input
                   type="text"
                   required
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                   placeholder="misal: drh. Sarah Wonda"
-                  className="w-full px-2.5 py-1.5 border border-[#d0d7de] rounded"
+                  className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                 />
               </div>
 
               {!editingUser && (
                 <div>
-                  <label className="block font-semibold text-[#1f2328] mb-1">Username</label>
+                  <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Username</label>
                   <input
                     type="text"
                     required
                     value={formData.username}
                     onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                     placeholder="misal: sarah_wonda"
-                    className="w-full px-2.5 py-1.5 border border-[#d0d7de] rounded"
+                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block font-semibold text-[#1f2328] mb-1">Email Resmi</label>
+                <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Email Resmi</label>
                 <input
                   type="email"
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="misal: sarah@mimikakab.go.id"
-                  className="w-full px-2.5 py-1.5 border border-[#d0d7de] rounded"
+                  className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-[#1f2328] mb-1">
+                <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">
                   {editingUser ? 'Kata Sandi Baru (Kosongkan bila tidak diubah)' : 'Kata Sandi Awal'}
                 </label>
                 <input
@@ -379,16 +379,16 @@ export const UserManagementPage: React.FC = () => {
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   placeholder={editingUser ? 'Biarkan kosong untuk mempertahankan' : 'Minimal 6 karakter'}
-                  className="w-full px-2.5 py-1.5 border border-[#d0d7de] rounded"
+                  className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-[#1f2328] mb-1">Peran (Role)</label>
+                <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Peran (Role)</label>
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  className="w-full px-2.5 py-1.5 border border-[#d0d7de] rounded bg-white text-[#1f2328]"
+                  className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md bg-white text-[#1f2328] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                 >
                   <option value="petugas">Petugas Lapangan / Operator</option>
                   <option value="dokter_hewan">Dokter Hewan Berwenang (Inspector)</option>
@@ -398,23 +398,23 @@ export const UserManagementPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block font-semibold text-[#1f2328] mb-1">Nomor Telepon / WhatsApp</label>
+                <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Nomor Telepon / WhatsApp</label>
                 <input
                   type="text"
                   value={formData.phoneNumber}
                   onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
                   placeholder="misal: 081248000000"
-                  className="w-full px-2.5 py-1.5 border border-[#d0d7de] rounded"
+                  className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-[#1f2328] mb-1">Instansi / Unit Kerja</label>
+                <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Instansi / Unit Kerja</label>
                 <input
                   type="text"
                   value={formData.agency}
                   onChange={(e) => setFormData({ ...formData, agency: e.target.value })}
-                  className="w-full px-2.5 py-1.5 border border-[#d0d7de] rounded"
+                  className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                 />
               </div>
 
@@ -425,26 +425,26 @@ export const UserManagementPage: React.FC = () => {
                     id="isActiveCheck"
                     checked={formData.isActive}
                     onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                    className="rounded border-[#d0d7de]"
+                    className="w-4 h-4 rounded border-[#d0d7de] text-[#1a7f37] focus:ring-[#1a7f37]"
                   />
-                  <label htmlFor="isActiveCheck" className="text-xs text-[#1f2328] font-medium">
+                  <label htmlFor="isActiveCheck" className="text-sm text-[#1f2328] font-medium cursor-pointer">
                     Akun Aktif (Dapat masuk ke sistem)
                   </label>
                 </div>
               )}
 
-              <div className="pt-4 border-t border-[#d0d7de] flex justify-end gap-2">
+              <div className="pt-4 border-t border-[#d0d7de] flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-3 py-1.5 border border-[#d0d7de] rounded text-[#1f2328] hover:bg-[#f6f8fa]"
+                  className="px-4 py-2 border border-[#d0d7de] rounded-md text-sm font-semibold text-[#1f2328] hover:bg-[#f6f8fa] transition-colors"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-1.5 font-semibold text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 rounded disabled:opacity-50"
+                  className="px-5 py-2 font-semibold text-sm text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 rounded-md disabled:opacity-50 transition-colors shadow-2xs"
                 >
                   {submitting ? 'Menyimpan...' : 'Simpan Pengguna'}
                 </button>

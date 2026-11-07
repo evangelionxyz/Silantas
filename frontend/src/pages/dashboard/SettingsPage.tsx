@@ -42,9 +42,9 @@ export const SettingsPage: React.FC = () => {
 
   if (user?.role !== 'admin') {
     return (
-      <div className="p-8 text-center bg-white border border-[#d0d7de] rounded-md">
-        <h2 className="text-base font-semibold text-[#d1242f] mb-1">Akses Terbatas</h2>
-        <p className="text-xs text-[#656d76]">
+      <div className="p-8 text-center bg-white border border-[#d0d7de] rounded-lg">
+        <h2 className="text-base font-semibold text-[#cf222e] mb-1">Akses Terbatas</h2>
+        <p className="text-sm text-[#57606a]">
           Pengaturan sistem hanya dapat diakses oleh Administrator Sistem.
         </p>
       </div>
@@ -54,44 +54,44 @@ export const SettingsPage: React.FC = () => {
   return (
     <div className="max-w-2xl space-y-6">
       <div className="border-b border-[#d0d7de] pb-4">
-        <h1 className="text-xl font-semibold text-[#1f2328] tracking-tight">
+        <h1 className="text-xl sm:text-2xl font-bold text-[#1f2328] tracking-tight">
           Pengaturan Sistem & Saluran WhatsApp
         </h1>
-        <p className="text-xs text-[#656d76] mt-0.5">
+        <p className="text-sm text-[#57606a] mt-1">
           Atur kontak resmi WhatsApp Business yang digunakan pada tombol konsultasi publik.
         </p>
       </div>
 
       {statusMessage && (
         <div
-          className={`p-3 rounded-md text-xs border ${
+          className={`p-3.5 rounded-md text-sm border ${
             statusMessage.type === 'success'
               ? 'bg-[#dafbe1] text-[#1a7f37] border-[#4ac26b]/40'
-              : 'bg-[#ffebe9] text-[#d1242f] border-[#ff8182]/40'
+              : 'bg-[#ffebe9] text-[#cf222e] border-[#ff8182]/40'
           }`}
         >
           {statusMessage.text}
         </div>
       )}
 
-      <div className="p-5 rounded-md border border-[#d0d7de] bg-white">
-        <form onSubmit={handleSave} className="space-y-4 text-xs">
+      <div className="p-5 sm:p-6 rounded-lg border border-[#d0d7de] bg-white shadow-2xs">
+        <form onSubmit={handleSave} className="space-y-4 text-sm">
           <div>
-            <label className="block font-semibold text-[#1f2328] mb-1">Nama Instansi</label>
+            <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Nama Instansi</label>
             <input
               type="text"
               disabled
               value={agencyName}
-              className="w-full px-2.5 py-1.5 border border-[#d0d7de] rounded bg-[#f6f8fa] text-[#656d76]"
+              className="w-full px-3 py-2 border border-[#d0d7de] rounded-md bg-[#f6f8fa] text-[#57606a] text-sm"
             />
           </div>
 
           <div>
-            <label className="block font-semibold text-[#1f2328] mb-1">
+            <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">
               Nomor WhatsApp Business Pelayanan (Format Internasional)
             </label>
             <div className="flex">
-              <span className="inline-flex items-center px-3 py-1.5 text-xs font-mono text-[#656d76] bg-[#f6f8fa] border border-r-0 border-[#d0d7de] rounded-l">
+              <span className="inline-flex items-center px-3.5 py-2 text-sm font-mono text-[#57606a] bg-[#f6f8fa] border border-r-0 border-[#d0d7de] rounded-l-md font-semibold">
                 +
               </span>
               <input
@@ -100,23 +100,23 @@ export const SettingsPage: React.FC = () => {
                 value={whatsappNumber}
                 onChange={(e) => setWhatsappNumber(e.target.value)}
                 placeholder="misal: 6281240000000"
-                className="w-full px-2.5 py-1.5 border border-[#d0d7de] rounded-r font-mono text-xs focus:outline-none focus:ring-1 focus:ring-[#0969da]"
+                className="w-full px-3 py-2 border border-[#d0d7de] rounded-r-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
               />
             </div>
-            <p className="text-[11px] text-[#656d76] mt-1">
+            <p className="text-xs text-[#57606a] mt-1.5">
               Gunakan kode negara tanpa tanda plus atau spasi (contoh: 6281240000000).
             </p>
           </div>
 
           <div>
-            <label className="block font-semibold text-[#1f2328] mb-1">
+            <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">
               Pesan Pembuka Konsultasi Bawaan
             </label>
             <textarea
-              rows={3}
+              rows={4}
               value={whatsappMessage}
               onChange={(e) => setWhatsappMessage(e.target.value)}
-              className="w-full px-2.5 py-1.5 border border-[#d0d7de] rounded focus:outline-none focus:ring-1 focus:ring-[#0969da]"
+              className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
             />
           </div>
 
@@ -124,7 +124,7 @@ export const SettingsPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading || saving}
-              className="px-4 py-2 font-semibold text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 rounded disabled:opacity-50 transition-colors shadow-2xs"
+              className="px-5 py-2.5 font-semibold text-sm text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 rounded-md disabled:opacity-50 transition-colors shadow-2xs"
             >
               {saving ? 'Menyimpan...' : 'Simpan Pengaturan WhatsApp'}
             </button>

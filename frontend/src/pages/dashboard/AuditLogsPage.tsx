@@ -37,9 +37,9 @@ export const AuditLogsPage: React.FC = () => {
 
   if (!isAuthorized) {
     return (
-      <div className="p-8 text-center bg-white border border-[#d0d7de] rounded-md">
-        <h2 className="text-base font-semibold text-[#d1242f] mb-1">Akses Terbatas</h2>
-        <p className="text-xs text-[#656d76]">
+      <div className="p-8 text-center bg-white border border-[#d0d7de] rounded-lg">
+        <h2 className="text-base font-semibold text-[#cf222e] mb-1">Akses Terbatas</h2>
+        <p className="text-sm text-[#57606a]">
           Halaman Log Audit hanya dapat diakses oleh Administrator dan Pimpinan.
         </p>
       </div>
@@ -49,18 +49,18 @@ export const AuditLogsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="border-b border-[#d0d7de] pb-4">
-        <h1 className="text-xl font-semibold text-[#1f2328] tracking-tight">
+        <h1 className="text-xl sm:text-2xl font-bold text-[#1f2328] tracking-tight">
           Log Audit Perubahan Sistem (Audit Trail)
         </h1>
-        <p className="text-xs text-[#656d76] mt-0.5">
+        <p className="text-sm text-[#57606a] mt-1">
           Rekaman jejak aktivitas pengguna untuk transparansi dan kepatuhan pengawasan internal lalu lintas hewan.
         </p>
       </div>
 
       {/* Filter Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#f6f8fa] p-3 rounded-md border border-[#d0d7de]">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#f6f8fa] p-3.5 rounded-lg border border-[#d0d7de]">
         <div>
-          <label className="block text-[11px] font-semibold text-[#656d76] mb-1">Cari Deskripsi / Pengguna</label>
+          <label className="block text-xs font-semibold text-[#57606a] mb-1.5 uppercase tracking-wide">Cari Deskripsi / Pengguna</label>
           <input
             type="text"
             value={search}
@@ -69,19 +69,19 @@ export const AuditLogsPage: React.FC = () => {
               setPage(1);
             }}
             placeholder="Cari uraian atau nama pengguna..."
-            className="w-full px-2.5 py-1.5 text-xs bg-white text-[#1f2328] border border-[#d0d7de] rounded-md focus:outline-none focus:ring-1 focus:ring-[#0969da]"
+            className="w-full px-3 py-2 text-sm bg-white text-[#1f2328] border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
           />
         </div>
 
         <div>
-          <label className="block text-[11px] font-semibold text-[#656d76] mb-1">Tipe Aksi</label>
+          <label className="block text-xs font-semibold text-[#57606a] mb-1.5 uppercase tracking-wide">Tipe Aksi</label>
           <select
             value={action}
             onChange={(e) => {
               setAction(e.target.value);
               setPage(1);
             }}
-            className="w-full px-2.5 py-1.5 text-xs bg-white text-[#1f2328] border border-[#d0d7de] rounded-md focus:outline-none focus:ring-1 focus:ring-[#0969da]"
+            className="w-full px-3 py-2 text-sm bg-white text-[#1f2328] border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
           >
             <option value="ALL">Semua Aksi</option>
             <option value="CREATE">CREATE (Tambah Data)</option>
@@ -92,14 +92,14 @@ export const AuditLogsPage: React.FC = () => {
         </div>
 
         <div>
-          <label className="block text-[11px] font-semibold text-[#656d76] mb-1">Entitas Objek</label>
+          <label className="block text-xs font-semibold text-[#57606a] mb-1.5 uppercase tracking-wide">Entitas Objek</label>
           <select
             value={entityType}
             onChange={(e) => {
               setEntityType(e.target.value);
               setPage(1);
             }}
-            className="w-full px-2.5 py-1.5 text-xs bg-white text-[#1f2328] border border-[#d0d7de] rounded-md focus:outline-none focus:ring-1 focus:ring-[#0969da]"
+            className="w-full px-3 py-2 text-sm bg-white text-[#1f2328] border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
           >
             <option value="ALL">Semua Entitas</option>
             <option value="TRAFFIC_RECORD">Data Lalu Lintas Hewan</option>
@@ -110,30 +110,33 @@ export const AuditLogsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Audit Log Table */}
-      <div className="border border-[#d0d7de] rounded-md overflow-hidden bg-white">
+      {/* Audit Log Table with Responsive Horizontal Scroll */}
+      <div className="border border-[#d0d7de] rounded-lg overflow-hidden bg-white shadow-2xs">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-[#1f2328]">
-            <thead className="bg-[#f6f8fa] border-b border-[#d0d7de] font-semibold text-[#1f2328]">
+          <table className="w-full min-w-[800px] text-left text-sm text-[#1f2328]">
+            <thead className="bg-[#f6f8fa] border-b border-[#d0d7de] font-semibold text-[#57606a] text-xs uppercase tracking-wider">
               <tr>
-                <th className="py-2.5 px-3">Waktu (WIB / WIT)</th>
-                <th className="py-2.5 px-3">Pengguna & Peran</th>
-                <th className="py-2.5 px-3">Aksi</th>
-                <th className="py-2.5 px-3">Entitas</th>
-                <th className="py-2.5 px-3">Uraian Aktivitas</th>
-                <th className="py-2.5 px-3 text-right">Rincian</th>
+                <th className="py-3 px-3.5">Waktu Kegiatan</th>
+                <th className="py-3 px-3.5">Pengguna & Peran</th>
+                <th className="py-3 px-3.5">Aksi</th>
+                <th className="py-3 px-3.5">Entitas</th>
+                <th className="py-3 px-3.5">Uraian Aktivitas</th>
+                <th className="py-3 px-3.5 text-right">Rincian</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#d0d7de]">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-xs text-[#656d76]">
-                    Memuat log audit...
+                  <td colSpan={6} className="py-12 text-center text-sm text-[#57606a]">
+                    <div className="inline-flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-[#1a7f37] border-t-transparent rounded-full animate-spin"></div>
+                      <span>Memuat log audit...</span>
+                    </div>
                   </td>
                 </tr>
               ) : logs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-xs text-[#656d76]">
+                  <td colSpan={6} className="py-12 text-center text-sm text-[#57606a]">
                     Belum ada riwayat aktivitas yang tercatat.
                   </td>
                 </tr>
@@ -147,63 +150,66 @@ export const AuditLogsPage: React.FC = () => {
 
                   return (
                     <React.Fragment key={log.id}>
-                      <tr className="hover:bg-[#f6f8fa]/60 transition-colors">
-                        <td className="py-2.5 px-3 font-mono text-[11px] text-[#656d76] whitespace-nowrap">
+                      <tr className="hover:bg-[#f6f8fa]/70 transition-colors">
+                        <td className="py-3 px-3.5 font-mono text-xs text-[#57606a] whitespace-nowrap">
                           {dateStr}
                         </td>
 
-                        <td className="py-2.5 px-3 whitespace-nowrap">
+                        <td className="py-3 px-3.5 whitespace-nowrap">
                           <span className="font-semibold text-[#1f2328]">{log.username}</span>
-                          <span className="ml-1.5 text-[10px] uppercase font-mono px-1 py-0.5 rounded bg-[#f6f8fa] border border-[#d0d7de] text-[#656d76]">
+                          <span className="ml-2 text-xs uppercase font-mono px-2 py-0.5 rounded-full bg-[#f6f8fa] border border-[#d0d7de] text-[#57606a]">
                             {log.userRole}
                           </span>
                         </td>
 
-                        <td className="py-2.5 px-3 whitespace-nowrap">
+                        <td className="py-3 px-3.5 whitespace-nowrap">
                           <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                               log.action === 'CREATE'
                                 ? 'bg-[#dafbe1] text-[#1a7f37]'
                                 : log.action === 'UPDATE'
                                 ? 'bg-[#ddf4ff] text-[#0969da]'
                                 : log.action === 'DELETE'
-                                ? 'bg-[#ffebe9] text-[#d1242f]'
-                                : 'bg-[#f6f8fa] text-[#656d76]'
+                                ? 'bg-[#ffebe9] text-[#cf222e]'
+                                : 'bg-[#f6f8fa] text-[#57606a]'
                             }`}
                           >
                             {log.action}
                           </span>
                         </td>
 
-                        <td className="py-2.5 px-3 font-mono text-[11px] text-[#656d76] whitespace-nowrap">
+                        <td className="py-3 px-3.5 font-mono text-xs text-[#57606a] whitespace-nowrap">
                           {log.entityType}
                         </td>
 
-                        <td className="py-2.5 px-3 text-xs text-[#1f2328]">
+                        <td className="py-3 px-3.5 text-xs sm:text-sm text-[#1f2328]">
                           {log.description}
                         </td>
 
-                        <td className="py-2.5 px-3 text-right">
+                        <td className="py-3 px-3.5 text-right whitespace-nowrap">
                           {log.metadata ? (
                             <button
                               type="button"
                               onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
-                              className="text-xs text-[#0969da] hover:underline"
+                              className="text-xs font-semibold text-[#0969da] hover:underline"
                             >
-                              {isExpanded ? 'Tutup' : 'Lihat'}
+                              {isExpanded ? 'Tutup' : 'Lihat Payload'}
                             </button>
                           ) : (
-                            <span className="text-[#8c959f] text-[11px]">-</span>
+                            <span className="text-xs text-[#8c959f]">-</span>
                           )}
                         </td>
                       </tr>
 
                       {isExpanded && log.metadata && (
                         <tr className="bg-[#f6f8fa]">
-                          <td colSpan={6} className="p-3 pl-8">
-                            <div className="text-[11px] font-mono bg-white p-3 border border-[#d0d7de] rounded overflow-x-auto text-[#1f2328]">
-                              <pre>{JSON.stringify(log.metadata, null, 2)}</pre>
+                          <td colSpan={6} className="p-4">
+                            <div className="text-xs font-bold text-[#57606a] uppercase tracking-wider mb-1.5">
+                              Data Payload / Metadata Perubahan:
                             </div>
+                            <pre className="p-3 bg-white border border-[#d0d7de] rounded-md text-xs font-mono overflow-x-auto text-[#1f2328] max-h-60 leading-relaxed">
+                              {JSON.stringify(log.metadata, null, 2)}
+                            </pre>
                           </td>
                         </tr>
                       )}
@@ -215,23 +221,28 @@ export const AuditLogsPage: React.FC = () => {
           </table>
         </div>
 
-        <div className="px-4 py-3 bg-[#f6f8fa] border-t border-[#d0d7de] flex items-center justify-between text-xs text-[#656d76]">
-          <div>Total {totalCount} log tercatat</div>
+        {/* Pagination Footer */}
+        <div className="px-4 py-3 bg-[#f6f8fa] border-t border-[#d0d7de] flex items-center justify-between text-xs sm:text-sm text-[#57606a]">
+          <div>
+            Total <span className="font-semibold text-[#1f2328]">{totalCount}</span> jejak audit
+          </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="px-2.5 py-1 bg-white border border-[#d0d7de] rounded hover:bg-[#f6f8fa] disabled:opacity-40"
+              className="px-3 py-1.5 bg-white border border-[#d0d7de] rounded-md font-medium text-[#1f2328] hover:bg-[#f6f8fa] disabled:opacity-40 transition-colors"
             >
               Sebelumnya
             </button>
-            <span>Halaman {page} dari {totalPages}</span>
+            <span className="font-medium">
+              Halaman {page} dari {totalPages}
+            </span>
             <button
               type="button"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="px-2.5 py-1 bg-white border border-[#d0d7de] rounded hover:bg-[#f6f8fa] disabled:opacity-40"
+              className="px-3 py-1.5 bg-white border border-[#d0d7de] rounded-md font-medium text-[#1f2328] hover:bg-[#f6f8fa] disabled:opacity-40 transition-colors"
             >
               Berikutnya
             </button>
