@@ -3,7 +3,7 @@
   "configVersion": 0,
   "workspaces": {
     "": {
-      "name": "frontend",
+      "name": "silantas",
       "dependencies": {
         "@tailwindcss/vite": "^4.3.5",
         "react": "^19.3.1",
