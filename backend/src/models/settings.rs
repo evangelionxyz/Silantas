@@ -18,7 +18,7 @@ pub struct UpdateWhatsappRequest {
     pub whatsapp_message: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WhatsappConfigResponse {
     pub whatsapp_number: String,

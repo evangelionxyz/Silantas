@@ -16,10 +16,10 @@ export const InternalSidebar: React.FC<InternalSidebarProps> = ({
   const { user } = useAuth();
 
   const navItemClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-3 py-2.5 px-3.5 text-sm font-medium rounded-md transition-colors ${
+    `flex items-center gap-2 py-2 px-3 text-sm transition-colors ${
       isActive
-        ? 'border-l-3 border-[#1a7f37] font-semibold text-[#1f2328] bg-[#f6f8fa] -ml-[2px]'
-        : 'text-[#57606a] hover:text-[#1f2328] hover:bg-[#f6f8fa]/80'
+        ? 'border-l-4 border-[#1a7f37] font-semibold text-[#1f2328] bg-[#f6f8fa] -ml-[2px]'
+        : 'text-[#57606a] hover:text-[#1f2328] hover:bg-[#f6f8fa]/70'
     }`;
 
   const handleLinkClick = () => {

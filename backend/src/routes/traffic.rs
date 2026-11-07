@@ -18,6 +18,16 @@ use crate::{
     services::{audit::record_audit_log, auth::extract_claims_from_headers},
 };
 
+const SUMMARY_CACHE_KEY: &str = "silantas:cache:traffic_summary";
+
+async fn invalidate_summary_cache(state: &AppState) {
+    if let Some(ref redis) = state.redis {
+        if let Err(e) = redis.del(SUMMARY_CACHE_KEY).await {
+            tracing::warn!("Failed to invalidate summary cache: {e}");
+        }
+    }
+}
+
 pub fn traffic_routes() -> Router<AppState> {
     Router::new()
         .route("/", get(list_traffic_handler).post(create_traffic_handler))
@@ -160,6 +170,13 @@ pub async fn get_traffic_summary_handler(
         }
     };
 
+    // Try reading from Upstash Redis cache first
+    if let Some(ref redis) = state.redis {
+        if let Ok(Some(cached_json)) = redis.get_json::<serde_json::Value>(SUMMARY_CACHE_KEY).await {
+            return (StatusCode::OK, Json(cached_json));
+        }
+    }
+
     let summary_items = db::query_as::<sqlx::Postgres, TrafficSummaryItem>(
         "SELECT 
             item_name, 
@@ -192,9 +209,8 @@ pub async fn get_traffic_summary_handler(
     let export_qty = overall.2.unwrap_or(0.0);
 
     match summary_items {
-        Ok(items) => (
-            StatusCode::OK,
-            Json(json!({
+        Ok(items) => {
+            let response_payload = json!({
                 "items": items,
                 "overall": {
                     "totalRecords": overall.0,
@@ -203,8 +219,16 @@ pub async fn get_traffic_summary_handler(
                     "totalCombinedQty": import_qty + export_qty,
                     "totalStorageQty": import_qty - export_qty
                 }
-            })),
-        ),
+            });
+
+            if let Some(ref redis) = state.redis {
+                if let Err(e) = redis.set_json_ex(SUMMARY_CACHE_KEY, &response_payload, 300).await {
+                    tracing::warn!("Failed to cache traffic summary in Redis: {e}");
+                }
+            }
+
+            (StatusCode::OK, Json(response_payload))
+        }
         Err(e) => {
             tracing::error!("Fetch summary error: {e}");
             (
@@ -357,6 +381,8 @@ pub async fn create_traffic_handler(
         updated_at: now,
     };
 
+    invalidate_summary_cache(&state).await;
+
     (StatusCode::CREATED, Json(json!(created)))
 }
 
@@ -496,6 +522,8 @@ pub async fn update_traffic_handler(
         updated_at: now,
     };
 
+    invalidate_summary_cache(&state).await;
+
     (StatusCode::OK, Json(json!(updated)))
 }
 
@@ -540,6 +568,8 @@ pub async fn delete_traffic_handler(
                 None,
             )
             .await;
+
+            invalidate_summary_cache(&state).await;
 
             (StatusCode::OK, Json(json!({ "message": "Data berhasil dihapus" })))
         }

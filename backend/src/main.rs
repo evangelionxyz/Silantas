@@ -47,9 +47,31 @@ async fn main() -> anyhow::Result<()> {
         .allow_methods(tower_http::cors::AllowMethods::mirror_request())
         .allow_headers(tower_http::cors::AllowHeaders::mirror_request());
 
+    // Setup Upstash Redis Client
+    let redis = match (&config.upstash_redis_rest_url, &config.upstash_redis_rest_token) {
+        (Some(url), Some(token)) => {
+            let redis_service = services::UpstashRedisService::new(url.clone(), token.clone());
+            match redis_service.ping().await {
+                Ok(pong) => {
+                    tracing::info!("Connected to Upstash Redis successfully: {pong}");
+                    Some(std::sync::Arc::new(redis_service))
+                }
+                Err(e) => {
+                    tracing::warn!("Could not connect to Upstash Redis on startup: {e}. Running with Redis cache degraded/disabled.");
+                    Some(std::sync::Arc::new(redis_service))
+                }
+            }
+        }
+        _ => {
+            tracing::info!("Upstash Redis credentials not provided. Running without Redis cache.");
+            None
+        }
+    };
+
     let app_state = AppState {
         pool: pool.clone(),
         config: config.clone(),
+        redis,
     };
 
     let trace_layer = tower_http::trace::TraceLayer::new_for_http()

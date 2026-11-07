@@ -41,6 +41,23 @@ pub async fn login_handler(
         );
     }
 
+    let rate_limit_key = format!("silantas:ratelimit:login:{identifier}");
+    if let Some(ref redis) = state.redis {
+        if let Ok(Some(attempts_str)) = redis.get(&rate_limit_key).await {
+            if let Ok(count) = attempts_str.parse::<u32>() {
+                if count >= 5 {
+                    return (
+                        StatusCode::TOO_MANY_REQUESTS,
+                        Json(json!({
+                            "message": "Terlalu banyak percobaan masuk yang gagal. Silakan coba kembali dalam 15 menit.",
+                            "code": "RATE_LIMIT_EXCEEDED"
+                        })),
+                    );
+                }
+            }
+        }
+    }
+
     let user_record = db::query_as::<sqlx::Postgres, UserWithPassword>(
         "SELECT id, full_name, username, email, password_hash, role, is_active, phone_number, agency, created_at, updated_at
         FROM silantas.users WHERE username = $1 OR email = $1;"
@@ -52,6 +69,13 @@ pub async fn login_handler(
     let user = match user_record {
         Ok(Some(u)) => u,
         Ok(None) => {
+            if let Some(ref redis) = state.redis {
+                if let Ok(attempts) = redis.incr(&rate_limit_key).await {
+                    if attempts == 1 {
+                        let _ = redis.expire(&rate_limit_key, 900).await;
+                    }
+                }
+            }
             return (
                 StatusCode::UNAUTHORIZED,
                 Json(json!({
@@ -83,6 +107,13 @@ pub async fn login_handler(
     }
 
     if !verify_password(&password, &user.password_hash) {
+        if let Some(ref redis) = state.redis {
+            if let Ok(attempts) = redis.incr(&rate_limit_key).await {
+                if attempts == 1 {
+                    let _ = redis.expire(&rate_limit_key, 900).await;
+                }
+            }
+        }
         return (
             StatusCode::UNAUTHORIZED,
             Json(json!({
@@ -90,6 +121,10 @@ pub async fn login_handler(
                 "code": "INVALID_CREDENTIALS"
             })),
         );
+    }
+
+    if let Some(ref redis) = state.redis {
+        let _ = redis.del(&rate_limit_key).await;
     }
 
     let token = match create_jwt(&user.id.to_string(), &user.role, &state.config.jwt_secret) {

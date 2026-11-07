@@ -15,6 +15,8 @@ use crate::{
     services::{audit::record_audit_log, auth::extract_claims_from_headers},
 };
 
+const WHATSAPP_SETTINGS_CACHE_KEY: &str = "silantas:cache:settings:whatsapp";
+
 pub fn settings_routes() -> Router<AppState> {
     Router::new()
         .route("/whatsapp", get(get_whatsapp_config_handler).put(update_whatsapp_config_handler))
@@ -23,6 +25,12 @@ pub fn settings_routes() -> Router<AppState> {
 pub async fn get_whatsapp_config_handler(
     State(state): State<AppState>,
 ) -> impl IntoResponse {
+    if let Some(ref redis) = state.redis {
+        if let Ok(Some(cached)) = redis.get_json::<WhatsappConfigResponse>(WHATSAPP_SETTINGS_CACHE_KEY).await {
+            return (StatusCode::OK, Json(json!(cached)));
+        }
+    }
+
     let rows = db::query_as::<sqlx::Postgres, (String, String)>(
         "SELECT key, value FROM silantas.settings WHERE key IN ('whatsapp_number', 'whatsapp_message', 'agency_name');"
     )
@@ -43,13 +51,21 @@ pub async fn get_whatsapp_config_handler(
         }
     }
 
+    let response = WhatsappConfigResponse {
+        whatsapp_number: number,
+        whatsapp_message: message,
+        agency_name: agency,
+    };
+
+    if let Some(ref redis) = state.redis {
+        if let Err(e) = redis.set_json_ex(WHATSAPP_SETTINGS_CACHE_KEY, &response, 3600).await {
+            tracing::warn!("Failed to cache whatsapp settings in Redis: {e}");
+        }
+    }
+
     (
         StatusCode::OK,
-        Json(json!(WhatsappConfigResponse {
-            whatsapp_number: number,
-            whatsapp_message: message,
-            agency_name: agency,
-        })),
+        Json(json!(response)),
     )
 }
 
@@ -114,6 +130,12 @@ pub async fn update_whatsapp_config_handler(
         Some(json!({ "whatsappNumber": clean_number })),
     )
     .await;
+
+    if let Some(ref redis) = state.redis {
+        if let Err(e) = redis.del(WHATSAPP_SETTINGS_CACHE_KEY).await {
+            tracing::warn!("Failed to invalidate whatsapp settings cache in Redis: {e}");
+        }
+    }
 
     (
         StatusCode::OK,
