@@ -131,16 +131,22 @@ pub async fn init_database(
         INSERT INTO silantas.settings (key, value, description)
         VALUES 
             ('whatsapp_number', '6281240000000', 'Nomor WhatsApp Business Pelayanan Dinas'),
-            ('whatsapp_message', 'Halo Admin SI-LANTAS HEWAN MIMIKA, saya ingin konsultasi mengenai persyaratan lalu lintas hewan/produk hewan.', 'Pesan template awal konsultasi'),
+            ('whatsapp_message', 'Halo Admin SUANGGI (Sistem Informasi Lalu Lintas Hewan) Kabupaten Mimika, saya ingin konsultasi mengenai persyaratan lalu lintas hewan/produk hewan.', 'Pesan template awal konsultasi'),
             ('agency_name', 'Dinas Peternakan dan Kesehatan Hewan Kabupaten Mimika', 'Nama Instansi')
         ON CONFLICT (key) DO NOTHING;
+
+        -- Migrate legacy default WhatsApp message from SI-LANTAS to SUANGGI
+        UPDATE silantas.settings
+        SET value = 'Halo Admin SUANGGI (Sistem Informasi Lalu Lintas Hewan) Kabupaten Mimika, saya ingin konsultasi mengenai persyaratan lalu lintas hewan/produk hewan.',
+            updated_at = NOW()
+        WHERE key = 'whatsapp_message' AND value LIKE '%SI-LANTAS%';
 
         -- Seed Initial Accounts with Verified Argon2 Hashes
         -- admin: admin123
         -- drh_sarah, petugas_budi, pimpinan_yohanis: password123
         INSERT INTO silantas.users (id, full_name, username, email, password_hash, role, is_active, phone_number, agency)
         VALUES 
-            ('e1000000-0000-0000-0000-000000000000', 'Administrator SILANTAS', 'admin', 'admin@mimikakab.go.id', '$argon2id$v=19$m=19456,t=2,p=1$wM4W0M5psB/tFJfgCRz1cA$fVchlIji3Rls/OKqYFC/G2GY2ox0hLPdVNfgXrcA+us', 'admin', true, '081248000000', 'Dinas Peternakan dan Kesehatan Hewan Kab. Mimika'),
+            ('e1000000-0000-0000-0000-000000000000', 'Administrator SUANGGI', 'admin', 'admin@mimikakab.go.id', '$argon2id$v=19$m=19456,t=2,p=1$wM4W0M5psB/tFJfgCRz1cA$fVchlIji3Rls/OKqYFC/G2GY2ox0hLPdVNfgXrcA+us', 'admin', true, '081248000000', 'Dinas Peternakan dan Kesehatan Hewan Kab. Mimika'),
             ('e1000000-0000-0000-0000-000000000001', 'drh. Sarah Wonda, M.Sc.', 'drh_sarah', 'sarah.wonda@mimikakab.go.id', '$argon2id$v=19$m=19456,t=2,p=1$OWl84TRrFqoiLQINkF8Xhg$PH0Wec9lY+Nu9+NnUeRXuYB9hi+O3MkSrFDsmxLXgrc', 'dokter_hewan', true, '081248001001', 'Bidang Kesehatan Hewan Kab. Mimika'),
             ('e1000000-0000-0000-0000-000000000002', 'Budi Santoso, S.Pt.', 'petugas_budi', 'budi.santoso@mimikakab.go.id', '$argon2id$v=19$m=19456,t=2,p=1$OWl84TRrFqoiLQINkF8Xhg$PH0Wec9lY+Nu9+NnUeRXuYB9hi+O3MkSrFDsmxLXgrc', 'petugas', true, '081248001002', 'Pos Pengawasan Lalu Lintas Pomako'),
             ('e1000000-0000-0000-0000-000000000003', 'Drs. Yohanis Maturbongs', 'pimpinan_yohanis', 'yohanis.maturbongs@mimikakab.go.id', '$argon2id$v=19$m=19456,t=2,p=1$OWl84TRrFqoiLQINkF8Xhg$PH0Wec9lY+Nu9+NnUeRXuYB9hi+O3MkSrFDsmxLXgrc', 'pimpinan', true, '081248001003', 'Kepala Dinas Peternakan & Keswan')

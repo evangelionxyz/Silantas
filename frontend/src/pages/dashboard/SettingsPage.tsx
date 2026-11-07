@@ -70,7 +70,7 @@ export const SettingsPage: React.FC = () => {
 
       {statusMessage && (
         <div
-          className={`p-3.5 rounded-md text-sm border ${
+          className={`p-3.5 text-sm border ${
             statusMessage.type === 'success'
               ? 'bg-[#dafbe1] text-[#1a7f37] border-[#4ac26b]/40'
               : 'bg-[#ffebe9] text-[#cf222e] border-[#ff8182]/40'
@@ -80,7 +80,7 @@ export const SettingsPage: React.FC = () => {
         </div>
       )}
 
-      <div className="p-5 sm:p-6 rounded-lg border border-[#d0d7de] bg-white shadow-2xs">
+      <div className="p-5 sm:p-6 border border-[#d0d7de] bg-white shadow-2xs">
         <form onSubmit={handleSave} className="space-y-4 text-sm">
           <div>
             <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Nama Instansi</label>
@@ -88,7 +88,7 @@ export const SettingsPage: React.FC = () => {
               type="text"
               disabled
               value={agencyName}
-              className="w-full px-3 py-2 border border-[#d0d7de] rounded-md bg-[#f6f8fa] text-[#57606a] text-sm"
+              className="w-full px-3 py-2 border border-[#d0d7de] bg-[#f6f8fa] text-[#57606a] text-sm"
             />
           </div>
 
@@ -122,7 +122,7 @@ export const SettingsPage: React.FC = () => {
               rows={4}
               value={whatsappMessage}
               onChange={(e) => setWhatsappMessage(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+              className="w-full px-3 py-2 text-sm border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
             />
           </div>
 
@@ -130,7 +130,7 @@ export const SettingsPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading || saving}
-              className="px-5 py-2.5 font-semibold text-sm text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 rounded-md disabled:opacity-50 transition-colors shadow-2xs cursor-pointer"
+              className="px-5 py-2.5 font-semibold text-sm text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 disabled:opacity-50 transition-colors shadow-2xs cursor-pointer"
             >
               {saving ? 'Menyimpan...' : 'Simpan Pengaturan WhatsApp'}
             </button>

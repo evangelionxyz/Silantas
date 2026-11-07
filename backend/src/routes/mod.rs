@@ -30,7 +30,9 @@ pub async fn root_handler(State(state): State<AppState>) -> Json<Value> {
     };
 
     Json(json!({
-        "service": "SI-LANTAS HEWAN MIMIKA API",
+        "service": "SUANGGI - SISTEM INFORMASI LALU LINTAS HEWAN API",
+        "motto": "Data Terpadu - Akurat - Terkini",
+        "slogan": "Satu Sistem, Satu Data, Terpantau Lalu Lintas Hewan dan Produk Hewan",
         "agency": "Dinas Peternakan dan Kesehatan Hewan Kabupaten Mimika",
         "status": "online",
         "redis": redis_status

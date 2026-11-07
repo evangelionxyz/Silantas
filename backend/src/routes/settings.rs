@@ -39,7 +39,7 @@ pub async fn get_whatsapp_config_handler(
     .unwrap_or_default();
 
     let mut number = "6281240000000".to_string();
-    let mut message = "Halo Admin SI-LANTAS HEWAN MIMIKA, saya ingin konsultasi mengenai persyaratan lalu lintas hewan/produk hewan.".to_string();
+    let mut message = "Halo Admin SUANGGI (Sistem Informasi Lalu Lintas Hewan) Kabupaten Mimika, saya ingin konsultasi mengenai persyaratan lalu lintas hewan/produk hewan.".to_string();
     let mut agency = "Dinas Peternakan dan Kesehatan Hewan Kabupaten Mimika".to_string();
 
     for (k, v) in rows {
@@ -93,7 +93,7 @@ pub async fn update_whatsapp_config_handler(
 
     let clean_number = payload.whatsapp_number.trim().replace([' ', '-', '+'], "");
     let message = payload.whatsapp_message.unwrap_or_else(|| {
-        "Halo Admin SI-LANTAS HEWAN MIMIKA, saya ingin konsultasi mengenai persyaratan lalu lintas hewan/produk hewan.".to_string()
+        "Halo Admin SUANGGI (Sistem Informasi Lalu Lintas Hewan) Kabupaten Mimika, saya ingin konsultasi mengenai persyaratan lalu lintas hewan/produk hewan.".to_string()
     });
 
     let now = chrono::Utc::now();

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { SUANGGI_BRAND } from '../../constants/brand';
 import { useAuth } from '../../context/AuthContext';
 
 interface InternalHeaderProps {
@@ -23,37 +24,40 @@ export const InternalHeader: React.FC<InternalHeaderProps> = ({ onToggleMobileSi
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-[#d0d7de] select-none shadow-2xs">
+    <header className="sticky top-0 z-40 bg-white border-b border-[#c6cbc0] select-none shadow-sm">
       <div className="mx-auto px-3 sm:px-6 lg:px-8 min-h-[4rem] h-16 flex items-center justify-between gap-3 sm:gap-4">
         {/* Left: Mobile hamburger & Internal Branding */}
         <div className="flex items-center gap-2.5 sm:gap-3.5">
           <button
             type="button"
             onClick={onToggleMobileSidebar}
-            className="lg:hidden p-2 text-[#57606a] hover:text-[#1f2328] hover:bg-[#f6f8fa] rounded-md transition-colors border border-[#d0d7de]"
-            title="Buka Menu Manajemen"
+            className="lg:hidden p-2 text-[#57606a] hover:text-[#1f2328] hover:bg-[#f6f8fa] transition-colors border border-[#d0d7de]"
+            title="Buka Menu Manajemen SUANGGI"
             aria-label="Buka Menu Manajemen"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
 
           <Link to="/dashboard" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-md bg-[#1a7f37] text-white flex items-center justify-center font-bold text-sm tracking-tight shadow-xs shrink-0">
-              SL
+            <div className="w-9 h-9 bg-[#174b2b] text-white flex items-center justify-center font-extrabold text-sm tracking-tight shrink-0">
+              {SUANGGI_BRAND.initials}
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
-                <span className="font-bold text-sm sm:text-base leading-tight tracking-tight text-[#1f2328]">
-                  SI-LANTAS HEWAN
+                <span className="font-extrabold text-sm sm:text-base leading-tight tracking-tight text-[#173d22]">
+                  {SUANGGI_BRAND.name}
                 </span>
-                <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] sm:text-xs font-semibold rounded bg-[#dafbe1] text-[#1a7f37] border border-[#4ac26b]/40 uppercase tracking-wide">
-                  Internal
+                <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] sm:text-xs font-semibold bg-[#dafbe1] text-[#1a7f37] border border-[#4ac26b]/40 uppercase tracking-wide">
+                  Internal Petugas
+                </span>
+                <span className="hidden xl:inline-flex items-center px-2 py-0.5 text-[10px] font-semibold bg-[#f6f8fa] text-[#57606a] border border-[#d0d7de]">
+                  {SUANGGI_BRAND.motto}
                 </span>
               </div>
               <span className="text-xs text-[#57606a] font-medium leading-none hidden xs:inline">
-                Portal Manajemen Dinas Peternakan & Keswan
+                {SUANGGI_BRAND.fullName} &bull; {SUANGGI_BRAND.agencyShort}
               </span>
             </div>
           </Link>
@@ -63,10 +67,10 @@ export const InternalHeader: React.FC<InternalHeaderProps> = ({ onToggleMobileSi
         <div className="flex items-center gap-2 sm:gap-4">
           <Link
             to="/"
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-medium text-[#0969da] hover:bg-[#ddf4ff] border border-[#54aeff]/40 rounded-md transition-colors"
-            title="Kunjungi Halaman Panduan Layanan Publik"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-semibold text-[#174b2b] hover:bg-[#eef1e8] border border-[#9eaa98] transition-colors"
+            title="Kunjungi Halaman Panduan Layanan Publik SUANGGI"
           >
-            <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
             <span>Lihat Portal Publik</span>
@@ -75,7 +79,7 @@ export const InternalHeader: React.FC<InternalHeaderProps> = ({ onToggleMobileSi
           {user && (
             <div className="flex items-center gap-2 sm:gap-3 pl-2 sm:pl-3 border-l border-[#d0d7de]">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-[#1f2328] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                <div className="w-8 h-8 bg-[#1f2328] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
                   {user.fullName.charAt(0)}
                 </div>
                 <div className="hidden md:flex flex-col min-w-0">
@@ -83,7 +87,7 @@ export const InternalHeader: React.FC<InternalHeaderProps> = ({ onToggleMobileSi
                     {user.fullName}
                   </span>
                   <span
-                    className={`inline-block text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.2 rounded border w-fit ${getRoleBadgeColor(
+                    className={`inline-block text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.2 border w-fit ${getRoleBadgeColor(
                       user.role
                     )}`}
                   >
@@ -95,7 +99,7 @@ export const InternalHeader: React.FC<InternalHeaderProps> = ({ onToggleMobileSi
               <button
                 type="button"
                 onClick={logout}
-                className="px-2.5 py-1.5 text-xs sm:text-sm font-medium text-[#cf222e] hover:bg-[#ffebe9] border border-[#ff8182]/40 rounded-md transition-colors"
+                className="px-2.5 py-1.5 text-xs sm:text-sm font-medium text-[#cf222e] hover:bg-[#ffebe9] border border-[#ff8182]/40 transition-colors"
                 title="Keluar dari sesi petugas"
               >
                 Keluar

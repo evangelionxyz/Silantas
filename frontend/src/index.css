@@ -2,30 +2,69 @@
 
 @theme {
   --breakpoint-xs: 30rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.625rem;
+  --radius-3xl: 0.75rem;
 }
 
 @layer base {
   :root {
-    --color-canvas-default: #ffffff;
-    --color-canvas-subtle: #f6f8fa;
-    --color-canvas-inset: #f6f8fa;
-    --color-border-default: #d0d7de;
-    --color-border-muted: #e5e7eb;
-    --color-fg-default: #1f2328;
-    --color-fg-muted: #57606a;
-    --color-fg-subtle: #8c959f;
-    --color-accent-fg: #0969da;
-    --color-accent-emphasis: #0969da;
-    --color-success-fg: #1a7f37;
-    --color-success-emphasis: #1f883d;
-    --color-danger-fg: #cf222e;
-    --color-attention-fg: #9a6700;
+    --color-canvas-default: #f7f6f1;
+    --color-canvas-subtle: #eef0e9;
+    --color-canvas-inset: #e8ebe2;
+    --color-border-default: #c6cbc0;
+    --color-border-muted: #d9ddd4;
+    --color-fg-default: #1f2920;
+    --color-fg-muted: #4b574d;
+    --color-fg-subtle: #59635a;
+    --color-accent-fg: #174b2b;
+    --color-accent-emphasis: #173d22;
+    --color-success-fg: #17613b;
+    --color-success-emphasis: #124b2d;
+    --color-danger-fg: #982d25;
+    --color-attention-fg: #805500;
+    --color-suanggi-forest: #173d22;
+    --color-suanggi-emerald: #17613b;
+    --color-suanggi-mint: #e7eddf;
+    --color-suanggi-ocean: #174b2b;
+    --color-suanggi-amber: #805500;
+  }
+
+  a[href],
+  button:not(:disabled),
+  summary,
+  select:not(:disabled),
+  label[for],
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  select:disabled,
+  input:disabled,
+  textarea:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   html, body {
     background-color: var(--color-canvas-default);
     color: var(--color-fg-default);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    font-family: "Aptos", "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     min-height: 100vh;
@@ -45,14 +84,18 @@
     border: none;
     text-align: left;
   }
+
+  :focus-visible {
+    outline: 3px solid #174b2b;
+    outline-offset: 2px;
+  }
 }
 
 /* Custom GitHub Docs markdown typography styling - highly readable */
 .docs-prose h1 {
-  font-size: 2.25rem;
-  font-weight: 700;
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  font-weight: 800;
   letter-spacing: -0.025em;
-  color: #1f2328;
   margin-bottom: 0.875rem;
   line-height: 1.25;
 }
@@ -61,25 +104,22 @@
   font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: -0.015em;
-  color: #1f2328;
   margin-top: 2.25rem;
   margin-bottom: 0.875rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #d0d7de;
+  border-bottom: 1px solid #c6cbc0;
   line-height: 1.3;
 }
 
 .docs-prose h3 {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #1f2328;
   margin-top: 1.75rem;
   margin-bottom: 0.625rem;
   line-height: 1.4;
 }
 
 .docs-prose p {
-  color: #24292f;
   line-height: 1.75;
   margin-bottom: 1.125rem;
   font-size: 1rem;
@@ -89,7 +129,6 @@
   list-style-type: disc;
   padding-left: 1.75rem;
   margin-bottom: 1.125rem;
-  color: #24292f;
   font-size: 1rem;
 }
 
@@ -101,7 +140,7 @@
 .docs-prose code {
   font-size: 0.875em;
   padding: 0.2em 0.4em;
-  background-color: #f6f8fa;
-  border: 1px solid #d0d7de;
+  background-color: #eef0e9;
+  border: 1px solid #c6cbc0;
   border-radius: 4px;
 }

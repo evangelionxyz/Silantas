@@ -164,10 +164,10 @@ export const TrafficManagementPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#d0d7de] pb-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-[#1f2328] tracking-tight">
-            Data Lalu Lintas Hewan & Produk Peternakan
+            Pemasukan, Pengeluaran &amp; Pemuktahiran Lalu Lintas Hewan
           </h1>
           <p className="text-sm text-[#57606a] mt-1">
-            Pencatatan dan verifikasi pemasukan (impor) serta pengeluaran (ekspor) komoditas di Kabupaten Mimika.
+            SUANGGI &bull; Pengelolaan data terkini untuk hewan hidup, produk hewan, dan olahan peternakan (Data Terpadu - Akurat - Terkini).
           </p>
         </div>
 
@@ -175,18 +175,64 @@ export const TrafficManagementPage: React.FC = () => {
           <button
             type="button"
             onClick={openCreateModal}
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 rounded-md transition-colors shadow-2xs self-start sm:self-auto shrink-0 cursor-pointer"
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold text-white bg-[#15803d] hover:bg-[#14532d] transition-colors shadow-2xs self-start sm:self-auto shrink-0 cursor-pointer"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
             </svg>
-            <span>Catat Lintas Baru</span>
+            <span>Pemuktahiran / Catat Data Baru</span>
           </button>
         )}
       </div>
 
+      {/* Quick Pillar Filter Tabs (Pemasukan / Pengeluaran / Semua) */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            setTrafficType('ALL');
+            setPage(1);
+          }}
+          className={`px-3.5 py-1.5 text-xs font-semibold border transition-colors ${
+            trafficType === 'ALL'
+              ? 'bg-[#1f2328] text-white border-[#1f2328]'
+              : 'bg-white text-[#57606a] border-[#d0d7de] hover:bg-[#f6f8fa]'
+          }`}
+        >
+          Semua Data Terpadu ({totalCount})
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setTrafficType('IMPORT');
+            setPage(1);
+          }}
+          className={`px-3.5 py-1.5 text-xs font-semibold border transition-colors ${
+            trafficType === 'IMPORT'
+              ? 'bg-[#15803d] text-white border-[#15803d]'
+              : 'bg-white text-[#15803d] border-[#86efac] hover:bg-[#f0fdf4]'
+          }`}
+        >
+          Pemasukan: Data Hewan &amp; Produk Masuk
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setTrafficType('EXPORT');
+            setPage(1);
+          }}
+          className={`px-3.5 py-1.5 text-xs font-semibold border transition-colors ${
+            trafficType === 'EXPORT'
+              ? 'bg-[#0969da] text-white border-[#0969da]'
+              : 'bg-white text-[#0969da] border-[#54aeff]/60 hover:bg-[#ddf4ff]/40'
+          }`}
+        >
+          Pengeluaran: Data Hewan &amp; Produk Keluar
+        </button>
+      </div>
+
       {/* Search & Filter Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-[#f6f8fa] p-3.5 rounded-lg border border-[#d0d7de]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-[#f6f8fa] p-3.5 border border-[#d0d7de]">
         <div>
           <label className="block text-xs font-semibold text-[#57606a] mb-1.5 uppercase tracking-wide">Cari Data</label>
           <input
@@ -197,23 +243,23 @@ export const TrafficManagementPage: React.FC = () => {
               setPage(1);
             }}
             placeholder="Cari komoditas / pemohon / dokumen..."
-            className="w-full px-3 py-2 text-sm bg-white text-[#1f2328] border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+            className="w-full px-3 py-2 text-sm bg-white text-[#1f2328] border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-[#57606a] mb-1.5 uppercase tracking-wide">Tipe Lalu Lintas</label>
+          <label className="block text-xs font-semibold text-[#57606a] mb-1.5 uppercase tracking-wide">Arah Lalu Lintas</label>
           <select
             value={trafficType}
             onChange={(e) => {
               setTrafficType(e.target.value);
               setPage(1);
             }}
-            className="w-full px-3 py-2 text-sm bg-white text-[#1f2328] border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+            className="w-full px-3 py-2 text-sm bg-white text-[#1f2328] border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
           >
-            <option value="ALL">Semua (Masuk & Keluar)</option>
-            <option value="IMPORT">Masuk (IMPORT)</option>
-            <option value="EXPORT">Keluar (EXPORT)</option>
+            <option value="ALL">Semua (Pemasukan &amp; Pengeluaran)</option>
+            <option value="IMPORT">Pemasukan (Masuk / IMPORT)</option>
+            <option value="EXPORT">Pengeluaran (Keluar / EXPORT)</option>
           </select>
         </div>
 
@@ -225,7 +271,7 @@ export const TrafficManagementPage: React.FC = () => {
               setCategory(e.target.value);
               setPage(1);
             }}
-            className="w-full px-3 py-2 text-sm bg-white text-[#1f2328] border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+            className="w-full px-3 py-2 text-sm bg-white text-[#1f2328] border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
           >
             <option value="ALL">Semua Kategori</option>
             <option value="HEWAN_HIDUP">Hewan Hidup</option>
@@ -242,7 +288,7 @@ export const TrafficManagementPage: React.FC = () => {
               setInspectionStatus(e.target.value);
               setPage(1);
             }}
-            className="w-full px-3 py-2 text-sm bg-white text-[#1f2328] border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+            className="w-full px-3 py-2 text-sm bg-white text-[#1f2328] border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
           >
             <option value="ALL">Semua Status</option>
             <option value="INSPECTED_PASS">Lulus (PASS)</option>
@@ -253,7 +299,7 @@ export const TrafficManagementPage: React.FC = () => {
       </div>
 
       {/* Main Table with Responsive Horizontal Scroll */}
-      <div className="border border-[#d0d7de] rounded-lg overflow-hidden bg-white shadow-2xs">
+      <div className="border border-[#d0d7de] overflow-hidden bg-white shadow-2xs">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[850px] text-left text-sm text-[#1f2328]">
             <thead className="bg-[#f6f8fa] border-b border-[#d0d7de] font-semibold text-[#57606a] text-xs uppercase tracking-wider">
@@ -273,7 +319,7 @@ export const TrafficManagementPage: React.FC = () => {
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-sm text-[#57606a]">
                     <div className="inline-flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-[#1a7f37] border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-[#1a7f37] border-t-transparent animate-spin"></div>
                       <span>Memuat data lalu lintas hewan...</span>
                     </div>
                   </td>
@@ -296,7 +342,7 @@ export const TrafficManagementPage: React.FC = () => {
 
                       <td className="py-3 px-3.5">
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                          className={`inline-flex items-center px-2.5 py-0.5 text-xs font-semibold ${
                             isImport
                               ? 'bg-[#dafbe1] text-[#1a7f37] border border-[#4ac26b]/40'
                               : 'bg-[#ddf4ff] text-[#0969da] border border-[#54aeff]/40'
@@ -333,15 +379,15 @@ export const TrafficManagementPage: React.FC = () => {
 
                       <td className="py-3 px-3.5">
                         {r.inspectionStatus === 'INSPECTED_PASS' ? (
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold text-[#1a7f37] bg-[#dafbe1]">
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-semibold text-[#1a7f37] bg-[#dafbe1]">
                             <span>&#10003; Lulus</span>
                           </span>
                         ) : r.inspectionStatus === 'INSPECTED_REJECT' ? (
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold text-[#cf222e] bg-[#ffebe9]">
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-semibold text-[#cf222e] bg-[#ffebe9]">
                             <span>&#10005; Ditolak</span>
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium text-[#9a6700] bg-[#fff8c5]">
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium text-[#9a6700] bg-[#fff8c5]">
                             <span>&bull; Menunggu</span>
                           </span>
                         )}
@@ -392,7 +438,7 @@ export const TrafficManagementPage: React.FC = () => {
               type="button"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="px-3 py-1.5 bg-white border border-[#d0d7de] rounded-md font-medium text-[#1f2328] hover:bg-[#f6f8fa] disabled:opacity-40 transition-colors cursor-pointer"
+              className="px-3 py-1.5 bg-white border border-[#d0d7de] font-medium text-[#1f2328] hover:bg-[#f6f8fa] disabled:opacity-40 transition-colors cursor-pointer"
             >
               Sebelumnya
             </button>
@@ -403,7 +449,7 @@ export const TrafficManagementPage: React.FC = () => {
               type="button"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="px-3 py-1.5 bg-white border border-[#d0d7de] rounded-md font-medium text-[#1f2328] hover:bg-[#f6f8fa] disabled:opacity-40 transition-colors cursor-pointer"
+              className="px-3 py-1.5 bg-white border border-[#d0d7de] font-medium text-[#1f2328] hover:bg-[#f6f8fa] disabled:opacity-40 transition-colors cursor-pointer"
             >
               Berikutnya
             </button>
@@ -429,7 +475,7 @@ export const TrafficManagementPage: React.FC = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 10 }}
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-              className="bg-white rounded-lg border border-[#d0d7de] shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden"
+              className="bg-white border border-[#d0d7de] shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="px-5 py-3.5 border-b border-[#d0d7de] flex items-center justify-between bg-[#f6f8fa]">
@@ -440,7 +486,7 @@ export const TrafficManagementPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => window.print()}
-                    className="px-3 py-1.5 text-xs sm:text-sm font-semibold text-[#1f2328] bg-white border border-[#d0d7de] rounded-md hover:bg-[#f6f8fa] shadow-2xs cursor-pointer"
+                    className="px-3 py-1.5 text-xs sm:text-sm font-semibold text-[#1f2328] bg-white border border-[#d0d7de] hover:bg-[#f6f8fa] shadow-2xs cursor-pointer"
                   >
                     Cetak / Print
                   </button>
@@ -522,14 +568,14 @@ export const TrafficManagementPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="p-3.5 rounded-lg bg-[#f6f8fa] border border-[#d0d7de] space-y-2 mt-4">
+                <div className="p-3.5 bg-[#f6f8fa] border border-[#d0d7de] space-y-2 mt-4">
                   <div className="font-semibold text-sm text-[#1f2328]">
                     Hasil Pemeriksaan Kesehatan Veteriner:
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-xs uppercase text-[#57606a]">Status:</span>
                     <span
-                      className={`font-semibold px-2.5 py-0.5 rounded text-xs ${
+                      className={`font-semibold px-2.5 py-0.5 text-xs ${
                         viewingRecord.inspectionStatus === 'INSPECTED_PASS'
                           ? 'bg-[#dafbe1] text-[#1a7f37]'
                           : viewingRecord.inspectionStatus === 'INSPECTED_REJECT'
@@ -547,7 +593,7 @@ export const TrafficManagementPage: React.FC = () => {
                     </div>
                   )}
                   {viewingRecord.notes && (
-                    <div className="text-xs sm:text-sm text-[#57606a] italic mt-1 bg-white p-2.5 rounded border border-[#d0d7de]/60">
+                    <div className="text-xs sm:text-sm text-[#57606a] italic mt-1 bg-white p-2.5 border border-[#d0d7de]/60">
                       "{viewingRecord.notes}"
                     </div>
                   )}
@@ -558,7 +604,7 @@ export const TrafficManagementPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setViewingRecord(null)}
-                  className="px-4 py-2 bg-white border border-[#d0d7de] rounded-md text-sm font-semibold text-[#1f2328] hover:bg-[#f6f8fa] cursor-pointer"
+                  className="px-4 py-2 bg-white border border-[#d0d7de] text-sm font-semibold text-[#1f2328] hover:bg-[#f6f8fa] cursor-pointer"
                 >
                   Tutup
                 </button>
@@ -586,7 +632,7 @@ export const TrafficManagementPage: React.FC = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 10 }}
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-              className="bg-white rounded-lg border border-[#d0d7de] shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden"
+              className="bg-white border border-[#d0d7de] shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="px-5 py-3.5 border-b border-[#d0d7de] flex items-center justify-between bg-[#f6f8fa]">
@@ -609,13 +655,13 @@ export const TrafficManagementPage: React.FC = () => {
 
               <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-sm">
                 {modalError && (
-                  <div className="p-3.5 rounded-md bg-[#ffebe9] border border-[#ff8182]/40 text-sm text-[#cf222e]">
+                  <div className="p-3.5 bg-[#ffebe9] border border-[#ff8182]/40 text-sm text-[#cf222e]">
                     {modalError}
                   </div>
                 )}
 
                 {isDoctor && (
-                  <div className="p-3.5 rounded-md bg-[#ddf4ff] border border-[#54aeff]/40 text-sm text-[#0969da]">
+                  <div className="p-3.5 bg-[#ddf4ff] border border-[#54aeff]/40 text-sm text-[#0969da]">
                     Sebagai Dokter Hewan Berwenang, Anda berwenang memvalidasi status inspeksi, nomor sertifikat kesehatan, dan catatan rekomendasi teknis.
                   </div>
                 )}
@@ -629,7 +675,7 @@ export const TrafficManagementPage: React.FC = () => {
                       disabled={isDoctor}
                       value={formData.recordNumber}
                       onChange={(e) => setFormData({ ...formData, recordNumber: e.target.value })}
-                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                     />
                   </div>
 
@@ -641,7 +687,7 @@ export const TrafficManagementPage: React.FC = () => {
                       disabled={isDoctor}
                       value={formData.trafficDate}
                       onChange={(e) => setFormData({ ...formData, trafficDate: e.target.value })}
-                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                     />
                   </div>
 
@@ -651,7 +697,7 @@ export const TrafficManagementPage: React.FC = () => {
                       disabled={isDoctor}
                       value={formData.trafficType}
                       onChange={(e) => setFormData({ ...formData, trafficType: e.target.value as 'IMPORT' | 'EXPORT' })}
-                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                     >
                       <option value="IMPORT">Masuk (IMPORT ke Mimika)</option>
                       <option value="EXPORT">Keluar (EXPORT dari Mimika)</option>
@@ -669,7 +715,7 @@ export const TrafficManagementPage: React.FC = () => {
                           category: e.target.value as 'HEWAN_HIDUP' | 'PRODUK_HEWAN' | 'OLAHAN_PRODUK_HEWAN',
                         })
                       }
-                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                     >
                       <option value="HEWAN_HIDUP">Hewan Hidup (Sapi, Kambing, Babi, dll)</option>
                       <option value="PRODUK_HEWAN">Produk Hewan (Daging Segar/Beku, Telur, dll)</option>
@@ -686,7 +732,7 @@ export const TrafficManagementPage: React.FC = () => {
                       value={formData.itemName}
                       onChange={(e) => setFormData({ ...formData, itemName: e.target.value })}
                       placeholder="misal: Sapi Bali Bakalan, Telur Ayam Ras, Daging Sapi Beku"
-                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                     />
                   </div>
 
@@ -700,7 +746,7 @@ export const TrafficManagementPage: React.FC = () => {
                       disabled={isDoctor}
                       value={formData.quantity}
                       onChange={(e) => setFormData({ ...formData, quantity: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                     />
                   </div>
 
@@ -715,7 +761,7 @@ export const TrafficManagementPage: React.FC = () => {
                       value={formData.unit}
                       onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                       placeholder="misal: ekor, kg, rak, ton, karton, butir"
-                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                     />
                     <div className="flex gap-2 mt-1.5 text-xs text-[#57606a]">
                       <span>Saran:</span>
@@ -742,7 +788,7 @@ export const TrafficManagementPage: React.FC = () => {
                       value={formData.origin}
                       onChange={(e) => setFormData({ ...formData, origin: e.target.value })}
                       placeholder="misal: Surabaya, Jawa Timur"
-                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                     />
                   </div>
 
@@ -755,7 +801,7 @@ export const TrafficManagementPage: React.FC = () => {
                       value={formData.destination}
                       onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
                       placeholder="misal: Distrik Mimika Baru, Timika"
-                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                     />
                   </div>
 
@@ -765,7 +811,7 @@ export const TrafficManagementPage: React.FC = () => {
                       disabled={isDoctor}
                       value={formData.transportType}
                       onChange={(e) => setFormData({ ...formData, transportType: e.target.value as 'UDARA' | 'LAUT' | 'DARAT' })}
-                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                     >
                       <option value="LAUT">Laut (Pelabuhan Pomako)</option>
                       <option value="UDARA">Udara (Bandara Mozes Kilangin)</option>
@@ -782,7 +828,7 @@ export const TrafficManagementPage: React.FC = () => {
                       value={formData.applicantName}
                       onChange={(e) => setFormData({ ...formData, applicantName: e.target.value })}
                       placeholder="misal: CV Papua Mandiri Ternak"
-                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                     />
                   </div>
 
@@ -796,7 +842,7 @@ export const TrafficManagementPage: React.FC = () => {
                           inspectionStatus: e.target.value as 'PENDING' | 'INSPECTED_PASS' | 'INSPECTED_REJECT',
                         })
                       }
-                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md bg-white text-[#1f2328] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] bg-white text-[#1f2328] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                     >
                       <option value="PENDING">Menunggu Pemeriksaan (PENDING)</option>
                       <option value="INSPECTED_PASS">Lulus Inspeksi (PASS)</option>
@@ -811,7 +857,7 @@ export const TrafficManagementPage: React.FC = () => {
                       value={formData.healthCertificateNo}
                       onChange={(e) => setFormData({ ...formData, healthCertificateNo: e.target.value })}
                       placeholder="misal: KH-11/2026/08912"
-                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md bg-white text-[#1f2328] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] bg-white text-[#1f2328] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                     />
                   </div>
 
@@ -824,7 +870,7 @@ export const TrafficManagementPage: React.FC = () => {
                       value={formData.notes}
                       onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                       placeholder="Pemeriksaan fisik normal, suhu tubuh dalam batas aman, tidak ada gejala PMK/ASF."
-                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md bg-white text-[#1f2328] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] bg-white text-[#1f2328] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                     />
                   </div>
                 </div>
@@ -833,14 +879,14 @@ export const TrafficManagementPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 border border-[#d0d7de] rounded-md text-sm font-semibold text-[#1f2328] hover:bg-[#f6f8fa] transition-colors cursor-pointer"
+                    className="px-4 py-2 border border-[#d0d7de] text-sm font-semibold text-[#1f2328] hover:bg-[#f6f8fa] transition-colors cursor-pointer"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="px-5 py-2 font-semibold text-sm text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 rounded-md disabled:opacity-50 transition-colors shadow-2xs cursor-pointer"
+                    className="px-5 py-2 font-semibold text-sm text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 disabled:opacity-50 transition-colors shadow-2xs cursor-pointer"
                   >
                     {submitting ? 'Menyimpan...' : 'Simpan Data'}
                   </button>

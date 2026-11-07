@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { SUANGGI_BRAND } from '../../constants/brand';
 import { useAuth } from '../../context/AuthContext';
 
 interface InternalSidebarProps {
@@ -16,10 +17,10 @@ export const InternalSidebar: React.FC<InternalSidebarProps> = ({
   const { user } = useAuth();
 
   const navItemClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-2 py-2 px-3 text-sm transition-colors ${
+    `flex items-start gap-2.5 py-2.5 px-3 text-sm transition-colors rounded-r-md ${
       isActive
-        ? 'border-l-4 border-[#1a7f37] font-semibold text-[#1f2328] bg-[#f6f8fa] -ml-[2px]'
-        : 'text-[#57606a] hover:text-[#1f2328] hover:bg-[#f6f8fa]/70'
+        ? 'border-l-4 border-[#174b2b] font-semibold text-[#1f2920] bg-[#eef1e8] -ml-[2px]'
+        : 'text-[#4b574d] hover:text-[#1f2920] hover:bg-[#eef1e8]/70'
     }`;
 
   const handleLinkClick = () => {
@@ -35,24 +36,34 @@ export const InternalSidebar: React.FC<InternalSidebarProps> = ({
       } ${className}`}
     >
       <div className="space-y-6">
-        {/* Section: Operasional */}
+        {/* Section: Operasional SUANGGI */}
         <div>
           <div className="font-bold text-xs text-[#57606a] uppercase tracking-wider px-3.5 mb-2">
-            Operasional Peternakan
+            Operasional {SUANGGI_BRAND.name}
           </div>
           <div className="space-y-1">
             <NavLink to="/dashboard" end className={navItemClass} onClick={handleLinkClick}>
-              <svg className="w-4 h-4 shrink-0 text-[#1a7f37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 shrink-0 text-[#15803d] mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              <span>Data Lalu Lintas Hewan</span>
+              <div className="flex flex-col">
+                <span>Pemasukan, Pengeluaran &amp; Pemuktahiran</span>
+                <span className="text-[11px] font-normal text-[#57606a]">
+                  Data Hewan &amp; Produk Hewan Terkini
+                </span>
+              </div>
             </NavLink>
 
             <NavLink to="/dashboard/kalkulasi" className={navItemClass} onClick={handleLinkClick}>
-              <svg className="w-4 h-4 shrink-0 text-[#0969da]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 shrink-0 text-[#0969da] mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
-              <span>Kalkulasi & Rekapitulasi</span>
+              <div className="flex flex-col">
+                <span>Monitoring &amp; Kalkulasi</span>
+                <span className="text-[11px] font-normal text-[#57606a]">
+                  Statistik &amp; Laporan Lalu Lintas
+                </span>
+              </div>
             </NavLink>
           </div>
         </div>
@@ -61,14 +72,14 @@ export const InternalSidebar: React.FC<InternalSidebarProps> = ({
         {(user?.role === 'admin' || user?.role === 'pimpinan') && (
           <div>
             <div className="font-bold text-xs text-[#57606a] uppercase tracking-wider px-3.5 mb-2">
-              Pengawasan & Kepatuhan
+              Pengawasan &amp; Kepatuhan
             </div>
             <div className="space-y-1">
               <NavLink to="/dashboard/audit" className={navItemClass} onClick={handleLinkClick}>
-                <svg className="w-4 h-4 shrink-0 text-[#8250df]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 shrink-0 text-[#8250df] mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>Log Audit Perubahan</span>
+                <span>Log Audit Pemuktahiran</span>
               </NavLink>
             </div>
           </div>
@@ -82,14 +93,14 @@ export const InternalSidebar: React.FC<InternalSidebarProps> = ({
             </div>
             <div className="space-y-1">
               <NavLink to="/dashboard/users" className={navItemClass} onClick={handleLinkClick}>
-                <svg className="w-4 h-4 shrink-0 text-[#bf8700]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 shrink-0 text-[#bf8700] mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
                 <span>Manajemen Pengguna</span>
               </NavLink>
 
               <NavLink to="/dashboard/settings" className={navItemClass} onClick={handleLinkClick}>
-                <svg className="w-4 h-4 shrink-0 text-[#1a7f37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 shrink-0 text-[#15803d] mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
@@ -98,6 +109,12 @@ export const InternalSidebar: React.FC<InternalSidebarProps> = ({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Compact Functional Brand Reference in Sidebar Footer */}
+      <div className="mx-3 mt-6 p-3 bg-[#eef0e9] border border-[#c6cbc0] text-xs text-[#4b574d]">
+        <div className="font-bold text-[#1f2920]">{SUANGGI_BRAND.name}</div>
+        <div className="text-[11px] font-semibold text-[#174b2b]">{SUANGGI_BRAND.motto}</div>
       </div>
     </aside>
   );

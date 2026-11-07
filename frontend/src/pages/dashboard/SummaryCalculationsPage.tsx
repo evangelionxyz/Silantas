@@ -75,10 +75,10 @@ export const SummaryCalculationsPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#d0d7de] pb-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-[#1f2328] tracking-tight">
-            Kalkulasi & Rekapitulasi Otomatis Lalu Lintas
+            Monitoring: Statistik &amp; Laporan Lalu Lintas (SUANGGI)
           </h1>
           <p className="text-sm text-[#57606a] mt-1">
-            Akumulasi kuantitas otomatis: <span className="font-mono font-semibold text-[#1a7f37]">Total Volume = Masuk + Keluar</span> dan <span className="font-mono font-semibold text-[#0969da]">Kuantitas Penyimpanan = Import - Export</span> dikelompokkan per komoditas dan satuan kustom.
+            Data Terpadu - Akurat - Terkini: <span className="font-mono font-semibold text-[#1a7f37]">Total Volume = Pemasukan + Pengeluaran</span> dan <span className="font-mono font-semibold text-[#0969da]">Kuantitas Penyimpanan = Pemasukan - Pengeluaran</span>.
           </p>
         </div>
 
@@ -86,84 +86,84 @@ export const SummaryCalculationsPage: React.FC = () => {
           type="button"
           onClick={exportCSV}
           disabled={!filteredItems.length}
-          className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold text-[#1f2328] bg-white hover:bg-[#f6f8fa] border border-[#d0d7de] rounded-md transition-colors shadow-2xs disabled:opacity-40 self-start sm:self-auto shrink-0 cursor-pointer"
+          className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold text-[#1f2328] bg-white hover:bg-[#f6f8fa] border border-[#d0d7de] transition-colors shadow-2xs disabled:opacity-40 self-start sm:self-auto shrink-0 cursor-pointer"
         >
-          <svg className="w-4 h-4 text-[#57606a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 text-[#57606a]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          <span>Ekspor CSV</span>
+          <span>Ekspor Laporan CSV</span>
         </button>
       </div>
 
       {/* KPI Overview Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
-        <div className="p-4 rounded-lg border border-[#d0d7de] bg-white shadow-2xs">
+        <div className="p-4 border border-[#d0d7de] bg-white shadow-2xs">
           <div className="text-xs font-semibold text-[#57606a] uppercase tracking-wider">
-            Total Dokumen Lintas
+            Pemuktahiran Data
           </div>
           <div className="text-2xl font-bold text-[#1f2328] mt-1.5">
             {summary?.overall.totalRecords ?? 0}
           </div>
-          <div className="text-xs text-[#57606a] mt-1">Surat / SKKH Tercatat</div>
+          <div className="text-xs text-[#57606a] mt-1">Dokumen / SKKH Terkini</div>
         </div>
 
-        <div className="p-4 rounded-lg border border-[#d0d7de] bg-white shadow-2xs">
+        <div className="p-4 border border-[#d0d7de] bg-white shadow-2xs">
           <div className="text-xs font-semibold text-[#1a7f37] uppercase tracking-wider">
-            Total Volume Masuk
+            Pemasukan (Masuk)
           </div>
           <div className="text-2xl font-bold text-[#1a7f37] mt-1.5">
             {(summary?.overall.totalImportQty ?? 0).toLocaleString('id-ID')}
           </div>
-          <div className="text-xs text-[#57606a] mt-1">Akumulasi Masuk (Import)</div>
+          <div className="text-xs text-[#57606a] mt-1">Data Hewan &amp; Produk Masuk</div>
         </div>
 
-        <div className="p-4 rounded-lg border border-[#d0d7de] bg-white shadow-2xs">
+        <div className="p-4 border border-[#d0d7de] bg-white shadow-2xs">
           <div className="text-xs font-semibold text-[#0969da] uppercase tracking-wider">
-            Total Volume Keluar
+            Pengeluaran (Keluar)
           </div>
           <div className="text-2xl font-bold text-[#0969da] mt-1.5">
             {(summary?.overall.totalExportQty ?? 0).toLocaleString('id-ID')}
           </div>
-          <div className="text-xs text-[#57606a] mt-1">Akumulasi Keluar (Export)</div>
+          <div className="text-xs text-[#57606a] mt-1">Data Hewan &amp; Produk Keluar</div>
         </div>
 
-        <div className="p-4 rounded-lg border border-[#dafbe1] bg-[#dafbe1]/30 shadow-2xs">
+        <div className="p-4 border border-[#dafbe1] bg-[#dafbe1]/30 shadow-2xs">
           <div className="text-xs font-semibold text-[#1a7f37] uppercase tracking-wider">
-            Total Volume Lintas
+            Monitoring Volume
           </div>
           <div className="text-2xl font-bold text-[#1a7f37] mt-1.5">
             {(summary?.overall.totalCombinedQty ?? 0).toLocaleString('id-ID')}
           </div>
-          <div className="text-xs text-[#1a7f37] font-medium mt-1">Total (Masuk + Keluar)</div>
+          <div className="text-xs text-[#1a7f37] font-medium mt-1">Total (Pemasukan + Pengeluaran)</div>
         </div>
 
-        <div className="p-4 rounded-lg border border-[#ddf4ff] bg-[#ddf4ff]/30 shadow-2xs">
+        <div className="p-4 border border-[#ddf4ff] bg-[#ddf4ff]/30 shadow-2xs">
           <div className="text-xs font-semibold text-[#0969da] uppercase tracking-wider">
             Kuantitas Penyimpanan
           </div>
           <div className={`text-2xl font-bold mt-1.5 ${netStorageTotal < 0 ? 'text-[#cf222e]' : 'text-[#0969da]'}`}>
             {netStorageTotal.toLocaleString('id-ID')}
           </div>
-          <div className="text-xs text-[#0969da] font-medium mt-1">Sisa Stok (Import - Export)</div>
+          <div className="text-xs text-[#0969da] font-medium mt-1">Stok (Pemasukan - Pengeluaran)</div>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 bg-[#f6f8fa] p-3.5 rounded-lg border border-[#d0d7de]">
+      <div className="flex flex-col sm:flex-row gap-3 bg-[#f6f8fa] p-3.5 border border-[#d0d7de]">
         <div className="flex-1">
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari nama komoditas..."
-            className="w-full px-3 py-2 text-sm bg-white text-[#1f2328] border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+            className="w-full px-3 py-2 text-sm bg-white text-[#1f2328] border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
           />
         </div>
         <div className="w-full sm:w-64">
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="w-full px-3 py-2 text-sm bg-white text-[#1f2328] border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+            className="w-full px-3 py-2 text-sm bg-white text-[#1f2328] border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
           >
             <option value="ALL">Semua Kategori</option>
             <option value="HEWAN_HIDUP">Hewan Hidup</option>
@@ -174,7 +174,7 @@ export const SummaryCalculationsPage: React.FC = () => {
       </div>
 
       {/* Grouped Commodities Calculation Table with Responsive Horizontal Scroll */}
-      <div className="border border-[#d0d7de] rounded-lg overflow-hidden bg-white shadow-2xs">
+      <div className="border border-[#d0d7de] overflow-hidden bg-white shadow-2xs">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px] text-left text-sm text-[#1f2328]">
             <thead className="bg-[#f6f8fa] border-b border-[#d0d7de] font-semibold text-[#57606a] text-xs uppercase tracking-wider">
@@ -198,7 +198,7 @@ export const SummaryCalculationsPage: React.FC = () => {
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-sm text-[#57606a]">
                     <div className="inline-flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-[#1a7f37] border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-[#1a7f37] border-t-transparent animate-spin"></div>
                       <span>Menghitung rekapitulasi data...</span>
                     </div>
                   </td>
@@ -219,7 +219,7 @@ export const SummaryCalculationsPage: React.FC = () => {
                       </td>
 
                       <td className="py-3 px-3.5">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#f6f8fa] text-[#57606a] border border-[#d0d7de]">
+                        <span className="inline-flex items-center px-2.5 py-0.5 text-xs font-medium bg-[#f6f8fa] text-[#57606a] border border-[#d0d7de]">
                           {item.category === 'HEWAN_HIDUP'
                             ? 'Hewan Hidup'
                             : item.category === 'PRODUK_HEWAN'

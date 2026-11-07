@@ -64,7 +64,7 @@ export const AuditLogsPage: React.FC = () => {
       </div>
 
       {/* Filter Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#f6f8fa] p-3.5 rounded-lg border border-[#d0d7de]">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#f6f8fa] p-3.5 border border-[#d0d7de]">
         <div>
           <label className="block text-xs font-semibold text-[#57606a] mb-1.5 uppercase tracking-wide">Cari Deskripsi / Pengguna</label>
           <input
@@ -75,7 +75,7 @@ export const AuditLogsPage: React.FC = () => {
               setPage(1);
             }}
             placeholder="Cari uraian atau nama pengguna..."
-            className="w-full px-3 py-2 text-sm bg-white text-[#1f2328] border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+            className="w-full px-3 py-2 text-sm bg-white text-[#1f2328] border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
           />
         </div>
 
@@ -87,7 +87,7 @@ export const AuditLogsPage: React.FC = () => {
               setAction(e.target.value);
               setPage(1);
             }}
-            className="w-full px-3 py-2 text-sm bg-white text-[#1f2328] border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+            className="w-full px-3 py-2 text-sm bg-white text-[#1f2328] border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
           >
             <option value="ALL">Semua Aksi</option>
             <option value="CREATE">CREATE (Tambah Data)</option>
@@ -105,7 +105,7 @@ export const AuditLogsPage: React.FC = () => {
               setEntityType(e.target.value);
               setPage(1);
             }}
-            className="w-full px-3 py-2 text-sm bg-white text-[#1f2328] border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+            className="w-full px-3 py-2 text-sm bg-white text-[#1f2328] border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
           >
             <option value="ALL">Semua Entitas</option>
             <option value="TRAFFIC_RECORD">Data Lalu Lintas Hewan</option>
@@ -117,7 +117,7 @@ export const AuditLogsPage: React.FC = () => {
       </div>
 
       {/* Audit Log Table with Responsive Horizontal Scroll */}
-      <div className="border border-[#d0d7de] rounded-lg overflow-hidden bg-white shadow-2xs">
+      <div className="border border-[#d0d7de] overflow-hidden bg-white shadow-2xs">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[800px] text-left text-sm text-[#1f2328]">
             <thead className="bg-[#f6f8fa] border-b border-[#d0d7de] font-semibold text-[#57606a] text-xs uppercase tracking-wider">
@@ -135,7 +135,7 @@ export const AuditLogsPage: React.FC = () => {
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-sm text-[#57606a]">
                     <div className="inline-flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-[#1a7f37] border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-[#1a7f37] border-t-transparent animate-spin"></div>
                       <span>Memuat log audit...</span>
                     </div>
                   </td>
@@ -163,14 +163,14 @@ export const AuditLogsPage: React.FC = () => {
 
                         <td className="py-3 px-3.5 whitespace-nowrap">
                           <span className="font-semibold text-[#1f2328]">{log.username}</span>
-                          <span className="ml-2 text-xs uppercase font-mono px-2 py-0.5 rounded-full bg-[#f6f8fa] border border-[#d0d7de] text-[#57606a]">
+                          <span className="ml-2 text-xs uppercase font-mono px-2 py-0.5 bg-[#f6f8fa] border border-[#d0d7de] text-[#57606a]">
                             {log.userRole}
                           </span>
                         </td>
 
                         <td className="py-3 px-3.5 whitespace-nowrap">
                           <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                            className={`inline-flex items-center px-2.5 py-0.5 text-xs font-semibold ${
                               log.action === 'CREATE'
                                 ? 'bg-[#dafbe1] text-[#1a7f37]'
                                 : log.action === 'UPDATE'
@@ -213,7 +213,7 @@ export const AuditLogsPage: React.FC = () => {
                             <div className="text-xs font-bold text-[#57606a] uppercase tracking-wider mb-1.5">
                               Data Payload / Metadata Perubahan:
                             </div>
-                            <pre className="p-3 bg-white border border-[#d0d7de] rounded-md text-xs font-mono overflow-x-auto text-[#1f2328] max-h-60 leading-relaxed">
+                            <pre className="p-3 bg-white border border-[#d0d7de] text-xs font-mono overflow-x-auto text-[#1f2328] max-h-60 leading-relaxed">
                               {JSON.stringify(log.metadata, null, 2)}
                             </pre>
                           </td>
@@ -237,7 +237,7 @@ export const AuditLogsPage: React.FC = () => {
               type="button"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="px-3 py-1.5 bg-white border border-[#d0d7de] rounded-md font-medium text-[#1f2328] hover:bg-[#f6f8fa] disabled:opacity-40 transition-colors cursor-pointer"
+              className="px-3 py-1.5 bg-white border border-[#d0d7de] font-medium text-[#1f2328] hover:bg-[#f6f8fa] disabled:opacity-40 transition-colors cursor-pointer"
             >
               Sebelumnya
             </button>
@@ -248,7 +248,7 @@ export const AuditLogsPage: React.FC = () => {
               type="button"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="px-3 py-1.5 bg-white border border-[#d0d7de] rounded-md font-medium text-[#1f2328] hover:bg-[#f6f8fa] disabled:opacity-40 transition-colors cursor-pointer"
+              className="px-3 py-1.5 bg-white border border-[#d0d7de] font-medium text-[#1f2328] hover:bg-[#f6f8fa] disabled:opacity-40 transition-colors cursor-pointer"
             >
               Berikutnya
             </button>

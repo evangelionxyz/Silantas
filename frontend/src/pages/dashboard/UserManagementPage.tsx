@@ -116,7 +116,7 @@ export const UserManagementPage: React.FC = () => {
 
   if (currentUser?.role !== 'admin') {
     return (
-      <div className="p-8 text-center bg-white border border-[#d0d7de] rounded-lg">
+      <div className="p-8 text-center bg-white border border-[#d0d7de]">
         <h2 className="text-base font-semibold text-[#cf222e] mb-1">Akses Terbatas</h2>
         <p className="text-sm text-[#57606a]">
           Manajemen Pengguna hanya dapat diakses oleh Administrator Sistem.
@@ -145,7 +145,7 @@ export const UserManagementPage: React.FC = () => {
         <button
           type="button"
           onClick={openCreateModal}
-          className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 rounded-md transition-colors shadow-2xs self-start sm:self-auto shrink-0 cursor-pointer"
+          className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 transition-colors shadow-2xs self-start sm:self-auto shrink-0 cursor-pointer"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
@@ -155,7 +155,7 @@ export const UserManagementPage: React.FC = () => {
       </div>
 
       {/* Role Permission Matrix Card */}
-      <div className="p-4 sm:p-5 rounded-lg border border-[#d0d7de] bg-[#f6f8fa]">
+      <div className="p-4 sm:p-5 border border-[#d0d7de] bg-[#f6f8fa]">
         <h3 className="font-semibold text-xs sm:text-sm text-[#1f2328] uppercase tracking-wider mb-3">
           Matriks Hak Akses & Peran (Role Permission Matrix)
         </h3>
@@ -212,7 +212,7 @@ export const UserManagementPage: React.FC = () => {
       </div>
 
       {/* User Table */}
-      <div className="border border-[#d0d7de] rounded-lg overflow-hidden bg-white shadow-2xs">
+      <div className="border border-[#d0d7de] overflow-hidden bg-white shadow-2xs">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[750px] text-left text-sm text-[#1f2328]">
             <thead className="bg-[#f6f8fa] border-b border-[#d0d7de] font-semibold text-[#57606a] text-xs uppercase tracking-wider">
@@ -230,7 +230,7 @@ export const UserManagementPage: React.FC = () => {
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-sm text-[#57606a]">
                     <div className="inline-flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-[#1a7f37] border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-[#1a7f37] border-t-transparent animate-spin"></div>
                       <span>Memuat daftar pengguna...</span>
                     </div>
                   </td>
@@ -255,20 +255,20 @@ export const UserManagementPage: React.FC = () => {
                     </td>
 
                     <td className="py-3 px-3.5">
-                      <span className="font-mono text-xs uppercase font-semibold px-2.5 py-0.5 rounded-full bg-[#f6f8fa] border border-[#d0d7de] text-[#1f2328]">
+                      <span className="font-mono text-xs uppercase font-semibold px-2.5 py-0.5 bg-[#f6f8fa] border border-[#d0d7de] text-[#1f2328]">
                         {u.role}
                       </span>
                     </td>
 
                     <td className="py-3 px-3.5">
                       {u.isActive ? (
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold text-[#1a7f37] bg-[#dafbe1]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#1a7f37]"></span>
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-semibold text-[#1a7f37] bg-[#dafbe1]">
+                          <span className="w-1.5 h-1.5 bg-[#1a7f37]"></span>
                           <span>Aktif</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold text-[#cf222e] bg-[#ffebe9]">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#cf222e]"></span>
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-semibold text-[#cf222e] bg-[#ffebe9]">
+                          <span className="w-1.5 h-1.5 bg-[#cf222e]"></span>
                           <span>Nonaktif</span>
                         </span>
                       )}
@@ -322,7 +322,7 @@ export const UserManagementPage: React.FC = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 10 }}
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-              className="bg-white rounded-lg border border-[#d0d7de] shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden"
+              className="bg-white border border-[#d0d7de] shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="px-5 py-3.5 border-b border-[#d0d7de] flex items-center justify-between bg-[#f6f8fa]">
@@ -341,7 +341,7 @@ export const UserManagementPage: React.FC = () => {
 
               <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-sm">
                 {modalError && (
-                  <div className="p-3.5 rounded-md bg-[#ffebe9] border border-[#ff8182]/40 text-sm text-[#cf222e]">
+                  <div className="p-3.5 bg-[#ffebe9] border border-[#ff8182]/40 text-sm text-[#cf222e]">
                     {modalError}
                   </div>
                 )}
@@ -354,7 +354,7 @@ export const UserManagementPage: React.FC = () => {
                     value={formData.fullName}
                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                     placeholder="misal: drh. Sarah Wonda"
-                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                   />
                 </div>
 
@@ -367,7 +367,7 @@ export const UserManagementPage: React.FC = () => {
                       value={formData.username}
                       onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                       placeholder="misal: sarah_wonda"
-                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                     />
                   </div>
                 )}
@@ -380,7 +380,7 @@ export const UserManagementPage: React.FC = () => {
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="misal: sarah@mimikakab.go.id"
-                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                   />
                 </div>
 
@@ -394,7 +394,7 @@ export const UserManagementPage: React.FC = () => {
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     placeholder={editingUser ? 'Biarkan kosong untuk mempertahankan' : 'Minimal 6 karakter'}
-                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                   />
                 </div>
 
@@ -403,7 +403,7 @@ export const UserManagementPage: React.FC = () => {
                   <select
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md bg-white text-[#1f2328] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] bg-white text-[#1f2328] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                   >
                     <option value="petugas">Petugas Lapangan / Operator</option>
                     <option value="dokter_hewan">Dokter Hewan Berwenang (Inspector)</option>
@@ -419,7 +419,7 @@ export const UserManagementPage: React.FC = () => {
                     value={formData.phoneNumber}
                     onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
                     placeholder="misal: 081248000000"
-                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                   />
                 </div>
 
@@ -429,7 +429,7 @@ export const UserManagementPage: React.FC = () => {
                     type="text"
                     value={formData.agency}
                     onChange={(e) => setFormData({ ...formData, agency: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                   />
                 </div>
 
@@ -440,7 +440,7 @@ export const UserManagementPage: React.FC = () => {
                       id="isActiveCheck"
                       checked={formData.isActive}
                       onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                      className="w-4 h-4 rounded border-[#d0d7de] text-[#1a7f37] focus:ring-[#1a7f37]"
+                      className="w-4 h-4 border-[#d0d7de] text-[#1a7f37] focus:ring-[#1a7f37]"
                     />
                     <label htmlFor="isActiveCheck" className="text-sm text-[#1f2328] font-medium cursor-pointer">
                       Akun Aktif (Dapat masuk ke sistem)
@@ -452,14 +452,14 @@ export const UserManagementPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 border border-[#d0d7de] rounded-md text-sm font-semibold text-[#1f2328] hover:bg-[#f6f8fa] transition-colors cursor-pointer"
+                    className="px-4 py-2 border border-[#d0d7de] text-sm font-semibold text-[#1f2328] hover:bg-[#f6f8fa] transition-colors cursor-pointer"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="px-5 py-2 font-semibold text-sm text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 rounded-md disabled:opacity-50 transition-colors shadow-2xs cursor-pointer"
+                    className="px-5 py-2 font-semibold text-sm text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 disabled:opacity-50 transition-colors shadow-2xs cursor-pointer"
                   >
                     {submitting ? 'Menyimpan...' : 'Simpan Pengguna'}
                   </button>
