@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { Breadcrumbs } from '../../components/layout/Breadcrumbs';
 import { DocsSidebar } from '../../components/layout/DocsSidebar';
 import { TableOfContents, type TocItem } from '../../components/layout/TableOfContents';
@@ -23,7 +24,12 @@ export const HealthCheckDoc: React.FC = () => {
       <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex items-start">
         <DocsSidebar className="hidden lg:block" />
 
-        <main className="flex-1 py-8 px-0 lg:px-10 docs-prose">
+        <motion.main
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+          className="flex-1 py-8 px-0 lg:px-10 docs-prose"
+        >
           <div className="border-b border-[#d0d7de] pb-6 mb-8">
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1f2328] mb-3">
               Pemeriksaan Kesehatan Hewan dan Produk Peternakan
@@ -126,7 +132,7 @@ export const HealthCheckDoc: React.FC = () => {
               SKKH diterbitkan setelah hewan dinyatakan sehat secara sah oleh Dokter Hewan Berwenang Dinas Peternakan dan Kesehatan Hewan Kabupaten Mimika. Dokumen ini memuat nomor registrasi, identitas pemilik, jumlah ternak, jenis kelamin, serta riwayat vaksinasi.
             </p>
           </section>
-        </main>
+        </motion.main>
 
         <TableOfContents items={tocItems} />
       </div>

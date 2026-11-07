@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { fetchWhatsappConfig, updateWhatsappConfig } from '../../services/api';
 
@@ -52,7 +53,12 @@ export const SettingsPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+      className="max-w-2xl space-y-6"
+    >
       <div className="border-b border-[#d0d7de] pb-4">
         <h1 className="text-xl sm:text-2xl font-bold text-[#1f2328] tracking-tight">
           Pengaturan Sistem & Saluran WhatsApp
@@ -124,13 +130,13 @@ export const SettingsPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading || saving}
-              className="px-5 py-2.5 font-semibold text-sm text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 rounded-md disabled:opacity-50 transition-colors shadow-2xs"
+              className="px-5 py-2.5 font-semibold text-sm text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 rounded-md disabled:opacity-50 transition-colors shadow-2xs cursor-pointer"
             >
               {saving ? 'Menyimpan...' : 'Simpan Pengaturan WhatsApp'}
             </button>
           </div>
         </form>
       </div>
-    </div>
+    </motion.div>
   );
 };

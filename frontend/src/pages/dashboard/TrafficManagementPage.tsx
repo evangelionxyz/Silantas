@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import {
@@ -153,7 +154,12 @@ export const TrafficManagementPage: React.FC = () => {
   const isDoctor = user?.role === 'dokter_hewan';
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+      className="space-y-6"
+    >
       {/* Title & Top Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#d0d7de] pb-4">
         <div>
@@ -169,7 +175,7 @@ export const TrafficManagementPage: React.FC = () => {
           <button
             type="button"
             onClick={openCreateModal}
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 rounded-md transition-colors shadow-2xs self-start sm:self-auto shrink-0"
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 rounded-md transition-colors shadow-2xs self-start sm:self-auto shrink-0 cursor-pointer"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
@@ -255,7 +261,7 @@ export const TrafficManagementPage: React.FC = () => {
                 <th className="py-3 px-3.5">Tanggal / Dokumen</th>
                 <th className="py-3 px-3.5">Tipe</th>
                 <th className="py-3 px-3.5">Komoditas & Kategori</th>
-                <th className="py-3 px-3.5">Jumlah</th>
+                <th className="py-3 px-3.5">Jumlah (Satuan Kustom)</th>
                 <th className="py-3 px-3.5">Rute & Angkutan</th>
                 <th className="py-3 px-3.5">Pemohon</th>
                 <th className="py-3 px-3.5">Status Inspeksi</th>
@@ -345,7 +351,7 @@ export const TrafficManagementPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => setViewingRecord(r)}
-                          className="text-xs text-[#57606a] hover:text-[#1f2328] font-semibold hover:underline"
+                          className="text-xs text-[#57606a] hover:text-[#1f2328] font-semibold hover:underline cursor-pointer"
                         >
                           Detail
                         </button>
@@ -353,7 +359,7 @@ export const TrafficManagementPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => openEditModal(r)}
-                            className="text-xs text-[#0969da] hover:underline font-semibold"
+                            className="text-xs text-[#0969da] hover:underline font-semibold cursor-pointer"
                           >
                             {isDoctor ? 'Verifikasi' : 'Ubah'}
                           </button>
@@ -362,7 +368,7 @@ export const TrafficManagementPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleDelete(r.id, r.recordNumber)}
-                            className="text-xs text-[#cf222e] hover:underline font-semibold"
+                            className="text-xs text-[#cf222e] hover:underline font-semibold cursor-pointer"
                           >
                             Hapus
                           </button>
@@ -386,7 +392,7 @@ export const TrafficManagementPage: React.FC = () => {
               type="button"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="px-3 py-1.5 bg-white border border-[#d0d7de] rounded-md font-medium text-[#1f2328] hover:bg-[#f6f8fa] disabled:opacity-40 transition-colors"
+              className="px-3 py-1.5 bg-white border border-[#d0d7de] rounded-md font-medium text-[#1f2328] hover:bg-[#f6f8fa] disabled:opacity-40 transition-colors cursor-pointer"
             >
               Sebelumnya
             </button>
@@ -397,7 +403,7 @@ export const TrafficManagementPage: React.FC = () => {
               type="button"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="px-3 py-1.5 bg-white border border-[#d0d7de] rounded-md font-medium text-[#1f2328] hover:bg-[#f6f8fa] disabled:opacity-40 transition-colors"
+              className="px-3 py-1.5 bg-white border border-[#d0d7de] rounded-md font-medium text-[#1f2328] hover:bg-[#f6f8fa] disabled:opacity-40 transition-colors cursor-pointer"
             >
               Berikutnya
             </button>
@@ -405,425 +411,445 @@ export const TrafficManagementPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Record Detail Modal (Printable Official Document) with Background Scroll Lock */}
-      {viewingRecord && (
-        <div
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
-          onClick={() => setViewingRecord(null)}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div
-            className="bg-white rounded-lg border border-[#d0d7de] shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
-            onClick={(e) => e.stopPropagation()}
+      {/* Record Detail Modal with Fast Framer Motion (< 250ms) */}
+      <AnimatePresence>
+        {viewingRecord && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+            onClick={() => setViewingRecord(null)}
+            role="dialog"
+            aria-modal="true"
           >
-            <div className="px-5 py-3.5 border-b border-[#d0d7de] flex items-center justify-between bg-[#f6f8fa]">
-              <h3 className="font-semibold text-sm sm:text-base text-[#1f2328]">
-                Rincian Surat Keterangan / Catatan Lalu Lintas
-              </h3>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  className="px-3 py-1.5 text-xs sm:text-sm font-semibold text-[#1f2328] bg-white border border-[#d0d7de] rounded-md hover:bg-[#f6f8fa] shadow-2xs"
-                >
-                  Cetak / Print
-                </button>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 10 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              className="bg-white rounded-lg border border-[#d0d7de] shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="px-5 py-3.5 border-b border-[#d0d7de] flex items-center justify-between bg-[#f6f8fa]">
+                <h3 className="font-semibold text-sm sm:text-base text-[#1f2328]">
+                  Rincian Surat Keterangan / Catatan Lalu Lintas
+                </h3>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="px-3 py-1.5 text-xs sm:text-sm font-semibold text-[#1f2328] bg-white border border-[#d0d7de] rounded-md hover:bg-[#f6f8fa] shadow-2xs cursor-pointer"
+                  >
+                    Cetak / Print
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewingRecord(null)}
+                    className="text-[#57606a] hover:text-[#1f2328] text-xl leading-none cursor-pointer"
+                    aria-label="Tutup"
+                  >
+                    &times;
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-5 sm:p-6 text-sm text-[#1f2328] space-y-4">
+                {/* Kop Dinas Official Header */}
+                <div className="text-center border-b-2 border-black pb-3">
+                  <div className="font-bold text-xs sm:text-sm uppercase tracking-wide">
+                    Pemerintah Kabupaten Mimika
+                  </div>
+                  <div className="font-bold text-sm sm:text-base uppercase tracking-wide">
+                    Dinas Peternakan dan Kesehatan Hewan
+                  </div>
+                  <div className="text-xs text-[#57606a] mt-0.5">
+                    Kompleks Kantor Pemda Mimika, Jl. Cenderawasih SP 3, Timika - Papua Tengah 99910
+                  </div>
+                </div>
+
+                <div className="text-center font-bold text-sm underline uppercase pt-2">
+                  Surat Keterangan Pengawasan Lalu Lintas Peternakan
+                </div>
+                <div className="text-center font-mono text-xs sm:text-sm text-[#57606a]">
+                  Nomor: {viewingRecord.recordNumber}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-[#d0d7de]">
+                  <div>
+                    <div className="text-[#57606a] text-xs uppercase font-bold">Jenis Lalu Lintas:</div>
+                    <div className="font-semibold text-sm sm:text-base mt-0.5">
+                      {viewingRecord.trafficType === 'IMPORT' ? 'PEMASUKAN (IMPORT)' : 'PENGELUARAN (EXPORT)'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[#57606a] text-xs uppercase font-bold">Tanggal Kegiatan:</div>
+                    <div className="font-mono text-sm mt-0.5">{viewingRecord.trafficDate}</div>
+                  </div>
+
+                  <div>
+                    <div className="text-[#57606a] text-xs uppercase font-bold">Nama Komoditas:</div>
+                    <div className="font-bold text-base text-[#1f2328] mt-0.5">{viewingRecord.itemName}</div>
+                    <div className="text-xs text-[#57606a] font-medium">{viewingRecord.category}</div>
+                  </div>
+
+                  <div>
+                    <div className="text-[#57606a] text-xs uppercase font-bold">Volume / Kuantitas:</div>
+                    <div className="font-bold text-base text-[#1a7f37] mt-0.5">
+                      {viewingRecord.quantity.toLocaleString('id-ID')} {viewingRecord.unit}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-[#57606a] text-xs uppercase font-bold">Daerah Asal:</div>
+                    <div className="text-sm mt-0.5">{viewingRecord.origin}</div>
+                  </div>
+
+                  <div>
+                    <div className="text-[#57606a] text-xs uppercase font-bold">Daerah Tujuan:</div>
+                    <div className="text-sm mt-0.5">{viewingRecord.destination}</div>
+                  </div>
+
+                  <div>
+                    <div className="text-[#57606a] text-xs uppercase font-bold">Moda Transportasi:</div>
+                    <div className="uppercase text-sm mt-0.5">Jalur {viewingRecord.transportType}</div>
+                  </div>
+
+                  <div>
+                    <div className="text-[#57606a] text-xs uppercase font-bold">Pemilik / Pelaku Usaha:</div>
+                    <div className="font-semibold text-sm mt-0.5">{viewingRecord.applicantName}</div>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-lg bg-[#f6f8fa] border border-[#d0d7de] space-y-2 mt-4">
+                  <div className="font-semibold text-sm text-[#1f2328]">
+                    Hasil Pemeriksaan Kesehatan Veteriner:
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-xs uppercase text-[#57606a]">Status:</span>
+                    <span
+                      className={`font-semibold px-2.5 py-0.5 rounded text-xs ${
+                        viewingRecord.inspectionStatus === 'INSPECTED_PASS'
+                          ? 'bg-[#dafbe1] text-[#1a7f37]'
+                          : viewingRecord.inspectionStatus === 'INSPECTED_REJECT'
+                          ? 'bg-[#ffebe9] text-[#cf222e]'
+                          : 'bg-[#fff8c5] text-[#9a6700]'
+                      }`}
+                    >
+                      {viewingRecord.inspectionStatus}
+                    </span>
+                  </div>
+                  {viewingRecord.healthCertificateNo && (
+                    <div className="text-xs sm:text-sm">
+                      <span className="text-[#57606a]">No. Dokumen Karantina: </span>
+                      <span className="font-mono font-semibold">{viewingRecord.healthCertificateNo}</span>
+                    </div>
+                  )}
+                  {viewingRecord.notes && (
+                    <div className="text-xs sm:text-sm text-[#57606a] italic mt-1 bg-white p-2.5 rounded border border-[#d0d7de]/60">
+                      "{viewingRecord.notes}"
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-4 border-t border-[#d0d7de] bg-[#f6f8fa] flex justify-end">
                 <button
                   type="button"
                   onClick={() => setViewingRecord(null)}
-                  className="text-[#57606a] hover:text-[#1f2328] text-xl leading-none"
+                  className="px-4 py-2 bg-white border border-[#d0d7de] rounded-md text-sm font-semibold text-[#1f2328] hover:bg-[#f6f8fa] cursor-pointer"
+                >
+                  Tutup
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Create / Edit Record Modal with Fast Framer Motion (< 250ms) */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+            onClick={() => setIsModalOpen(false)}
+            role="dialog"
+            aria-modal="true"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 10 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              className="bg-white rounded-lg border border-[#d0d7de] shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="px-5 py-3.5 border-b border-[#d0d7de] flex items-center justify-between bg-[#f6f8fa]">
+                <h3 className="font-semibold text-base text-[#1f2328]">
+                  {editingRecord
+                    ? isDoctor
+                      ? 'Verifikasi Pemeriksaan Kesehatan Veteriner'
+                      : 'Ubah Data Lalu Lintas'
+                    : 'Catat Data Lalu Lintas Baru'}
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="text-[#57606a] hover:text-[#1f2328] text-xl leading-none cursor-pointer"
                   aria-label="Tutup"
                 >
                   &times;
                 </button>
               </div>
-            </div>
 
-            <div className="flex-1 overflow-y-auto p-5 sm:p-6 text-sm text-[#1f2328] space-y-4">
-              {/* Kop Dinas Official Header */}
-              <div className="text-center border-b-2 border-black pb-3">
-                <div className="font-bold text-xs sm:text-sm uppercase tracking-wide">
-                  Pemerintah Kabupaten Mimika
-                </div>
-                <div className="font-bold text-sm sm:text-base uppercase tracking-wide">
-                  Dinas Peternakan dan Kesehatan Hewan
-                </div>
-                <div className="text-xs text-[#57606a] mt-0.5">
-                  Kompleks Kantor Pemda Mimika, Jl. Cenderawasih SP 3, Timika - Papua Tengah 99910
-                </div>
-              </div>
-
-              <div className="text-center font-bold text-sm underline uppercase pt-2">
-                Surat Keterangan Pengawasan Lalu Lintas Peternakan
-              </div>
-              <div className="text-center font-mono text-xs sm:text-sm text-[#57606a]">
-                Nomor: {viewingRecord.recordNumber}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-[#d0d7de]">
-                <div>
-                  <div className="text-[#57606a] text-xs uppercase font-bold">Jenis Lalu Lintas:</div>
-                  <div className="font-semibold text-sm sm:text-base mt-0.5">
-                    {viewingRecord.trafficType === 'IMPORT' ? 'PEMASUKAN (IMPORT)' : 'PENGELUARAN (EXPORT)'}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[#57606a] text-xs uppercase font-bold">Tanggal Kegiatan:</div>
-                  <div className="font-mono text-sm mt-0.5">{viewingRecord.trafficDate}</div>
-                </div>
-
-                <div>
-                  <div className="text-[#57606a] text-xs uppercase font-bold">Nama Komoditas:</div>
-                  <div className="font-bold text-base text-[#1f2328] mt-0.5">{viewingRecord.itemName}</div>
-                  <div className="text-xs text-[#57606a] font-medium">{viewingRecord.category}</div>
-                </div>
-
-                <div>
-                  <div className="text-[#57606a] text-xs uppercase font-bold">Volume / Kuantitas:</div>
-                  <div className="font-bold text-base text-[#1a7f37] mt-0.5">
-                    {viewingRecord.quantity.toLocaleString('id-ID')} {viewingRecord.unit}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-[#57606a] text-xs uppercase font-bold">Daerah Asal:</div>
-                  <div className="text-sm mt-0.5">{viewingRecord.origin}</div>
-                </div>
-
-                <div>
-                  <div className="text-[#57606a] text-xs uppercase font-bold">Daerah Tujuan:</div>
-                  <div className="text-sm mt-0.5">{viewingRecord.destination}</div>
-                </div>
-
-                <div>
-                  <div className="text-[#57606a] text-xs uppercase font-bold">Moda Transportasi:</div>
-                  <div className="uppercase text-sm mt-0.5">Jalur {viewingRecord.transportType}</div>
-                </div>
-
-                <div>
-                  <div className="text-[#57606a] text-xs uppercase font-bold">Pemilik / Pelaku Usaha:</div>
-                  <div className="font-semibold text-sm mt-0.5">{viewingRecord.applicantName}</div>
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-lg bg-[#f6f8fa] border border-[#d0d7de] space-y-2 mt-4">
-                <div className="font-semibold text-sm text-[#1f2328]">
-                  Hasil Pemeriksaan Kesehatan Veteriner:
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-xs uppercase text-[#57606a]">Status:</span>
-                  <span
-                    className={`font-semibold px-2.5 py-0.5 rounded text-xs ${
-                      viewingRecord.inspectionStatus === 'INSPECTED_PASS'
-                        ? 'bg-[#dafbe1] text-[#1a7f37]'
-                        : viewingRecord.inspectionStatus === 'INSPECTED_REJECT'
-                        ? 'bg-[#ffebe9] text-[#cf222e]'
-                        : 'bg-[#fff8c5] text-[#9a6700]'
-                    }`}
-                  >
-                    {viewingRecord.inspectionStatus}
-                  </span>
-                </div>
-                {viewingRecord.healthCertificateNo && (
-                  <div className="text-xs sm:text-sm">
-                    <span className="text-[#57606a]">No. Dokumen Karantina: </span>
-                    <span className="font-mono font-semibold">{viewingRecord.healthCertificateNo}</span>
+              <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-sm">
+                {modalError && (
+                  <div className="p-3.5 rounded-md bg-[#ffebe9] border border-[#ff8182]/40 text-sm text-[#cf222e]">
+                    {modalError}
                   </div>
                 )}
-                {viewingRecord.notes && (
-                  <div className="text-xs sm:text-sm text-[#57606a] italic mt-1 bg-white p-2.5 rounded border border-[#d0d7de]/60">
-                    "{viewingRecord.notes}"
+
+                {isDoctor && (
+                  <div className="p-3.5 rounded-md bg-[#ddf4ff] border border-[#54aeff]/40 text-sm text-[#0969da]">
+                    Sebagai Dokter Hewan Berwenang, Anda berwenang memvalidasi status inspeksi, nomor sertifikat kesehatan, dan catatan rekomendasi teknis.
                   </div>
                 )}
-              </div>
-            </div>
 
-            <div className="p-4 border-t border-[#d0d7de] bg-[#f6f8fa] flex justify-end">
-              <button
-                type="button"
-                onClick={() => setViewingRecord(null)}
-                className="px-4 py-2 bg-white border border-[#d0d7de] rounded-md text-sm font-semibold text-[#1f2328] hover:bg-[#f6f8fa]"
-              >
-                Tutup
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Nomor Dokumen / SKKH</label>
+                    <input
+                      type="text"
+                      required
+                      disabled={isDoctor}
+                      value={formData.recordNumber}
+                      onChange={(e) => setFormData({ ...formData, recordNumber: e.target.value })}
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                    />
+                  </div>
 
-      {/* Create / Edit Record Modal with Background Scroll Lock */}
-      {isModalOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
-          onClick={() => setIsModalOpen(false)}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div
-            className="bg-white rounded-lg border border-[#d0d7de] shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="px-5 py-3.5 border-b border-[#d0d7de] flex items-center justify-between bg-[#f6f8fa]">
-              <h3 className="font-semibold text-base text-[#1f2328]">
-                {editingRecord
-                  ? isDoctor
-                    ? 'Verifikasi Pemeriksaan Kesehatan Veteriner'
-                    : 'Ubah Data Lalu Lintas'
-                  : 'Catat Data Lalu Lintas Baru'}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="text-[#57606a] hover:text-[#1f2328] text-xl leading-none"
-                aria-label="Tutup"
-              >
-                &times;
-              </button>
-            </div>
+                  <div>
+                    <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Tanggal Lalu Lintas</label>
+                    <input
+                      type="date"
+                      required
+                      disabled={isDoctor}
+                      value={formData.trafficDate}
+                      onChange={(e) => setFormData({ ...formData, trafficDate: e.target.value })}
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                    />
+                  </div>
 
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-sm">
-              {modalError && (
-                <div className="p-3.5 rounded-md bg-[#ffebe9] border border-[#ff8182]/40 text-sm text-[#cf222e]">
-                  {modalError}
-                </div>
-              )}
+                  <div>
+                    <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Tipe Lalu Lintas</label>
+                    <select
+                      disabled={isDoctor}
+                      value={formData.trafficType}
+                      onChange={(e) => setFormData({ ...formData, trafficType: e.target.value as 'IMPORT' | 'EXPORT' })}
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                    >
+                      <option value="IMPORT">Masuk (IMPORT ke Mimika)</option>
+                      <option value="EXPORT">Keluar (EXPORT dari Mimika)</option>
+                    </select>
+                  </div>
 
-              {isDoctor && (
-                <div className="p-3.5 rounded-md bg-[#ddf4ff] border border-[#54aeff]/40 text-sm text-[#0969da]">
-                  Sebagai Dokter Hewan Berwenang, Anda berwenang memvalidasi status inspeksi, nomor sertifikat kesehatan, dan catatan rekomendasi teknis.
-                </div>
-              )}
+                  <div>
+                    <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Kategori Komoditas</label>
+                    <select
+                      disabled={isDoctor}
+                      value={formData.category}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          category: e.target.value as 'HEWAN_HIDUP' | 'PRODUK_HEWAN' | 'OLAHAN_PRODUK_HEWAN',
+                        })
+                      }
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                    >
+                      <option value="HEWAN_HIDUP">Hewan Hidup (Sapi, Kambing, Babi, dll)</option>
+                      <option value="PRODUK_HEWAN">Produk Hewan (Daging Segar/Beku, Telur, dll)</option>
+                      <option value="OLAHAN_PRODUK_HEWAN">Produk Olahan (Sosis, Bakso, Kornet, dll)</option>
+                    </select>
+                  </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Nomor Dokumen / SKKH</label>
-                  <input
-                    type="text"
-                    required
-                    disabled={isDoctor}
-                    value={formData.recordNumber}
-                    onChange={(e) => setFormData({ ...formData, recordNumber: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                  />
-                </div>
+                  <div className="sm:col-span-2">
+                    <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Nama Komoditas</label>
+                    <input
+                      type="text"
+                      required
+                      disabled={isDoctor}
+                      value={formData.itemName}
+                      onChange={(e) => setFormData({ ...formData, itemName: e.target.value })}
+                      placeholder="misal: Sapi Bali Bakalan, Telur Ayam Ras, Daging Sapi Beku"
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Tanggal Lalu Lintas</label>
-                  <input
-                    type="date"
-                    required
-                    disabled={isDoctor}
-                    value={formData.trafficDate}
-                    onChange={(e) => setFormData({ ...formData, trafficDate: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                  />
-                </div>
+                  <div>
+                    <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Jumlah (Kuantitas)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      min="0.01"
+                      required
+                      disabled={isDoctor}
+                      value={formData.quantity}
+                      onChange={(e) => setFormData({ ...formData, quantity: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Tipe Lalu Lintas</label>
-                  <select
-                    disabled={isDoctor}
-                    value={formData.trafficType}
-                    onChange={(e) => setFormData({ ...formData, trafficType: e.target.value as 'IMPORT' | 'EXPORT' })}
-                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                  >
-                    <option value="IMPORT">Masuk (IMPORT ke Mimika)</option>
-                    <option value="EXPORT">Keluar (EXPORT dari Mimika)</option>
-                  </select>
-                </div>
+                  <div>
+                    <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">
+                      Satuan Kustom (Custom Unit)
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      disabled={isDoctor}
+                      value={formData.unit}
+                      onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                      placeholder="misal: ekor, kg, rak, ton, karton, butir"
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                    />
+                    <div className="flex gap-2 mt-1.5 text-xs text-[#57606a]">
+                      <span>Saran:</span>
+                      {['ekor', 'kg', 'rak', 'ton', 'karton'].map((u) => (
+                        <button
+                          key={u}
+                          type="button"
+                          disabled={isDoctor}
+                          onClick={() => setFormData({ ...formData, unit: u })}
+                          className="underline hover:text-[#0969da] cursor-pointer"
+                        >
+                          {u}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-                <div>
-                  <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Kategori Komoditas</label>
-                  <select
-                    disabled={isDoctor}
-                    value={formData.category}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        category: e.target.value as 'HEWAN_HIDUP' | 'PRODUK_HEWAN' | 'OLAHAN_PRODUK_HEWAN',
-                      })
-                    }
-                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                  >
-                    <option value="HEWAN_HIDUP">Hewan Hidup (Sapi, Kambing, Babi, dll)</option>
-                    <option value="PRODUK_HEWAN">Produk Hewan (Daging Segar/Beku, Telur, dll)</option>
-                    <option value="OLAHAN_PRODUK_HEWAN">Produk Olahan (Sosis, Bakso, Kornet, dll)</option>
-                  </select>
-                </div>
+                  <div>
+                    <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Asal Pengiriman</label>
+                    <input
+                      type="text"
+                      required
+                      disabled={isDoctor}
+                      value={formData.origin}
+                      onChange={(e) => setFormData({ ...formData, origin: e.target.value })}
+                      placeholder="misal: Surabaya, Jawa Timur"
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                    />
+                  </div>
 
-                <div className="sm:col-span-2">
-                  <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Nama Komoditas</label>
-                  <input
-                    type="text"
-                    required
-                    disabled={isDoctor}
-                    value={formData.itemName}
-                    onChange={(e) => setFormData({ ...formData, itemName: e.target.value })}
-                    placeholder="misal: Sapi Bali Bakalan, Telur Ayam Ras, Daging Sapi Beku"
-                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                  />
-                </div>
+                  <div>
+                    <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Tujuan Penerimaan</label>
+                    <input
+                      type="text"
+                      required
+                      disabled={isDoctor}
+                      value={formData.destination}
+                      onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
+                      placeholder="misal: Distrik Mimika Baru, Timika"
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Jumlah (Kuantitas)</label>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0.01"
-                    required
-                    disabled={isDoctor}
-                    value={formData.quantity}
-                    onChange={(e) => setFormData({ ...formData, quantity: parseFloat(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                  />
-                </div>
+                  <div>
+                    <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Jalur Angkutan</label>
+                    <select
+                      disabled={isDoctor}
+                      value={formData.transportType}
+                      onChange={(e) => setFormData({ ...formData, transportType: e.target.value as 'UDARA' | 'LAUT' | 'DARAT' })}
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                    >
+                      <option value="LAUT">Laut (Pelabuhan Pomako)</option>
+                      <option value="UDARA">Udara (Bandara Mozes Kilangin)</option>
+                      <option value="DARAT">Darat (Antar Distrik)</option>
+                    </select>
+                  </div>
 
-                <div>
-                  <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">
-                    Satuan Kustom (Custom Unit)
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    disabled={isDoctor}
-                    value={formData.unit}
-                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                    placeholder="misal: ekor, kg, rak, ton, karton, butir"
-                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                  />
-                  <div className="flex gap-2 mt-1.5 text-xs text-[#57606a]">
-                    <span>Saran:</span>
-                    {['ekor', 'kg', 'rak', 'ton', 'karton'].map((u) => (
-                      <button
-                        key={u}
-                        type="button"
-                        disabled={isDoctor}
-                        onClick={() => setFormData({ ...formData, unit: u })}
-                        className="underline hover:text-[#0969da]"
-                      >
-                        {u}
-                      </button>
-                    ))}
+                  <div>
+                    <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Nama Pemilik / Pelaku Usaha</label>
+                    <input
+                      type="text"
+                      required
+                      disabled={isDoctor}
+                      value={formData.applicantName}
+                      onChange={(e) => setFormData({ ...formData, applicantName: e.target.value })}
+                      placeholder="misal: CV Papua Mandiri Ternak"
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Status Pemeriksaan Kesehatan</label>
+                    <select
+                      value={formData.inspectionStatus}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          inspectionStatus: e.target.value as 'PENDING' | 'INSPECTED_PASS' | 'INSPECTED_REJECT',
+                        })
+                      }
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md bg-white text-[#1f2328] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                    >
+                      <option value="PENDING">Menunggu Pemeriksaan (PENDING)</option>
+                      <option value="INSPECTED_PASS">Lulus Inspeksi (PASS)</option>
+                      <option value="INSPECTED_REJECT">Ditolak / Karantina (REJECT)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Nomor Sertifikat Pelepasan Karantina</label>
+                    <input
+                      type="text"
+                      value={formData.healthCertificateNo}
+                      onChange={(e) => setFormData({ ...formData, healthCertificateNo: e.target.value })}
+                      placeholder="misal: KH-11/2026/08912"
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md bg-white text-[#1f2328] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">
+                      Catatan Klinis Dokter Hewan / Hasil Pemeriksaan
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={formData.notes}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      placeholder="Pemeriksaan fisik normal, suhu tubuh dalam batas aman, tidak ada gejala PMK/ASF."
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md bg-white text-[#1f2328] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                    />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Asal Pengiriman</label>
-                  <input
-                    type="text"
-                    required
-                    disabled={isDoctor}
-                    value={formData.origin}
-                    onChange={(e) => setFormData({ ...formData, origin: e.target.value })}
-                    placeholder="misal: Surabaya, Jawa Timur"
-                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Tujuan Penerimaan</label>
-                  <input
-                    type="text"
-                    required
-                    disabled={isDoctor}
-                    value={formData.destination}
-                    onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
-                    placeholder="misal: Distrik Mimika Baru, Timika"
-                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Jalur Angkutan</label>
-                  <select
-                    disabled={isDoctor}
-                    value={formData.transportType}
-                    onChange={(e) => setFormData({ ...formData, transportType: e.target.value as 'UDARA' | 'LAUT' | 'DARAT' })}
-                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                <div className="pt-4 border-t border-[#d0d7de] flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-4 py-2 border border-[#d0d7de] rounded-md text-sm font-semibold text-[#1f2328] hover:bg-[#f6f8fa] transition-colors cursor-pointer"
                   >
-                    <option value="LAUT">Laut (Pelabuhan Pomako)</option>
-                    <option value="UDARA">Udara (Bandara Mozes Kilangin)</option>
-                    <option value="DARAT">Darat (Antar Distrik)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Nama Pemilik / Pelaku Usaha</label>
-                  <input
-                    type="text"
-                    required
-                    disabled={isDoctor}
-                    value={formData.applicantName}
-                    onChange={(e) => setFormData({ ...formData, applicantName: e.target.value })}
-                    placeholder="misal: CV Papua Mandiri Ternak"
-                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Status Pemeriksaan Kesehatan</label>
-                  <select
-                    value={formData.inspectionStatus}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        inspectionStatus: e.target.value as 'PENDING' | 'INSPECTED_PASS' | 'INSPECTED_REJECT',
-                      })
-                    }
-                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md bg-white text-[#1f2328] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="px-5 py-2 font-semibold text-sm text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 rounded-md disabled:opacity-50 transition-colors shadow-2xs cursor-pointer"
                   >
-                    <option value="PENDING">Menunggu Pemeriksaan (PENDING)</option>
-                    <option value="INSPECTED_PASS">Lulus Inspeksi (PASS)</option>
-                    <option value="INSPECTED_REJECT">Ditolak / Karantina (REJECT)</option>
-                  </select>
+                    {submitting ? 'Menyimpan...' : 'Simpan Data'}
+                  </button>
                 </div>
-
-                <div>
-                  <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Nomor Sertifikat Pelepasan Karantina</label>
-                  <input
-                    type="text"
-                    value={formData.healthCertificateNo}
-                    onChange={(e) => setFormData({ ...formData, healthCertificateNo: e.target.value })}
-                    placeholder="misal: KH-11/2026/08912"
-                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md bg-white text-[#1f2328] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">
-                    Catatan Klinis Dokter Hewan / Hasil Pemeriksaan
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    placeholder="Pemeriksaan fisik normal, suhu tubuh dalam batas aman, tidak ada gejala PMK/ASF."
-                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md bg-white text-[#1f2328] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                  />
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-[#d0d7de] flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-[#d0d7de] rounded-md text-sm font-semibold text-[#1f2328] hover:bg-[#f6f8fa] transition-colors"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2 font-semibold text-sm text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 rounded-md disabled:opacity-50 transition-colors shadow-2xs"
-                >
-                  {submitting ? 'Menyimpan...' : 'Simpan Data'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 };

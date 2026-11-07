@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { fetchTrafficSummary, type TrafficSummaryItem, type TrafficSummaryResponse } from '../../services/api';
 
 export const SummaryCalculationsPage: React.FC = () => {
@@ -65,7 +66,12 @@ export const SummaryCalculationsPage: React.FC = () => {
   const netStorageTotal = summary?.overall.totalStorageQty ?? ((summary?.overall.totalImportQty ?? 0) - (summary?.overall.totalExportQty ?? 0));
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+      className="space-y-6"
+    >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#d0d7de] pb-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-[#1f2328] tracking-tight">
@@ -80,7 +86,7 @@ export const SummaryCalculationsPage: React.FC = () => {
           type="button"
           onClick={exportCSV}
           disabled={!filteredItems.length}
-          className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold text-[#1f2328] bg-white hover:bg-[#f6f8fa] border border-[#d0d7de] rounded-md transition-colors shadow-2xs disabled:opacity-40 self-start sm:self-auto shrink-0"
+          className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold text-[#1f2328] bg-white hover:bg-[#f6f8fa] border border-[#d0d7de] rounded-md transition-colors shadow-2xs disabled:opacity-40 self-start sm:self-auto shrink-0 cursor-pointer"
         >
           <svg className="w-4 h-4 text-[#57606a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -257,6 +263,6 @@ export const SummaryCalculationsPage: React.FC = () => {
           </table>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };

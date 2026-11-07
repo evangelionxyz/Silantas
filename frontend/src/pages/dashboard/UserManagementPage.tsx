@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { createUser, deleteUser, fetchUsers, updateUser, type User } from '../../services/api';
@@ -125,7 +126,12 @@ export const UserManagementPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+      className="space-y-6"
+    >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#d0d7de] pb-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-[#1f2328] tracking-tight">
@@ -139,7 +145,7 @@ export const UserManagementPage: React.FC = () => {
         <button
           type="button"
           onClick={openCreateModal}
-          className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 rounded-md transition-colors shadow-2xs self-start sm:self-auto shrink-0"
+          className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 rounded-md transition-colors shadow-2xs self-start sm:self-auto shrink-0 cursor-pointer"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
@@ -276,7 +282,7 @@ export const UserManagementPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => openEditModal(u)}
-                        className="text-xs text-[#0969da] hover:underline font-semibold"
+                        className="text-xs text-[#0969da] hover:underline font-semibold cursor-pointer"
                       >
                         Ubah
                       </button>
@@ -284,7 +290,7 @@ export const UserManagementPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleDelete(u)}
-                          className="text-xs text-[#cf222e] hover:underline font-semibold"
+                          className="text-xs text-[#cf222e] hover:underline font-semibold cursor-pointer"
                         >
                           Hapus
                         </button>
@@ -298,161 +304,171 @@ export const UserManagementPage: React.FC = () => {
         </div>
       </div>
 
-      {/* User Create/Edit Modal with Background Scroll Lock */}
-      {isModalOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
-          onClick={() => setIsModalOpen(false)}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div
-            className="bg-white rounded-lg border border-[#d0d7de] shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150"
-            onClick={(e) => e.stopPropagation()}
+      {/* User Create/Edit Modal with Fast Framer Motion (< 250ms) */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+            onClick={() => setIsModalOpen(false)}
+            role="dialog"
+            aria-modal="true"
           >
-            <div className="px-5 py-3.5 border-b border-[#d0d7de] flex items-center justify-between bg-[#f6f8fa]">
-              <h3 className="font-semibold text-base text-[#1f2328]">
-                {editingUser ? 'Ubah Data Pengguna' : 'Tambah Pengguna Baru'}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="text-[#57606a] hover:text-[#1f2328] text-xl leading-none"
-                aria-label="Tutup"
-              >
-                &times;
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-sm">
-              {modalError && (
-                <div className="p-3.5 rounded-md bg-[#ffebe9] border border-[#ff8182]/40 text-sm text-[#cf222e]">
-                  {modalError}
-                </div>
-              )}
-
-              <div>
-                <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Nama Lengkap</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  placeholder="misal: drh. Sarah Wonda"
-                  className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                />
-              </div>
-
-              {!editingUser && (
-                <div>
-                  <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Username</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                    placeholder="misal: sarah_wonda"
-                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                  />
-                </div>
-              )}
-
-              <div>
-                <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Email Resmi</label>
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="misal: sarah@mimikakab.go.id"
-                  className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">
-                  {editingUser ? 'Kata Sandi Baru (Kosongkan bila tidak diubah)' : 'Kata Sandi Awal'}
-                </label>
-                <input
-                  type="password"
-                  required={!editingUser}
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder={editingUser ? 'Biarkan kosong untuk mempertahankan' : 'Minimal 6 karakter'}
-                  className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Peran (Role)</label>
-                <select
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md bg-white text-[#1f2328] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                >
-                  <option value="petugas">Petugas Lapangan / Operator</option>
-                  <option value="dokter_hewan">Dokter Hewan Berwenang (Inspector)</option>
-                  <option value="pimpinan">Pimpinan / Auditor (Viewer)</option>
-                  <option value="admin">Administrator Sistem</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Nomor Telepon / WhatsApp</label>
-                <input
-                  type="text"
-                  value={formData.phoneNumber}
-                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                  placeholder="misal: 081248000000"
-                  className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Instansi / Unit Kerja</label>
-                <input
-                  type="text"
-                  value={formData.agency}
-                  onChange={(e) => setFormData({ ...formData, agency: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                />
-              </div>
-
-              {editingUser && (
-                <div className="flex items-center gap-2 pt-1">
-                  <input
-                    type="checkbox"
-                    id="isActiveCheck"
-                    checked={formData.isActive}
-                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                    className="w-4 h-4 rounded border-[#d0d7de] text-[#1a7f37] focus:ring-[#1a7f37]"
-                  />
-                  <label htmlFor="isActiveCheck" className="text-sm text-[#1f2328] font-medium cursor-pointer">
-                    Akun Aktif (Dapat masuk ke sistem)
-                  </label>
-                </div>
-              )}
-
-              <div className="pt-4 border-t border-[#d0d7de] flex justify-end gap-3">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 10 }}
+              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              className="bg-white rounded-lg border border-[#d0d7de] shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="px-5 py-3.5 border-b border-[#d0d7de] flex items-center justify-between bg-[#f6f8fa]">
+                <h3 className="font-semibold text-base text-[#1f2328]">
+                  {editingUser ? 'Ubah Data Pengguna' : 'Tambah Pengguna Baru'}
+                </h3>
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-[#d0d7de] rounded-md text-sm font-semibold text-[#1f2328] hover:bg-[#f6f8fa] transition-colors"
+                  className="text-[#57606a] hover:text-[#1f2328] text-xl leading-none cursor-pointer"
+                  aria-label="Tutup"
                 >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-5 py-2 font-semibold text-sm text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 rounded-md disabled:opacity-50 transition-colors shadow-2xs"
-                >
-                  {submitting ? 'Menyimpan...' : 'Simpan Pengguna'}
+                  &times;
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
+
+              <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-sm">
+                {modalError && (
+                  <div className="p-3.5 rounded-md bg-[#ffebe9] border border-[#ff8182]/40 text-sm text-[#cf222e]">
+                    {modalError}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Nama Lengkap</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.fullName}
+                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                    placeholder="misal: drh. Sarah Wonda"
+                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                  />
+                </div>
+
+                {!editingUser && (
+                  <div>
+                    <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Username</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.username}
+                      onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                      placeholder="misal: sarah_wonda"
+                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Email Resmi</label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="misal: sarah@mimikakab.go.id"
+                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">
+                    {editingUser ? 'Kata Sandi Baru (Kosongkan bila tidak diubah)' : 'Kata Sandi Awal'}
+                  </label>
+                  <input
+                    type="password"
+                    required={!editingUser}
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    placeholder={editingUser ? 'Biarkan kosong untuk mempertahankan' : 'Minimal 6 karakter'}
+                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Peran (Role)</label>
+                  <select
+                    value={formData.role}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md bg-white text-[#1f2328] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                  >
+                    <option value="petugas">Petugas Lapangan / Operator</option>
+                    <option value="dokter_hewan">Dokter Hewan Berwenang (Inspector)</option>
+                    <option value="pimpinan">Pimpinan / Auditor (Viewer)</option>
+                    <option value="admin">Administrator Sistem</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Nomor Telepon / WhatsApp</label>
+                  <input
+                    type="text"
+                    value={formData.phoneNumber}
+                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                    placeholder="misal: 081248000000"
+                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Instansi / Unit Kerja</label>
+                  <input
+                    type="text"
+                    value={formData.agency}
+                    onChange={(e) => setFormData({ ...formData, agency: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                  />
+                </div>
+
+                {editingUser && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      type="checkbox"
+                      id="isActiveCheck"
+                      checked={formData.isActive}
+                      onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                      className="w-4 h-4 rounded border-[#d0d7de] text-[#1a7f37] focus:ring-[#1a7f37]"
+                    />
+                    <label htmlFor="isActiveCheck" className="text-sm text-[#1f2328] font-medium cursor-pointer">
+                      Akun Aktif (Dapat masuk ke sistem)
+                    </label>
+                  </div>
+                )}
+
+                <div className="pt-4 border-t border-[#d0d7de] flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-4 py-2 border border-[#d0d7de] rounded-md text-sm font-semibold text-[#1f2328] hover:bg-[#f6f8fa] transition-colors cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="px-5 py-2 font-semibold text-sm text-white bg-[#1a7f37] hover:bg-[#1a7f37]/90 rounded-md disabled:opacity-50 transition-colors shadow-2xs cursor-pointer"
+                  >
+                    {submitting ? 'Menyimpan...' : 'Simpan Pengguna'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 };

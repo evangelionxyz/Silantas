@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { fetchAuditLogs, type AuditLogRecord } from '../../services/api';
 
@@ -47,7 +48,12 @@ export const AuditLogsPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+      className="space-y-6"
+    >
       <div className="border-b border-[#d0d7de] pb-4">
         <h1 className="text-xl sm:text-2xl font-bold text-[#1f2328] tracking-tight">
           Log Audit Perubahan Sistem (Audit Trail)
@@ -191,7 +197,7 @@ export const AuditLogsPage: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
-                              className="text-xs font-semibold text-[#0969da] hover:underline"
+                              className="text-xs font-semibold text-[#0969da] hover:underline cursor-pointer"
                             >
                               {isExpanded ? 'Tutup' : 'Lihat Payload'}
                             </button>
@@ -231,7 +237,7 @@ export const AuditLogsPage: React.FC = () => {
               type="button"
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="px-3 py-1.5 bg-white border border-[#d0d7de] rounded-md font-medium text-[#1f2328] hover:bg-[#f6f8fa] disabled:opacity-40 transition-colors"
+              className="px-3 py-1.5 bg-white border border-[#d0d7de] rounded-md font-medium text-[#1f2328] hover:bg-[#f6f8fa] disabled:opacity-40 transition-colors cursor-pointer"
             >
               Sebelumnya
             </button>
@@ -242,13 +248,13 @@ export const AuditLogsPage: React.FC = () => {
               type="button"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="px-3 py-1.5 bg-white border border-[#d0d7de] rounded-md font-medium text-[#1f2328] hover:bg-[#f6f8fa] disabled:opacity-40 transition-colors"
+              className="px-3 py-1.5 bg-white border border-[#d0d7de] rounded-md font-medium text-[#1f2328] hover:bg-[#f6f8fa] disabled:opacity-40 transition-colors cursor-pointer"
             >
               Berikutnya
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };

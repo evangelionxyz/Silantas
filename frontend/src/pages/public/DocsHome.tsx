@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Breadcrumbs } from '../../components/layout/Breadcrumbs';
 import { DocsSidebar } from '../../components/layout/DocsSidebar';
 
@@ -13,7 +14,12 @@ export const DocsHome: React.FC = () => {
         <DocsSidebar className="hidden lg:block" />
 
         {/* Center Main Content */}
-        <main className="flex-1 py-8 px-0 lg:px-10">
+        <motion.main
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.22, ease: 'easeOut' }}
+          className="flex-1 py-8 px-0 lg:px-10"
+        >
           <div className="mb-8">
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1f2328] mb-3">
               SI-LANTAS HEWAN MIMIKA
@@ -106,7 +112,7 @@ export const DocsHome: React.FC = () => {
               <div><strong className="text-[#1f2328]">Pos Mozes Kilangin:</strong> Kargo Bandara Mozes Kilangin Timika</div>
             </div>
           </div>
-        </main>
+        </motion.main>
       </div>
     </div>
   );
