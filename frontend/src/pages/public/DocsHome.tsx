@@ -11,7 +11,7 @@ import {
 
 export const DocsHome: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#f7f6f1] flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col">
       <Breadcrumbs items={[{ label: `Tentang ${SUANGGI_BRAND.name}` }]} />
 
       <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 flex-1">

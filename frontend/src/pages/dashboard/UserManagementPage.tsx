@@ -230,7 +230,7 @@ export const UserManagementPage: React.FC = () => {
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-sm text-[#57606a]">
                     <div className="inline-flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-[#1a7f37] border-t-transparent animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-[#1a7f37] rounded rounded-full  border-t-transparent animate-spin"></div>
                       <span>Memuat daftar pengguna...</span>
                     </div>
                   </td>

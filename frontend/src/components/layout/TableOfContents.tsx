@@ -21,7 +21,7 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({ items }) => {
           }
         });
       },
-      { rootMargin: '-20% 0% -60% 0%' }
+      { rootMargin: '-120px 0% -60% 0%' }
     );
 
     items.forEach((item) => {
@@ -35,10 +35,11 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({ items }) => {
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
-      // Offset for sticky header (h-16 = 64px + 16px buffer = 80px)
-      const headerOffset = 80;
+      const headerEl = document.querySelector('header');
+      const headerHeight = headerEl ? headerEl.getBoundingClientRect().height : 100;
+      const headerOffset = headerHeight + 24;
       const elementPosition = el.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+      const offsetPosition = elementPosition + window.scrollY - headerOffset;
 
       window.scrollTo({
         top: offsetPosition,
@@ -51,7 +52,10 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({ items }) => {
   if (!items.length) return null;
 
   return (
-    <div className="w-64 shrink-0 hidden xl:block pl-6 py-8 select-none sticky top-16 self-start max-h-[calc(100vh-4rem)] overflow-y-auto">
+    <aside
+      aria-label="Daftar isi halaman"
+      className="w-64 shrink-0 hidden lg:block pl-6 py-8 select-none sticky top-28 self-start max-h-[calc(100vh-7.5rem)] overflow-y-auto"
+    >
       <h4 className="text-xs font-bold tracking-wider uppercase text-[#57606a] mb-3">
         Pada Halaman Ini
       </h4>
@@ -65,7 +69,7 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({ items }) => {
               onClick={() => scrollTo(item.id)}
               className={`block w-full text-left py-1 text-xs sm:text-sm leading-snug transition-colors truncate cursor-pointer ${
                 isActive
-                  ? 'text-[#0969da] font-semibold -ml-[14px] pl-3 border-l-2 border-[#0969da]'
+                  ? 'text-[#174b2b] font-semibold -ml-[14px] pl-3 border-l-2 border-[#174b2b]'
                   : 'text-[#57606a] hover:text-[#1f2328]'
               }`}
             >
@@ -74,6 +78,6 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({ items }) => {
           );
         })}
       </nav>
-    </div>
+    </aside>
   );
 };

@@ -38,7 +38,7 @@ export const AuditLogsPage: React.FC = () => {
 
   if (!isAuthorized) {
     return (
-      <div className="p-8 text-center bg-white border border-[#d0d7de] rounded-lg">
+      <div className="p-8 text-center bg-white border border-[#d0d7de]">
         <h2 className="text-base font-semibold text-[#cf222e] mb-1">Akses Terbatas</h2>
         <p className="text-sm text-[#57606a]">
           Halaman Log Audit hanya dapat diakses oleh Administrator dan Pimpinan.
@@ -135,7 +135,7 @@ export const AuditLogsPage: React.FC = () => {
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-sm text-[#57606a]">
                     <div className="inline-flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-[#1a7f37] border-t-transparent animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-[#1a7f37] rounded rounded-full border-t-transparent animate-spin"></div>
                       <span>Memuat log audit...</span>
                     </div>
                   </td>

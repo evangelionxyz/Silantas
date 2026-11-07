@@ -17,18 +17,18 @@ export const HealthCheckDoc: React.FC = () => {
   const vetImage = LOGIN_IMAGE;
 
   return (
-    <div className="min-h-screen bg-[#f7f6f1] flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col">
       <Breadcrumbs items={[
         { label: `Layanan Publik ${SUANGGI_BRAND.name}`, href: '/' },
         { label: 'Pemeriksaan Kesehatan & SKKH' }
       ]} />
 
-      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 flex-1">
+      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 flex-1 flex items-start gap-8">
         <motion.main
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="py-8 sm:py-10 docs-prose min-w-0"
+          className="flex-1 py-8 sm:py-10 docs-prose min-w-0"
         >
           <div className="not-prose bg-[#0c4a6e] text-white p-6 sm:p-8 mb-8 border border-[#0369a1] shadow-xs">
             <span className="inline-block px-2.5 py-1 text-xs font-extrabold uppercase tracking-wider bg-[#38bdf8] text-[#082f49] mb-3">
@@ -45,17 +45,17 @@ export const HealthCheckDoc: React.FC = () => {
           {/* Veterinary Inspection Photo Showcase */}
           <div className="not-prose grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
             <div className="overflow-hidden border border-[#7dd3fc] bg-white shadow-2xs flex flex-col">
-              <div className="aspect-16/9 bg-[#0c4a6e]">
+              <div className="aspect-16/9 overflow-hidden bg-[#0c4a6e]">
                 <img
                   src={vetImage.url}
                   alt={vetImage.alt}
                   width={vetImage.width}
                   height={vetImage.height}
                   fetchPriority="high"
-                  className="object-cover"
+                  className="w-full h-full object-cover object-[50%_58%]"
                 />
               </div>
-              <div className="p-3.5 bg-[#f0f9ff]">
+              <div className="p-3.5 bg-[#f0f9ff] flex-1">
                 <div className="text-xs font-extrabold uppercase text-[#0369a1]">Inspeksi Klinis</div>
                 <div className="font-bold text-sm text-[#1f2328]">
                   Pemeriksaan Fisik, Suhu Rektal &amp; Penanda Ear-Tag Ternak
@@ -64,14 +64,17 @@ export const HealthCheckDoc: React.FC = () => {
             </div>
 
             <div className="overflow-hidden border border-[#86efac] bg-white shadow-2xs flex flex-col">
-              <div className="aspect-16/9 bg-[#14532d]">
+              <div className="aspect-16/9 overflow-hidden bg-[#14532d]">
                 <img
                   src="https://images.unsplash.com/photo-1500595046743-cd271d694d30?auto=format&fit=crop&w=800&q=80"
+                  alt="Pengawasan kesehatan komoditas ternak sapi sehat di padang penggembalaan"
+                  width={800}
+                  height={450}
                   loading="lazy"
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="p-3.5 bg-[#f0fdf4]">
+              <div className="p-3.5 bg-[#f0fdf4] flex-1">
                 <div className="text-xs font-extrabold uppercase text-[#15803d]">Biosekuriti Karantina</div>
                 <div className="font-bold text-sm text-[#1f2328]">
                   Pengawasan Kesehatan Komoditas Ternak Sehat (ASUH)

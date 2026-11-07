@@ -22,7 +22,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ breadcrumbs = 
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-3 text-sm text-[#57606a]">
-        <div className="w-8 h-8 border-3 border-[#15803d] border-t-transparent animate-spin"></div>
+        <div className="w-8 h-8 border-3 border-[#15803d] border-t-transparent rounded rounded-full animate-spin"></div>
         <span>Memuat sesi petugas {SUANGGI_BRAND.name}...</span>
       </div>
     );
@@ -38,7 +38,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ breadcrumbs = 
   ];
 
   return (
-    <div className="min-h-screen bg-[#eef0e9] flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col">
       {/* Dedicated Internal Header */}
       <InternalHeader onToggleMobileSidebar={() => setMobileSidebarOpen(true)} />
 

@@ -15,18 +15,18 @@ const tocItems: TocItem[] = [
 
 export const RequirementsDoc: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#f7f6f1] flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col">
       <Breadcrumbs items={[
         { label: `Layanan Publik ${SUANGGI_BRAND.name}`, href: '/' },
         { label: 'Persyaratan Lalu Lintas' }
       ]} />
 
-      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 flex-1">
+      <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 flex-1 flex items-start gap-8">
         <motion.main
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="py-8 sm:py-10 docs-prose min-w-0"
+          className="flex-1 py-8 sm:py-10 docs-prose min-w-0"
         >
           {/* Colorful Article Header Banner */}
           <div className="not-prose bg-[#14532d] text-white p-6 sm:p-8 mb-8 border border-[#166534] shadow-xs">

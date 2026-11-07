@@ -179,7 +179,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: -8 }}
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            className="bg-white border border-[#86efac] shadow-2xl max-w-xl w-full overflow-hidden flex flex-col"
+            className="bg-white shadow-2xl max-w-3xl w-full overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative border-b border-[#d0d7de] flex items-center">

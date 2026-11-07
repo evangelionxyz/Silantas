@@ -43,7 +43,7 @@ export const SettingsPage: React.FC = () => {
 
   if (user?.role !== 'admin') {
     return (
-      <div className="p-8 text-center bg-white border border-[#d0d7de] rounded-lg">
+      <div className="p-8 text-center bg-white border border-[#d0d7de]">
         <h2 className="text-base font-semibold text-[#cf222e] mb-1">Akses Terbatas</h2>
         <p className="text-sm text-[#57606a]">
           Pengaturan sistem hanya dapat diakses oleh Administrator Sistem.
@@ -97,7 +97,7 @@ export const SettingsPage: React.FC = () => {
               Nomor WhatsApp Business Pelayanan (Format Internasional)
             </label>
             <div className="flex">
-              <span className="inline-flex items-center px-3.5 py-2 text-sm font-mono text-[#57606a] bg-[#f6f8fa] border border-r-0 border-[#d0d7de] rounded-l-md font-semibold">
+              <span className="inline-flex items-center px-3.5 py-2 text-sm font-mono text-[#57606a] bg-[#f6f8fa] border border-r-0 border-[#d0d7de] font-semibold">
                 +
               </span>
               <input
@@ -106,7 +106,7 @@ export const SettingsPage: React.FC = () => {
                 value={whatsappNumber}
                 onChange={(e) => setWhatsappNumber(e.target.value)}
                 placeholder="misal: 6281240000000"
-                className="w-full px-3 py-2 border border-[#d0d7de] rounded-r-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                className="w-full px-3 py-2 border border-[#d0d7de] font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
               />
             </div>
             <p className="text-xs text-[#57606a] mt-1.5">

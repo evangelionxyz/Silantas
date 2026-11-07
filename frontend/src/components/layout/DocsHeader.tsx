@@ -40,7 +40,7 @@ export const DocsHeader: React.FC<DocsHeaderProps> = ({ onToggleMobileMenu }) =>
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-[#d8dbd2] bg-white shadow-[0_2px_8px_rgba(24,45,27,0.06)]">
-        <div className="hidden min-h-7 items-center justify-between bg-[#173d22] px-6 text-[11px] text-[#f3f1e8] lg:flex xl:px-10">
+        <div className="hidden min-h-7 items-center justify-between bg-[#173d22] px-6 text-[14px] font-semibold text-[#f3f1e8] lg:flex xl:px-10">
           <span>{SUANGGI_BRAND.agency}</span>
           <span className="text-[#f4d16b]">{SUANGGI_BRAND.region}</span>
         </div>

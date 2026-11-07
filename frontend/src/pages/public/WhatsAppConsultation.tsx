@@ -41,7 +41,7 @@ export const WhatsAppConsultation: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#f7f6f1] flex flex-col">
+        <div className="min-h-screen bg-white flex flex-col">
             <Breadcrumbs items={[
                 { label: `Layanan Publik ${SUANGGI_BRAND.name}`, href: '/' },
                 { label: 'Konsultasi WhatsApp Business' }

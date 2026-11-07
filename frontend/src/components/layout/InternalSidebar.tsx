@@ -17,7 +17,7 @@ export const InternalSidebar: React.FC<InternalSidebarProps> = ({
   const { user } = useAuth();
 
   const navItemClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-start gap-2.5 py-2.5 px-3 text-sm transition-colors rounded-r-md ${
+    `flex items-start gap-2.5 py-2.5 px-3 text-sm transition-colors ${
       isActive
         ? 'border-l-4 border-[#174b2b] font-semibold text-[#1f2920] bg-[#eef1e8] -ml-[2px]'
         : 'text-[#4b574d] hover:text-[#1f2920] hover:bg-[#eef1e8]/70'
