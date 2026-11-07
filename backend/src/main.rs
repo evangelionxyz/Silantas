@@ -63,10 +63,22 @@ async fn main() -> anyhow::Result<()> {
         .layer(cors)
         .layer(Extension(pool));
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
-    tracing::info!("Server listening on http://localhost:{}", config.port);
+    let host_ip: std::net::IpAddr = config.host.parse()
+        .unwrap_or(std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)));
+    let addr = SocketAddr::new(host_ip, config.port);
+    tracing::info!("Server starting on http://{}:{}", config.host, config.port);
 
-    let listener = tokio::net::TcpListener::bind(addr).await?;
+    let listener = match tokio::net::TcpListener::bind(addr).await {
+        Ok(l) => {
+            tracing::info!("Server listening on http://{}:{}", config.host, config.port);
+            l
+        }
+        Err(e) => {
+            tracing::error!("Failed to bind to {addr}: {e}");
+            tracing::info!("If port {} is already in use (e.g. by VS Code port forwarding), close it in the VS Code Ports tab or change PORT in .env", config.port);
+            return Err(e.into());
+        }
+    };
     axum::serve(listener, app).await?;
 
     Ok(())

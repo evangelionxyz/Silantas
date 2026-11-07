@@ -5,6 +5,7 @@ use std::path::Path;
 
 #[derive(Debug, Clone)]
 pub struct Config {
+    pub host: String,
     pub port: u16,
     pub database_url: String,
     pub jwt_secret: String,
@@ -43,6 +44,7 @@ impl Config {
         }
 
         let database_url = Self::resolve_database_url();
+        let host = get_clean_env("HOST").unwrap_or_else(|| "127.0.0.1".to_string());
         let port = get_clean_env("PORT")
             .and_then(|p| p.parse().ok())
             .unwrap_or(8000);
@@ -51,6 +53,7 @@ impl Config {
         });
 
         Self {
+            host,
             port,
             database_url,
             jwt_secret,

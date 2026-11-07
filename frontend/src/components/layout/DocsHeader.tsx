@@ -41,7 +41,7 @@ export const DocsHeader: React.FC = () => {
   return (
     <>
       <header className="sticky top-0 z-40 bg-white border-b border-[#d0d7de] select-none">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           {/* Brand & Scope */}
           <div className="flex items-center gap-3">
             <Link to="/" className="flex items-center gap-2.5 text-[#1f2328] hover:opacity-90 transition-opacity">

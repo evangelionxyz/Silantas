@@ -39,10 +39,10 @@ export const WhatsAppConsultation: React.FC = () => {
         { label: 'Konsultasi WhatsApp Business' }
       ]} />
 
-      <div className="max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex">
+      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex">
         <DocsSidebar className="hidden lg:block" />
 
-        <main className="flex-1 py-8 px-0 lg:px-10 max-w-4xl docs-prose">
+        <main className="flex-1 py-8 px-0 lg:px-10 docs-prose">
           <div className="border-b border-[#d0d7de] pb-6 mb-8">
             <h1 className="text-3xl font-semibold tracking-tight text-[#1f2328] mb-2">
               Konsultasi & Chatting WhatsApp Business SI-LANTAS

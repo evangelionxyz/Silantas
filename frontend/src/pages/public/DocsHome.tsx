@@ -8,12 +8,12 @@ export const DocsHome: React.FC = () => {
     <div className="min-h-screen bg-white flex flex-col">
       <Breadcrumbs items={[{ label: 'Tentang SI-LANTAS' }]} />
 
-      <div className="max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex">
+      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex">
         {/* Left Sidebar */}
         <DocsSidebar className="hidden lg:block" />
 
         {/* Center Main Content */}
-        <main className="flex-1 py-8 px-0 lg:px-10 max-w-4xl">
+        <main className="flex-1 py-8 px-0 lg:px-10">
           <div className="mb-8">
             <h1 className="text-3xl font-semibold tracking-tight text-[#1f2328] mb-2">
               SI-LANTAS HEWAN MIMIKA

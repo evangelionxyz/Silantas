@@ -62,18 +62,89 @@ pub async fn init_database(
         -- Create Schema
         CREATE SCHEMA IF NOT EXISTS silantas;
 
-        -- Create Users
+        -- Create Users Table
         CREATE TABLE IF NOT EXISTS silantas.users (
             id UUID PRIMARY KEY,
             full_name VARCHAR(255) NOT NULL,
-            username VARCHAR(64) NOT NULL,
+            username VARCHAR(64) UNIQUE NOT NULL,
             email VARCHAR(255) UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
-            role VARCHAR(64) NOT NULL DEFAULT 'user',
+            role VARCHAR(64) NOT NULL DEFAULT 'petugas',
+            is_active BOOLEAN NOT NULL DEFAULT true,
+            phone_number VARCHAR(50),
+            agency VARCHAR(255) DEFAULT 'Dinas Peternakan dan Kesehatan Hewan Kab. Mimika',
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
         CREATE INDEX IF NOT EXISTS idx_users_email ON silantas.users(email);
+        CREATE INDEX IF NOT EXISTS idx_users_username ON silantas.users(username);
+
+        ALTER TABLE silantas.users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true;
+        ALTER TABLE silantas.users ADD COLUMN IF NOT EXISTS phone_number VARCHAR(50);
+        ALTER TABLE silantas.users ADD COLUMN IF NOT EXISTS agency VARCHAR(255) DEFAULT 'Dinas Peternakan dan Kesehatan Hewan Kab. Mimika';
+
+        -- Create Traffic Records Table
+        CREATE TABLE IF NOT EXISTS silantas.traffic_records (
+            id UUID PRIMARY KEY,
+            record_number VARCHAR(100) NOT NULL,
+            traffic_type VARCHAR(20) NOT NULL,
+            category VARCHAR(50) NOT NULL,
+            item_name VARCHAR(255) NOT NULL,
+            quantity NUMERIC(12, 2) NOT NULL,
+            unit VARCHAR(50) NOT NULL,
+            origin VARCHAR(255) NOT NULL,
+            destination VARCHAR(255) NOT NULL,
+            transport_type VARCHAR(50) NOT NULL,
+            applicant_name VARCHAR(255) NOT NULL,
+            health_certificate_no VARCHAR(100),
+            inspection_status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+            notes TEXT,
+            recorded_by UUID REFERENCES silantas.users(id),
+            traffic_date DATE NOT NULL DEFAULT CURRENT_DATE,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+
+        -- Create Audit Logs Table
+        CREATE TABLE IF NOT EXISTS silantas.audit_logs (
+            id UUID PRIMARY KEY,
+            user_id UUID REFERENCES silantas.users(id),
+            username VARCHAR(64) NOT NULL,
+            user_role VARCHAR(64) NOT NULL,
+            action VARCHAR(50) NOT NULL,
+            entity_type VARCHAR(50) NOT NULL,
+            entity_id VARCHAR(100),
+            description TEXT NOT NULL,
+            metadata JSONB,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+
+        -- Create Settings Table
+        CREATE TABLE IF NOT EXISTS silantas.settings (
+            key VARCHAR(100) PRIMARY KEY,
+            value TEXT NOT NULL,
+            description TEXT,
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+
+        -- Seed Default Settings
+        INSERT INTO silantas.settings (key, value, description)
+        VALUES 
+            ('whatsapp_number', '6281240000000', 'Nomor WhatsApp Business Pelayanan Dinas'),
+            ('whatsapp_message', 'Halo Admin SI-LANTAS HEWAN MIMIKA, saya ingin konsultasi mengenai persyaratan lalu lintas hewan/produk hewan.', 'Pesan template awal konsultasi'),
+            ('agency_name', 'Dinas Peternakan dan Kesehatan Hewan Kabupaten Mimika', 'Nama Instansi')
+        ON CONFLICT (key) DO NOTHING;
+
+        -- Seed Initial Accounts with Verified Argon2 Hashes
+        -- admin: admin123
+        -- drh_sarah, petugas_budi, pimpinan_yohanis: password123
+        INSERT INTO silantas.users (id, full_name, username, email, password_hash, role, is_active, phone_number, agency)
+        VALUES 
+            ('e1000000-0000-0000-0000-000000000000', 'Administrator SILANTAS', 'admin', 'admin@mimikakab.go.id', '$argon2id$v=19$m=19456,t=2,p=1$wM4W0M5psB/tFJfgCRz1cA$fVchlIji3Rls/OKqYFC/G2GY2ox0hLPdVNfgXrcA+us', 'admin', true, '081248000000', 'Dinas Peternakan dan Kesehatan Hewan Kab. Mimika'),
+            ('e1000000-0000-0000-0000-000000000001', 'drh. Sarah Wonda, M.Sc.', 'drh_sarah', 'sarah.wonda@mimikakab.go.id', '$argon2id$v=19$m=19456,t=2,p=1$OWl84TRrFqoiLQINkF8Xhg$PH0Wec9lY+Nu9+NnUeRXuYB9hi+O3MkSrFDsmxLXgrc', 'dokter_hewan', true, '081248001001', 'Bidang Kesehatan Hewan Kab. Mimika'),
+            ('e1000000-0000-0000-0000-000000000002', 'Budi Santoso, S.Pt.', 'petugas_budi', 'budi.santoso@mimikakab.go.id', '$argon2id$v=19$m=19456,t=2,p=1$OWl84TRrFqoiLQINkF8Xhg$PH0Wec9lY+Nu9+NnUeRXuYB9hi+O3MkSrFDsmxLXgrc', 'petugas', true, '081248001002', 'Pos Pengawasan Lalu Lintas Pomako'),
+            ('e1000000-0000-0000-0000-000000000003', 'Drs. Yohanis Maturbongs', 'pimpinan_yohanis', 'yohanis.maturbongs@mimikakab.go.id', '$argon2id$v=19$m=19456,t=2,p=1$OWl84TRrFqoiLQINkF8Xhg$PH0Wec9lY+Nu9+NnUeRXuYB9hi+O3MkSrFDsmxLXgrc', 'pimpinan', true, '081248001003', 'Kepala Dinas Peternakan & Keswan')
+        ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash;
     "#;
 
     sqlx::raw_sql(init_sql)

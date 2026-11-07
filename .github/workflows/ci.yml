@@ -91,9 +91,7 @@ jobs:
             fi
 
   deploy-to-vercel:
-    # Deploy the web app (and API rewrites) only after the Rust API is live.
     name: Deploy Web to Vercel (event)
-    needs: deploy-to-dewacloud
     runs-on: ubuntu-latest
 
     steps:

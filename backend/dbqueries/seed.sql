@@ -1,12 +1,13 @@
 -- Seed Users
--- Password for all seed users is 'password123'
--- Argon2 hash for 'password123' generated
+-- Password for admin: 'admin123'
+-- Password for other seed users: 'password123'
 INSERT INTO silantas.users (id, full_name, username, email, password_hash, role, is_active, phone_number, agency)
 VALUES 
-	('e1000000-0000-0000-0000-000000000001', 'drh. Sarah Wonda, M.Sc.', 'drh_sarah', 'sarah.wonda@mimikakab.go.id', '$argon2id$v=19$m=19456,t=2,p=1$741vYlQ2X7B8Z8v2$mE8tG7H4Z9r2T0q1L5f8S6m1k2P4o7N9w3V2b1X4z5A', 'dokter_hewan', true, '081248001001', 'Bidang Kesehatan Hewan Kab. Mimika'),
-	('e1000000-0000-0000-0000-000000000002', 'Budi Santoso, S.Pt.', 'petugas_budi', 'budi.santoso@mimikakab.go.id', '$argon2id$v=19$m=19456,t=2,p=1$741vYlQ2X7B8Z8v2$mE8tG7H4Z9r2T0q1L5f8S6m1k2P4o7N9w3V2b1X4z5A', 'petugas', true, '081248001002', 'Pos Pengawasan Lalu Lintas Pomako'),
-	('e1000000-0000-0000-0000-000000000003', 'Drs. Yohanis Maturbongs', 'pimpinan_yohanis', 'yohanis.maturbongs@mimikakab.go.id', '$argon2id$v=19$m=19456,t=2,p=1$741vYlQ2X7B8Z8v2$mE8tG7H4Z9r2T0q1L5f8S6m1k2P4o7N9w3V2b1X4z5A', 'pimpinan', true, '081248001003', 'Kepala Dinas Peternakan & Keswan')
-ON CONFLICT (email) DO NOTHING;
+	('e1000000-0000-0000-0000-000000000000', 'Administrator SILANTAS', 'admin', 'admin@mimikakab.go.id', '$argon2id$v=19$m=19456,t=2,p=1$wM4W0M5psB/tFJfgCRz1cA$fVchlIji3Rls/OKqYFC/G2GY2ox0hLPdVNfgXrcA+us', 'admin', true, '081248000000', 'Dinas Peternakan dan Kesehatan Hewan Kab. Mimika'),
+	('e1000000-0000-0000-0000-000000000001', 'drh. Sarah Wonda, M.Sc.', 'drh_sarah', 'sarah.wonda@mimikakab.go.id', '$argon2id$v=19$m=19456,t=2,p=1$OWl84TRrFqoiLQINkF8Xhg$PH0Wec9lY+Nu9+NnUeRXuYB9hi+O3MkSrFDsmxLXgrc', 'dokter_hewan', true, '081248001001', 'Bidang Kesehatan Hewan Kab. Mimika'),
+	('e1000000-0000-0000-0000-000000000002', 'Budi Santoso, S.Pt.', 'petugas_budi', 'budi.santoso@mimikakab.go.id', '$argon2id$v=19$m=19456,t=2,p=1$OWl84TRrFqoiLQINkF8Xhg$PH0Wec9lY+Nu9+NnUeRXuYB9hi+O3MkSrFDsmxLXgrc', 'petugas', true, '081248001002', 'Pos Pengawasan Lalu Lintas Pomako'),
+	('e1000000-0000-0000-0000-000000000003', 'Drs. Yohanis Maturbongs', 'pimpinan_yohanis', 'yohanis.maturbongs@mimikakab.go.id', '$argon2id$v=19$m=19456,t=2,p=1$OWl84TRrFqoiLQINkF8Xhg$PH0Wec9lY+Nu9+NnUeRXuYB9hi+O3MkSrFDsmxLXgrc', 'pimpinan', true, '081248001003', 'Kepala Dinas Peternakan & Keswan')
+ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash;
 
 -- Seed Traffic Records
 INSERT INTO silantas.traffic_records 

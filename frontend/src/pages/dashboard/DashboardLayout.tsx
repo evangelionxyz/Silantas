@@ -32,7 +32,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ breadcrumbs = 
     <div className="min-h-screen bg-white flex flex-col">
       <Breadcrumbs items={defaultCrumbs} />
 
-      <div className="max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex">
+      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 flex-1 flex">
         <DocsSidebar className="hidden lg:block" />
 
         <main className="flex-1 py-6 px-0 lg:px-8 min-w-0">

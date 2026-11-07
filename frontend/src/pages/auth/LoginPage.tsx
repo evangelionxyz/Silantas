@@ -66,7 +66,7 @@ export const LoginPage: React.FC = () => {
                 required
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="misal: evangelionxyz"
+                placeholder="admin"
                 className="w-full px-3 py-1.5 text-xs bg-white text-[#1f2328] border border-[#d0d7de] rounded-md focus:outline-none focus:ring-1 focus:ring-[#0969da] focus:border-[#0969da]"
               />
             </div>

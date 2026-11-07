@@ -19,9 +19,9 @@ export const DocsSidebar: React.FC<DocsSidebarProps> = ({ className = '' }) => {
   };
 
   const navItemClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-2 py-1.5 px-3 text-xs transition-colors rounded-sm ${
+    `flex items-center gap-2 py-1.5 px-3 text-xs transition-colors ${
       isActive
-        ? 'border-l-2 border-[#1a7f37] font-semibold text-[#1f2328] bg-[#f6f8fa] -ml-[2px]'
+        ? 'border-l-4 border-[#1a7f37] font-semibold text-[#1f2328] bg-[#f6f8fa] -ml-[2px]'
         : 'text-[#656d76] hover:text-[#1f2328] hover:bg-[#f6f8fa]/60'
     }`;
 

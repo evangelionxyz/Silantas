@@ -83,7 +83,10 @@ mod tests {
     fn test_password_hashing() {
         let hash = hash_password("admin123").unwrap();
         println!("HASH_ADMIN123: {hash}");
+        let hash_pwd = hash_password("password123").unwrap();
+        println!("HASH_PASSWORD123: {hash_pwd}");
         assert!(verify_password("admin123", &hash));
+        assert!(verify_password("password123", &hash_pwd));
     }
 }
 
