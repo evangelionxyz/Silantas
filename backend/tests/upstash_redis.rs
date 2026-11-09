@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
-use silantas_api::config::Config;
-use silantas_api::services::UpstashRedisService;
+use silantas_api::services::MiniRedisService;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 struct TestCacheData {
@@ -10,20 +9,11 @@ struct TestCacheData {
 }
 
 #[tokio::test]
-async fn test_upstash_redis_full_lifecycle() {
-    let config = Config::load();
-    let (url, token) = match (&config.upstash_redis_rest_url, &config.upstash_redis_rest_token) {
-        (Some(u), Some(t)) => (u.clone(), t.clone()),
-        _ => {
-            eprintln!("Upstash credentials not found in env, skipping live test");
-            return;
-        }
-    };
-
-    let service = UpstashRedisService::new(url, token);
+async fn test_mini_redis_full_lifecycle() {
+    let service = MiniRedisService::new();
 
     // 1. PING
-    let pong = service.ping().await.expect("Upstash ping should succeed");
+    let pong = service.ping().await.expect("MiniRedis ping should succeed");
     assert_eq!(pong, "PONG");
 
     let test_key = "silantas:test:unit_test_key";
@@ -65,7 +55,13 @@ async fn test_upstash_redis_full_lifecycle() {
         .incr(counter_key)
         .await
         .expect("INCR 1 should succeed");
-    assert!(count_1 >= 1);
+    assert_eq!(count_1, 1);
+
+    let count_2 = service
+        .incr(counter_key)
+        .await
+        .expect("INCR 2 should succeed");
+    assert_eq!(count_2, 2);
 
     service
         .expire(counter_key, 60)

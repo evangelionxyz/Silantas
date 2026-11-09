@@ -1,80 +1,83 @@
-use reqwest::Client;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Serialize};
+use std::collections::HashMap;
+use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::RwLock;
+use tokio::time::Instant;
 
 #[derive(Debug, Clone)]
-pub struct UpstashRedisService {
-    client: Client,
-    rest_url: String,
-    rest_token: String,
+struct CacheEntry {
+    value: String,
+    expires_at: Option<Instant>,
 }
 
-#[derive(Debug, Deserialize)]
-struct UpstashResponse {
-    result: Option<serde_json::Value>,
-    error: Option<String>,
+impl CacheEntry {
+    fn is_expired(&self) -> bool {
+        self.expires_at.is_some_and(|exp| Instant::now() >= exp)
+    }
 }
 
-impl UpstashRedisService {
-    pub fn new(rest_url: String, rest_token: String) -> Self {
-        let clean_url = rest_url.trim().trim_end_matches('/').to_string();
-        let client = Client::builder()
-            .timeout(Duration::from_secs(5))
-            .connect_timeout(Duration::from_secs(3))
-            .build()
-            .unwrap_or_else(|_| Client::new());
+/// In-node concurrent key-value cache with TTL expiration (mini-redis)
+#[derive(Debug, Clone)]
+pub struct MiniRedisService {
+    store: Arc<RwLock<HashMap<String, CacheEntry>>>,
+}
 
-        Self {
-            client,
-            rest_url: clean_url,
-            rest_token: rest_token.trim().to_string(),
+pub type UpstashRedisService = MiniRedisService;
+
+impl Default for MiniRedisService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl MiniRedisService {
+    pub fn new() -> Self {
+        let store: Arc<RwLock<HashMap<String, CacheEntry>>> = Arc::new(RwLock::new(HashMap::new()));
+        let cleanup_store = Arc::clone(&store);
+
+        if let Ok(handle) = tokio::runtime::Handle::try_current() {
+            handle.spawn(async move {
+                let mut interval = tokio::time::interval(Duration::from_secs(60));
+                loop {
+                    interval.tick().await;
+                    let mut map = cleanup_store.write().await;
+                    map.retain(|_, entry| !entry.is_expired());
+                }
+            });
         }
+
+        Self { store }
     }
 
-    /// Execute a raw Redis command through the Upstash REST API
-    pub async fn execute_raw(&self, command: &[&str]) -> anyhow::Result<serde_json::Value> {
-        let response = self
-            .client
-            .post(&self.rest_url)
-            .header("Authorization", format!("Bearer {}", self.rest_token))
-            .json(&command)
-            .send()
-            .await?;
-
-        let status = response.status();
-        let body: UpstashResponse = response.json().await?;
-
-        if let Some(err) = body.error {
-            return Err(anyhow::anyhow!("Upstash error: {err}"));
-        }
-
-        if !status.is_success() {
-            return Err(anyhow::anyhow!("Upstash HTTP error: {status}"));
-        }
-
-        Ok(body.result.unwrap_or(serde_json::Value::Null))
-    }
-
-    /// Ping the Upstash Redis database
+    /// Ping the in-node mini-redis store
     pub async fn ping(&self) -> anyhow::Result<String> {
-        let res = self.execute_raw(&["PING"]).await?;
-        if let Some(s) = res.as_str() {
-            Ok(s.to_string())
-        } else {
-            Ok(res.to_string())
-        }
+        Ok("PONG".to_string())
     }
 
     /// Retrieve a string value by key
     pub async fn get(&self, key: &str) -> anyhow::Result<Option<String>> {
-        let res = self.execute_raw(&["GET", key]).await?;
-        if res.is_null() {
-            Ok(None)
-        } else if let Some(s) = res.as_str() {
-            Ok(Some(s.to_string()))
-        } else {
-            Ok(Some(res.to_string()))
+        {
+            let map = self.store.read().await;
+            if let Some(entry) = map.get(key) {
+                if !entry.is_expired() {
+                    return Ok(Some(entry.value.clone()));
+                }
+            } else {
+                return Ok(None);
+            }
         }
+
+        // Lazy eviction if expired
+        let mut map = self.store.write().await;
+        if let Some(entry) = map.get(key) {
+            if entry.is_expired() {
+                map.remove(key);
+                return Ok(None);
+            }
+            return Ok(Some(entry.value.clone()));
+        }
+        Ok(None)
     }
 
     /// Retrieve and deserialize a JSON value by key
@@ -88,16 +91,29 @@ impl UpstashRedisService {
         }
     }
 
-    /// Set a key to hold a string value
+    /// Set a key to hold a string value without expiration
     pub async fn set(&self, key: &str, value: &str) -> anyhow::Result<()> {
-        let _ = self.execute_raw(&["SET", key, value]).await?;
+        let mut map = self.store.write().await;
+        map.insert(
+            key.to_string(),
+            CacheEntry {
+                value: value.to_string(),
+                expires_at: None,
+            },
+        );
         Ok(())
     }
 
     /// Set a key with expiration in seconds
     pub async fn set_ex(&self, key: &str, value: &str, ttl_seconds: u64) -> anyhow::Result<()> {
-        let ttl_str = ttl_seconds.to_string();
-        let _ = self.execute_raw(&["SET", key, value, "EX", &ttl_str]).await?;
+        let mut map = self.store.write().await;
+        map.insert(
+            key.to_string(),
+            CacheEntry {
+                value: value.to_string(),
+                expires_at: Some(Instant::now() + Duration::from_secs(ttl_seconds)),
+            },
+        );
         Ok(())
     }
 
@@ -109,26 +125,46 @@ impl UpstashRedisService {
 
     /// Delete a key
     pub async fn del(&self, key: &str) -> anyhow::Result<()> {
-        let _ = self.execute_raw(&["DEL", key]).await?;
+        let mut map = self.store.write().await;
+        map.remove(key);
         Ok(())
     }
 
     /// Increment the integer value of a key
     pub async fn incr(&self, key: &str) -> anyhow::Result<i64> {
-        let res = self.execute_raw(&["INCR", key]).await?;
-        if let Some(num) = res.as_i64() {
-            Ok(num)
-        } else if let Some(s) = res.as_str() {
-            s.parse::<i64>().map_err(|e| anyhow::anyhow!("Failed to parse INCR result: {e}"))
-        } else {
-            Err(anyhow::anyhow!("Unexpected response from INCR: {res:?}"))
-        }
+        let mut map = self.store.write().await;
+        let (next_val, expires_at) = match map.get(key) {
+            Some(entry) if !entry.is_expired() => {
+                let current = entry
+                    .value
+                    .parse::<i64>()
+                    .map_err(|e| anyhow::anyhow!("Value is not an integer: {e}"))?;
+                (current + 1, entry.expires_at)
+            }
+            _ => (1, None),
+        };
+
+        map.insert(
+            key.to_string(),
+            CacheEntry {
+                value: next_val.to_string(),
+                expires_at,
+            },
+        );
+
+        Ok(next_val)
     }
 
     /// Set a timeout on key in seconds
     pub async fn expire(&self, key: &str, ttl_seconds: u64) -> anyhow::Result<()> {
-        let ttl_str = ttl_seconds.to_string();
-        let _ = self.execute_raw(&["EXPIRE", key, &ttl_str]).await?;
+        let mut map = self.store.write().await;
+        if let Some(entry) = map.get_mut(key) {
+            if entry.is_expired() {
+                map.remove(key);
+            } else {
+                entry.expires_at = Some(Instant::now() + Duration::from_secs(ttl_seconds));
+            }
+        }
         Ok(())
     }
 }

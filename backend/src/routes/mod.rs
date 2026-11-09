@@ -23,7 +23,7 @@ pub fn build_router(state: AppState) -> Router {
 pub async fn root_handler(State(state): State<AppState>) -> Json<Value> {
     let redis_status = match &state.redis {
         Some(redis) => match redis.ping().await {
-            Ok(_) => "connected (Upstash)",
+            Ok(_) => "connected (mini-redis)",
             Err(_) => "unreachable / degraded",
         },
         None => "disabled",

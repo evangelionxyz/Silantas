@@ -92,12 +92,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ breadcrumbs = 
       </AnimatePresence>
 
       {/* Main Dashboard Workspace */}
-      <div className="w-full mx-auto px-3 sm:px-6 lg:px-8 flex-1 flex items-start">
+      <div className="w-full mx-auto px-3 sm:px-6 lg:px-8 flex-1 flex items-start print:px-0">
         {/* Desktop Sidebar (Sticky, follows content) */}
         <InternalSidebar className="hidden lg:flex" />
 
         {/* Dynamic Main Management View */}
-        <main className="flex-1 py-6 px-0 lg:px-8 min-w-0">
+        <main className="flex-1 py-6 px-0 lg:px-8 min-w-0 print:py-0 print:px-0">
           <Outlet />
         </main>
       </div>

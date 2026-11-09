@@ -9,8 +9,7 @@ pub struct Config {
     pub port: u16,
     pub database_url: String,
     pub jwt_secret: String,
-    pub upstash_redis_rest_url: Option<String>,
-    pub upstash_redis_rest_token: Option<String>,
+    pub mini_redis_enabled: bool,
 }
 
 fn clean_val(v: String) -> String {
@@ -53,16 +52,16 @@ impl Config {
         let jwt_secret = get_clean_env("JWT_SECRET").unwrap_or_else(|| {
             "default-secret-key-silantas-mimika-replace-in-production".to_string()
         });
-        let upstash_redis_rest_url = get_clean_env("UPSTASH_REDIS_REST_URL");
-        let upstash_redis_rest_token = get_clean_env("UPSTASH_REDIS_REST_TOKEN");
+        let mini_redis_enabled = get_clean_env("MINI_REDIS_ENABLED")
+            .map(|v| !matches!(v.to_lowercase().as_str(), "false" | "0" | "no"))
+            .unwrap_or(true);
 
         Self {
             host,
             port,
             database_url,
             jwt_secret,
-            upstash_redis_rest_url,
-            upstash_redis_rest_token,
+            mini_redis_enabled,
         }
     }
 

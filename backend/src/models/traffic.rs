@@ -85,6 +85,20 @@ pub struct TrafficSummaryItem {
     pub record_count: i64,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct TrafficRouteSummaryItem {
+    pub traffic_type: String,
+    pub origin: String,
+    pub destination: String,
+    pub item_name: String,
+    pub category: String,
+    pub unit: String,
+    pub transport_type: String,
+    pub total_quantity: f64,
+    pub record_count: i64,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct TrafficFilterParams {
     pub search: Option<String>,

@@ -169,7 +169,6 @@ export const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose }) => 
           exit={{ opacity: 0 }}
           transition={{ duration: 0.18 }}
           className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-start justify-center pt-16 sm:pt-24 px-3 sm:px-4"
-          onClick={onClose}
           role="dialog"
           aria-modal="true"
           aria-labelledby="search-modal-title"

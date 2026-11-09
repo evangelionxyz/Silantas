@@ -47,25 +47,16 @@ async fn main() -> anyhow::Result<()> {
         .allow_methods(tower_http::cors::AllowMethods::mirror_request())
         .allow_headers(tower_http::cors::AllowHeaders::mirror_request());
 
-    // Setup Upstash Redis Client
-    let redis = match (&config.upstash_redis_rest_url, &config.upstash_redis_rest_token) {
-        (Some(url), Some(token)) => {
-            let redis_service = services::UpstashRedisService::new(url.clone(), token.clone());
-            match redis_service.ping().await {
-                Ok(pong) => {
-                    tracing::info!("Connected to Upstash Redis successfully: {pong}");
-                    Some(std::sync::Arc::new(redis_service))
-                }
-                Err(e) => {
-                    tracing::warn!("Could not connect to Upstash Redis on startup: {e}. Running with Redis cache degraded/disabled.");
-                    Some(std::sync::Arc::new(redis_service))
-                }
-            }
+    // Setup In-Node Mini-Redis Cache
+    let redis = if config.mini_redis_enabled {
+        let redis_service = services::MiniRedisService::new();
+        if let Ok(pong) = redis_service.ping().await {
+            tracing::info!("In-node mini-redis cache initialized successfully: {pong}");
         }
-        _ => {
-            tracing::info!("Upstash Redis credentials not provided. Running without Redis cache.");
-            None
-        }
+        Some(std::sync::Arc::new(redis_service))
+    } else {
+        tracing::info!("MINI_REDIS_ENABLED=false. Running without in-node cache.");
+        None
     };
 
     let app_state = AppState {
@@ -88,7 +79,6 @@ async fn main() -> anyhow::Result<()> {
     let host_ip: std::net::IpAddr = config.host.parse()
         .unwrap_or(std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)));
     let addr = SocketAddr::new(host_ip, config.port);
-    tracing::info!("Server starting on http://{}:{}", config.host, config.port);
 
     let listener = match tokio::net::TcpListener::bind(addr).await {
         Ok(l) => {

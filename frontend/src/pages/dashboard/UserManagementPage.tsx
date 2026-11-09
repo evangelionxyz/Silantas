@@ -313,7 +313,6 @@ export const UserManagementPage: React.FC = () => {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
             className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
-            onClick={() => setIsModalOpen(false)}
             role="dialog"
             aria-modal="true"
           >

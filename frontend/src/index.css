@@ -144,3 +144,58 @@
   border: 1px solid #c6cbc0;
   border-radius: 4px;
 }
+
+/* A4 Print Formatting — excludes modal chrome & dashboard background */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 15mm;
+  }
+
+  html,
+  body,
+  #root {
+    background: #ffffff !important;
+    color: #000000 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  header,
+  aside,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+
+  .print-modal-backdrop {
+    position: static !important;
+    inset: auto !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+  }
+
+  .print-modal-window {
+    position: static !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    max-height: none !important;
+    height: auto !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    transform: none !important;
+  }
+
+  #printable-surat-keterangan {
+    overflow: visible !important;
+    padding: 0 !important;
+    width: 100% !important;
+    color: #000000 !important;
+  }
+}

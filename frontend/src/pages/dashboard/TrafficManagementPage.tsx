@@ -6,9 +6,28 @@ import {
   createTrafficRecord,
   deleteTrafficRecord,
   fetchTrafficRecords,
+  fetchTrafficSummary,
   updateTrafficRecord,
   type TrafficRecord,
 } from '../../services/api';
+
+interface CommodityOption {
+  itemName: string;
+  category: 'HEWAN_HIDUP' | 'PRODUK_HEWAN' | 'OLAHAN_PRODUK_HEWAN';
+  unit: string;
+}
+
+const DEFAULT_COMMODITIES: CommodityOption[] = [
+  { itemName: 'Sapi Bali Bakalan', category: 'HEWAN_HIDUP', unit: 'ekor' },
+  { itemName: 'Sapi Bali Bibit', category: 'HEWAN_HIDUP', unit: 'ekor' },
+  { itemName: 'Kambing Kacang Betina', category: 'HEWAN_HIDUP', unit: 'ekor' },
+  { itemName: 'Babi Ternak', category: 'HEWAN_HIDUP', unit: 'ekor' },
+  { itemName: 'DOC Ayam Ras Pedaging', category: 'HEWAN_HIDUP', unit: 'ekor' },
+  { itemName: 'Telur Ayam Ras', category: 'PRODUK_HEWAN', unit: 'rak' },
+  { itemName: 'Daging Sapi Beku', category: 'PRODUK_HEWAN', unit: 'kg' },
+  { itemName: 'Daging Ayam Beku', category: 'PRODUK_HEWAN', unit: 'kg' },
+  { itemName: 'Sosis Daging Sapi & Ayam', category: 'OLAHAN_PRODUK_HEWAN', unit: 'karton' },
+];
 
 export const TrafficManagementPage: React.FC = () => {
   const { user } = useAuth();
@@ -28,11 +47,13 @@ export const TrafficManagementPage: React.FC = () => {
   const [viewingRecord, setViewingRecord] = useState<TrafficRecord | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [knownCommodities, setKnownCommodities] = useState<CommodityOption[]>(DEFAULT_COMMODITIES);
 
   // Lock background scroll when any modal is open
   useBodyScrollLock(isModalOpen || !!viewingRecord);
 
   // Form State
+  const [quantityInput, setQuantityInput] = useState<string>('1');
   const [formData, setFormData] = useState({
     recordNumber: '',
     trafficType: 'IMPORT' as 'IMPORT' | 'EXPORT',
@@ -53,16 +74,48 @@ export const TrafficManagementPage: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const res = await fetchTrafficRecords({
-        search,
-        category,
-        trafficType,
-        inspectionStatus,
-        page,
-      });
+      const [res, summaryRes] = await Promise.all([
+        fetchTrafficRecords({
+          search,
+          category,
+          trafficType,
+          inspectionStatus,
+          page,
+        }),
+        fetchTrafficSummary().catch(() => null),
+      ]);
       setRecords(res.data);
       setTotalPages(res.meta.totalPages || 1);
       setTotalCount(res.meta.total || 0);
+
+      const mergedMap = new Map<string, CommodityOption>();
+      for (const preset of DEFAULT_COMMODITIES) {
+        mergedMap.set(preset.itemName.toLowerCase(), preset);
+      }
+      if (summaryRes?.items) {
+        for (const item of summaryRes.items) {
+          const cat = (
+            item.category === 'HEWAN_HIDUP' ||
+            item.category === 'PRODUK_HEWAN' ||
+            item.category === 'OLAHAN_PRODUK_HEWAN'
+              ? item.category
+              : 'HEWAN_HIDUP'
+          ) as CommodityOption['category'];
+          mergedMap.set(item.itemName.toLowerCase(), {
+            itemName: item.itemName,
+            category: cat,
+            unit: item.unit,
+          });
+        }
+      }
+      for (const rec of res.data) {
+        mergedMap.set(rec.itemName.toLowerCase(), {
+          itemName: rec.itemName,
+          category: rec.category,
+          unit: rec.unit,
+        });
+      }
+      setKnownCommodities(Array.from(mergedMap.values()));
     } catch {
       setRecords([]);
     } finally {
@@ -76,6 +129,7 @@ export const TrafficManagementPage: React.FC = () => {
 
   const openCreateModal = () => {
     setEditingRecord(null);
+    setQuantityInput('');
     setFormData({
       recordNumber: `SKKH/MMK/${new Date().getFullYear()}/${Math.floor(1000 + Math.random() * 9000)}`,
       trafficType: 'IMPORT',
@@ -98,6 +152,7 @@ export const TrafficManagementPage: React.FC = () => {
 
   const openEditModal = (rec: TrafficRecord) => {
     setEditingRecord(rec);
+    setQuantityInput(String(rec.quantity));
     setFormData({
       recordNumber: rec.recordNumber,
       trafficType: rec.trafficType,
@@ -133,13 +188,21 @@ export const TrafficManagementPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setModalError(null);
+
+    const parsedQuantity = parseFloat(quantityInput);
+    if (Number.isNaN(parsedQuantity) || parsedQuantity <= 0) {
+      setModalError('Jumlah (Kuantitas) harus lebih besar dari 0');
+      return;
+    }
+
     setSubmitting(true);
+    const payload = { ...formData, quantity: parsedQuantity };
 
     try {
       if (editingRecord) {
-        await updateTrafficRecord(editingRecord.id, formData);
+        await updateTrafficRecord(editingRecord.id, payload);
       } else {
-        await createTrafficRecord(formData);
+        await createTrafficRecord(payload);
       }
       setIsModalOpen(false);
       loadData();
@@ -161,7 +224,7 @@ export const TrafficManagementPage: React.FC = () => {
       className="space-y-6"
     >
       {/* Title & Top Action Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#d0d7de] pb-4">
+      <div className="no-print flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#d0d7de] pb-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-[#1f2328] tracking-tight">
             Pemasukan, Pengeluaran &amp; Pemuktahiran Lalu Lintas Hewan
@@ -186,7 +249,7 @@ export const TrafficManagementPage: React.FC = () => {
       </div>
 
       {/* Quick Pillar Filter Tabs (Pemasukan / Pengeluaran / Semua) */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="no-print flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={() => {
@@ -232,7 +295,7 @@ export const TrafficManagementPage: React.FC = () => {
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-[#f6f8fa] p-3.5 border border-[#d0d7de]">
+      <div className="no-print grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-[#f6f8fa] p-3.5 border border-[#d0d7de]">
         <div>
           <label className="block text-xs font-semibold text-[#57606a] mb-1.5 uppercase tracking-wide">Cari Data</label>
           <input
@@ -299,7 +362,7 @@ export const TrafficManagementPage: React.FC = () => {
       </div>
 
       {/* Main Table with Responsive Horizontal Scroll */}
-      <div className="border border-[#d0d7de] overflow-hidden bg-white shadow-2xs">
+      <div className="no-print border border-[#d0d7de] overflow-hidden bg-white shadow-2xs">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[850px] text-left text-sm text-[#1f2328]">
             <thead className="bg-[#f6f8fa] border-b border-[#d0d7de] font-semibold text-[#57606a] text-xs uppercase tracking-wider">
@@ -465,8 +528,7 @@ export const TrafficManagementPage: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
-            onClick={() => setViewingRecord(null)}
+            className="print-modal-backdrop fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
             role="dialog"
             aria-modal="true"
           >
@@ -475,10 +537,10 @@ export const TrafficManagementPage: React.FC = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 10 }}
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-              className="bg-white border border-[#d0d7de] shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden"
+              className="print-modal-window bg-white border border-[#d0d7de] shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="px-5 py-3.5 border-b border-[#d0d7de] flex items-center justify-between bg-[#f6f8fa]">
+              <div className="no-print px-5 py-3.5 border-b border-[#d0d7de] flex items-center justify-between bg-[#f6f8fa]">
                 <h3 className="font-semibold text-sm sm:text-base text-[#1f2328]">
                   Rincian Surat Keterangan / Catatan Lalu Lintas
                 </h3>
@@ -488,7 +550,7 @@ export const TrafficManagementPage: React.FC = () => {
                     onClick={() => window.print()}
                     className="px-3 py-1.5 text-xs sm:text-sm font-semibold text-[#1f2328] bg-white border border-[#d0d7de] hover:bg-[#f6f8fa] shadow-2xs cursor-pointer"
                   >
-                    Cetak / Print
+                    Cetak / Print (A4)
                   </button>
                   <button
                     type="button"
@@ -501,7 +563,7 @@ export const TrafficManagementPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-5 sm:p-6 text-sm text-[#1f2328] space-y-4">
+              <div id="printable-surat-keterangan" className="flex-1 overflow-y-auto p-5 sm:p-6 text-sm text-[#1f2328] space-y-4">
                 {/* Kop Dinas Official Header */}
                 <div className="text-center border-b-2 border-black pb-3">
                   <div className="font-bold text-xs sm:text-sm uppercase tracking-wide">
@@ -522,7 +584,7 @@ export const TrafficManagementPage: React.FC = () => {
                   Nomor: {viewingRecord.recordNumber}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t border-[#d0d7de]">
+                <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-4 pt-3 border-t border-[#d0d7de]">
                   <div>
                     <div className="text-[#57606a] text-xs uppercase font-bold">Jenis Lalu Lintas:</div>
                     <div className="font-semibold text-sm sm:text-base mt-0.5">
@@ -583,7 +645,11 @@ export const TrafficManagementPage: React.FC = () => {
                           : 'bg-[#fff8c5] text-[#9a6700]'
                       }`}
                     >
-                      {viewingRecord.inspectionStatus}
+                      {viewingRecord.inspectionStatus === 'INSPECTED_PASS'
+                        ? 'Lulus (INSPECTED_PASS)'
+                        : viewingRecord.inspectionStatus === 'INSPECTED_REJECT'
+                        ? 'Ditolak (INSPECTED_REJECT)'
+                        : 'Menunggu (PENDING)'}
                     </span>
                   </div>
                   {viewingRecord.healthCertificateNo && (
@@ -598,9 +664,23 @@ export const TrafficManagementPage: React.FC = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Official Signature Footer (shown when printing A4) */}
+                <div className="hidden print:flex justify-end pt-10">
+                  <div className="text-center w-64 space-y-16 text-xs text-black">
+                    <div>
+                      <div>Timika, {viewingRecord.trafficDate}</div>
+                      <div className="font-bold mt-0.5">Pejabat Dokter Hewan Berwenang / Petugas</div>
+                      <div>Dinas Peternakan dan Kesehatan Hewan Kab. Mimika</div>
+                    </div>
+                    <div className="border-t border-black pt-1 font-semibold">
+                      Tanda Tangan &amp; Stempel Resmi
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="p-4 border-t border-[#d0d7de] bg-[#f6f8fa] flex justify-end">
+              <div className="no-print p-4 border-t border-[#d0d7de] bg-[#f6f8fa] flex justify-end">
                 <button
                   type="button"
                   onClick={() => setViewingRecord(null)}
@@ -622,8 +702,7 @@ export const TrafficManagementPage: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
-            onClick={() => setIsModalOpen(false)}
+            className="no-print fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
             role="dialog"
             aria-modal="true"
           >
@@ -723,17 +802,111 @@ export const TrafficManagementPage: React.FC = () => {
                     </select>
                   </div>
 
-                  <div className="sm:col-span-2">
-                    <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">Nama Komoditas</label>
-                    <input
-                      type="text"
-                      required
-                      disabled={isDoctor}
-                      value={formData.itemName}
-                      onChange={(e) => setFormData({ ...formData, itemName: e.target.value })}
-                      placeholder="misal: Sapi Bali Bakalan, Telur Ayam Ras, Daging Sapi Beku"
-                      className="w-full px-3 py-2 text-sm border border-[#d0d7de] disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                    />
+                  <div className="sm:col-span-2 space-y-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                      <label htmlFor="commodity-name-input" className="block font-semibold text-[#1f2328] text-xs uppercase tracking-wide">
+                        Nama Komoditas
+                      </label>
+                      <span className="text-[11px] text-[#57606a]">
+                        Pilih nama komoditas terdaftar agar seragam atau ketik nama baru
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <select
+                        disabled={isDoctor}
+                        aria-label="Pilih dari daftar komoditas terdaftar"
+                        value={
+                          knownCommodities.some((c) => c.itemName === formData.itemName)
+                            ? formData.itemName
+                            : '__CUSTOM__'
+                        }
+                        onChange={(e) => {
+                          const selectedName = e.target.value;
+                          if (selectedName === '__CUSTOM__') {
+                            return;
+                          }
+                          const matched = knownCommodities.find((c) => c.itemName === selectedName);
+                          if (matched) {
+                            setFormData({
+                              ...formData,
+                              itemName: matched.itemName,
+                              category: matched.category,
+                              unit: matched.unit,
+                            });
+                          }
+                        }}
+                        className="w-full px-3 py-2 text-sm border border-[#d0d7de] bg-[#f6f8fa] text-[#1f2328] disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                      >
+                        <option value="__CUSTOM__">-- Pilih Komoditas Terdaftar / Ketik Baru --</option>
+                        {knownCommodities.map((c) => (
+                          <option key={c.itemName} value={c.itemName}>
+                            {c.itemName} ({c.unit})
+                          </option>
+                        ))}
+                      </select>
+
+                      <input
+                        id="commodity-name-input"
+                        type="text"
+                        list="commodity-name-datalist"
+                        required
+                        disabled={isDoctor}
+                        value={formData.itemName}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const matched = knownCommodities.find(
+                            (c) => c.itemName.toLowerCase() === val.trim().toLowerCase()
+                          );
+                          if (matched) {
+                            setFormData({
+                              ...formData,
+                              itemName: matched.itemName,
+                              category: matched.category,
+                              unit: matched.unit,
+                            });
+                          } else {
+                            setFormData({ ...formData, itemName: val });
+                          }
+                        }}
+                        placeholder="Ketik nama komoditas baru atau pilih..."
+                        className="w-full px-3 py-2 text-sm border border-[#d0d7de] disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                      />
+                    </div>
+
+                    <datalist id="commodity-name-datalist">
+                      {knownCommodities.map((c) => (
+                        <option key={c.itemName} value={c.itemName} />
+                      ))}
+                    </datalist>
+
+                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5 text-xs text-[#57606a]">
+                      <span className="font-medium">Komoditas ({formData.category === 'HEWAN_HIDUP' ? 'Hewan Hidup' : formData.category === 'PRODUK_HEWAN' ? 'Produk Hewan' : 'Produk Olahan'}):</span>
+                      {knownCommodities
+                        .filter((c) => c.category === formData.category)
+                        .map((c) => (
+                          <button
+                            key={c.itemName}
+                            type="button"
+                            disabled={isDoctor}
+                            onClick={() =>
+                              setFormData({
+                                ...formData,
+                                itemName: c.itemName,
+                                category: c.category,
+                                unit: c.unit,
+                              })
+                            }
+                            className={`px-2 py-0.5 border text-xs transition-colors cursor-pointer ${
+                              formData.itemName === c.itemName
+                                ? 'bg-[#dafbe1] text-[#1a7f37] border-[#4ac26b] font-semibold'
+                                : 'bg-white text-[#57606a] border-[#d0d7de] hover:bg-[#f6f8fa] hover:text-[#0969da]'
+                            }`}
+                          >
+                            {c.itemName}
+                          </button>
+                        ))}
+                    </div>
                   </div>
 
                   <div>
@@ -744,8 +917,16 @@ export const TrafficManagementPage: React.FC = () => {
                       min="0.01"
                       required
                       disabled={isDoctor}
-                      value={formData.quantity}
-                      onChange={(e) => setFormData({ ...formData, quantity: parseFloat(e.target.value) || 0 })}
+                      placeholder="Masukkan jumlah (misal: 25)"
+                      value={quantityInput}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/^0+(?=\d)/, '');
+                        setQuantityInput(raw);
+                        const num = parseFloat(raw);
+                        if (!Number.isNaN(num)) {
+                          setFormData({ ...formData, quantity: num });
+                        }
+                      }}
                       className="w-full px-3 py-2 text-sm border border-[#d0d7de] disabled:bg-[#f6f8fa] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                     />
                   </div>

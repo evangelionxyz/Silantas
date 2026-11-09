@@ -47,14 +47,29 @@ export interface TrafficSummaryItem {
   recordCount: number;
 }
 
+export interface TrafficRouteSummaryItem {
+  trafficType: 'IMPORT' | 'EXPORT';
+  origin: string;
+  destination: string;
+  itemName: string;
+  category: string;
+  unit: string;
+  transportType: 'UDARA' | 'LAUT' | 'DARAT';
+  totalQuantity: number;
+  recordCount: number;
+}
+
 export interface TrafficSummaryResponse {
   items: TrafficSummaryItem[];
+  routes?: TrafficRouteSummaryItem[];
   overall: {
     totalRecords: number;
     totalImportQty: number;
     totalExportQty: number;
     totalCombinedQty: number;
     totalStorageQty?: number;
+    pendingRecords?: number;
+    rejectedRecords?: number;
   };
 }
 
@@ -127,6 +142,7 @@ export async function fetchTrafficRecords(params?: {
   trafficType?: string;
   inspectionStatus?: string;
   page?: number;
+  perPage?: number;
 }): Promise<{ data: TrafficRecord[]; meta: { total: number; page: number; totalPages: number } }> {
   const url = new URL(`${API_BASE}/api/traffic`);
   if (params?.search) url.searchParams.set('search', params.search);
@@ -134,6 +150,7 @@ export async function fetchTrafficRecords(params?: {
   if (params?.trafficType) url.searchParams.set('traffic_type', params.trafficType);
   if (params?.inspectionStatus) url.searchParams.set('inspection_status', params.inspectionStatus);
   if (params?.page) url.searchParams.set('page', params.page.toString());
+  if (params?.perPage) url.searchParams.set('per_page', params.perPage.toString());
 
   const res = await fetch(url.toString(), { headers: { ...getAuthHeader() } });
   if (!res.ok) throw new Error('Gagal mengambil data lalu lintas');

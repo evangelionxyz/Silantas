@@ -12,8 +12,8 @@ use crate::{
     appstate::AppState,
     db,
     models::traffic::{
-        CreateTrafficRequest, TrafficFilterParams, TrafficRecord, TrafficSummaryItem,
-        UpdateTrafficRequest,
+        CreateTrafficRequest, TrafficFilterParams, TrafficRecord, TrafficRouteSummaryItem,
+        TrafficSummaryItem, UpdateTrafficRequest,
     },
     services::{audit::record_audit_log, auth::extract_claims_from_headers},
 };
@@ -170,7 +170,7 @@ pub async fn get_traffic_summary_handler(
         }
     };
 
-    // Try reading from Upstash Redis cache first
+    // Try reading from in-node mini-redis cache first
     if let Some(ref redis) = state.redis {
         if let Ok(Some(cached_json)) = redis.get_json::<serde_json::Value>(SUMMARY_CACHE_KEY).await {
             return (StatusCode::OK, Json(cached_json));
@@ -188,22 +188,45 @@ pub async fn get_traffic_summary_handler(
             COALESCE(SUM(CASE WHEN traffic_type = 'IMPORT' THEN quantity ELSE 0 END) - SUM(CASE WHEN traffic_type = 'EXPORT' THEN quantity ELSE 0 END), 0)::double precision AS current_storage,
             COUNT(*) AS record_count
         FROM silantas.traffic_records
+        WHERE inspection_status = 'INSPECTED_PASS'
         GROUP BY item_name, category, unit
         ORDER BY category, item_name;"
     )
     .fetch_all(&state.pool)
     .await;
 
-    let overall = db::query_as::<sqlx::Postgres, (i64, Option<f64>, Option<f64>)>(
+    let route_items = db::query_as::<sqlx::Postgres, TrafficRouteSummaryItem>(
         "SELECT 
-            COUNT(*),
-            SUM(CASE WHEN traffic_type = 'IMPORT' THEN quantity ELSE 0 END)::double precision,
-            SUM(CASE WHEN traffic_type = 'EXPORT' THEN quantity ELSE 0 END)::double precision
+            traffic_type,
+            origin,
+            destination,
+            item_name,
+            category,
+            unit,
+            transport_type,
+            COALESCE(SUM(quantity), 0)::double precision AS total_quantity,
+            COUNT(*) AS record_count
+        FROM silantas.traffic_records
+        WHERE inspection_status = 'INSPECTED_PASS'
+        GROUP BY traffic_type, origin, destination, item_name, category, unit, transport_type
+        ORDER BY total_quantity DESC, record_count DESC;"
+    )
+    .fetch_all(&state.pool)
+    .await
+    .unwrap_or_default();
+
+    let overall = db::query_as::<sqlx::Postgres, (i64, Option<f64>, Option<f64>, i64, i64)>(
+        "SELECT 
+            COUNT(*) FILTER (WHERE inspection_status = 'INSPECTED_PASS'),
+            SUM(CASE WHEN traffic_type = 'IMPORT' AND inspection_status = 'INSPECTED_PASS' THEN quantity ELSE 0 END)::double precision,
+            SUM(CASE WHEN traffic_type = 'EXPORT' AND inspection_status = 'INSPECTED_PASS' THEN quantity ELSE 0 END)::double precision,
+            COUNT(*) FILTER (WHERE inspection_status = 'PENDING'),
+            COUNT(*) FILTER (WHERE inspection_status = 'INSPECTED_REJECT')
          FROM silantas.traffic_records;"
     )
     .fetch_one(&state.pool)
     .await
-    .unwrap_or((0, Some(0.0), Some(0.0)));
+    .unwrap_or((0, Some(0.0), Some(0.0), 0, 0));
 
     let import_qty = overall.1.unwrap_or(0.0);
     let export_qty = overall.2.unwrap_or(0.0);
@@ -212,12 +235,15 @@ pub async fn get_traffic_summary_handler(
         Ok(items) => {
             let response_payload = json!({
                 "items": items,
+                "routes": route_items,
                 "overall": {
                     "totalRecords": overall.0,
                     "totalImportQty": import_qty,
                     "totalExportQty": export_qty,
                     "totalCombinedQty": import_qty + export_qty,
-                    "totalStorageQty": import_qty - export_qty
+                    "totalStorageQty": import_qty - export_qty,
+                    "pendingRecords": overall.3,
+                    "rejectedRecords": overall.4
                 }
             });
 
