@@ -1,5 +1,6 @@
 pub mod audit;
 pub mod auth;
+pub mod backup;
 pub mod settings;
 pub mod traffic;
 pub mod users;
@@ -17,6 +18,7 @@ pub fn build_router(state: AppState) -> Router {
         .nest("/api/traffic", traffic::traffic_routes())
         .nest("/api/audit-logs", audit::audit_routes())
         .nest("/api/settings", settings::settings_routes())
+        .nest("/api/backup", backup::backup_routes())
         .with_state(state)
 }
 

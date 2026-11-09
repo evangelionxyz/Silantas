@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext';
 import { LoginPage } from './pages/auth/LoginPage';
 import { AuditLogsPage } from './pages/dashboard/AuditLogsPage';
 import { DashboardLayout } from './pages/dashboard/DashboardLayout';
+import { DatabaseBackupPage } from './pages/dashboard/DatabaseBackupPage';
 import { SettingsPage } from './pages/dashboard/SettingsPage';
 import { SummaryCalculationsPage } from './pages/dashboard/SummaryCalculationsPage';
 import { TrafficManagementPage } from './pages/dashboard/TrafficManagementPage';
@@ -38,6 +39,7 @@ function App() {
             <Route path="audit" element={<AuditLogsPage />} />
             <Route path="users" element={<UserManagementPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="backup" element={<DatabaseBackupPage />} />
           </Route>
 
           {/* Fallback */}

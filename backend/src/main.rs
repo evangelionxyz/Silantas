@@ -65,6 +65,13 @@ async fn main() -> anyhow::Result<()> {
         redis,
     };
 
+    // Spawn automated backup scheduler background task
+    let bg_pool = pool.clone();
+    let bg_config = config.clone();
+    tokio::spawn(async move {
+        services::backup::start_backup_scheduler(bg_pool, bg_config).await;
+    });
+
     let trace_layer = tower_http::trace::TraceLayer::new_for_http()
         .make_span_with(tower_http::trace::DefaultMakeSpan::new().level(tracing::Level::INFO))
         .on_request(tower_http::trace::DefaultOnRequest::new().level(tracing::Level::INFO))

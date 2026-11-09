@@ -267,3 +267,120 @@ export async function fetchAuditLogs(params?: {
   if (!res.ok) throw new Error('Gagal mengambil data log audit');
   return res.json();
 }
+
+export interface BackupConfig {
+  intervalDays: number;
+  autoEnabled: boolean;
+  retentionCount: number;
+  lastRun?: string;
+  lastStatus?: string;
+  nextRun?: string;
+}
+
+export interface BackupFileItem {
+  filename: string;
+  sizeBytes: number;
+  sizeDisplay: string;
+  createdAt: string;
+  triggerType: 'AUTO' | 'MANUAL';
+  checksumSha256: string;
+}
+
+export interface TableStatItem {
+  tableName: string;
+  estimatedRows: number;
+  totalSize: string;
+  tableSize: string;
+  indexSize: string;
+}
+
+export interface DatabaseStatusResponse {
+  databaseName: string;
+  databaseVersion: string;
+  databaseSize: string;
+  databaseSizeBytes: number;
+  activeConnections: number;
+  config: BackupConfig;
+  tables: TableStatItem[];
+  totalBackups: number;
+  totalBackupBytes: number;
+  totalBackupSizeDisplay: string;
+}
+
+export async function fetchBackupStatus(): Promise<DatabaseStatusResponse> {
+  const res = await fetch(`${API_BASE}/api/backup/status`, {
+    headers: { ...getAuthHeader() },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Gagal memuat status basis data');
+  }
+  return res.json();
+}
+
+export async function fetchBackupList(): Promise<BackupFileItem[]> {
+  const res = await fetch(`${API_BASE}/api/backup/list`, {
+    headers: { ...getAuthHeader() },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Gagal mengambil arsip berkas cadangan');
+  }
+  return res.json();
+}
+
+export async function createManualBackup(): Promise<{ message: string; file: BackupFileItem }> {
+  const res = await fetch(`${API_BASE}/api/backup/create`, {
+    method: 'POST',
+    headers: { ...getAuthHeader() },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Gagal membuat cadangan basis data');
+  return data;
+}
+
+export async function updateBackupConfig(payload: {
+  intervalDays?: number;
+  autoEnabled?: boolean;
+  retentionCount?: number;
+}): Promise<{ message: string; config: BackupConfig }> {
+  const res = await fetch(`${API_BASE}/api/backup/config`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Gagal memperbarui konfigurasi cadangan');
+  return data;
+}
+
+export async function deleteBackupFile(filename: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/backup/${encodeURIComponent(filename)}`, {
+    method: 'DELETE',
+    headers: { ...getAuthHeader() },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Gagal menghapus berkas cadangan');
+  }
+}
+
+export async function downloadBackupFile(filename: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/backup/download/${encodeURIComponent(filename)}`, {
+    headers: { ...getAuthHeader() },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Gagal mengunduh berkas cadangan');
+  }
+
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+}
