@@ -16,6 +16,17 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface TrafficAttachment {
+  id: string;
+  trafficId: string;
+  fileName: string;
+  filePath: string;
+  mimeType: string;
+  fileSize: number;
+  uploadedBy?: string;
+  createdAt: string;
+}
+
 export interface TrafficRecord {
   id: string;
   recordNumber: string;
@@ -34,6 +45,7 @@ export interface TrafficRecord {
   trafficDate: string;
   createdAt: string;
   updatedAt: string;
+  attachments?: TrafficAttachment[];
 }
 
 export interface TrafficSummaryItem {
@@ -194,6 +206,46 @@ export async function deleteTrafficRecord(id: string): Promise<void> {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Gagal menghapus data');
   }
+}
+
+export async function uploadTrafficAttachments(
+  trafficId: string,
+  files: File[]
+): Promise<TrafficAttachment[]> {
+  const formData = new FormData();
+  for (const file of files) {
+    formData.append('files', file);
+  }
+
+  const res = await fetch(`${API_BASE}/api/traffic/${trafficId}/attachments`, {
+    method: 'POST',
+    headers: { ...getAuthHeader() },
+    body: formData,
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Gagal mengunggah berkas lampiran');
+  return data;
+}
+
+export async function deleteTrafficAttachment(attachmentId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/traffic/attachments/${attachmentId}`, {
+    method: 'DELETE',
+    headers: { ...getAuthHeader() },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Gagal menghapus berkas lampiran');
+  }
+}
+
+export function getAttachmentFileUrl(attachmentId: string, download = false): string {
+  const token = localStorage.getItem('silantas_token');
+  const params = new URLSearchParams();
+  if (download) params.set('download', 'true');
+  if (token) params.set('token', token);
+  const qs = params.toString();
+  return `${API_BASE}/api/traffic/attachments/${attachmentId}${qs ? `?${qs}` : ''}`;
 }
 
 export async function fetchUsers(): Promise<User[]> {

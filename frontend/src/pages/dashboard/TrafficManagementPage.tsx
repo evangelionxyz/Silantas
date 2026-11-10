@@ -4,10 +4,14 @@ import { useAuth } from '../../context/AuthContext';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import {
   createTrafficRecord,
+  deleteTrafficAttachment,
   deleteTrafficRecord,
   fetchTrafficRecords,
   fetchTrafficSummary,
+  getAttachmentFileUrl,
   updateTrafficRecord,
+  uploadTrafficAttachments,
+  type TrafficAttachment,
   type TrafficRecord,
 } from '../../services/api';
 
@@ -49,8 +53,18 @@ export const TrafficManagementPage: React.FC = () => {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [knownCommodities, setKnownCommodities] = useState<CommodityOption[]>(DEFAULT_COMMODITIES);
 
+  // Attachment State
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [existingAttachments, setExistingAttachments] = useState<TrafficAttachment[]>([]);
+  const [deletingAttachmentId, setDeletingAttachmentId] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<{ url: string; title: string } | null>(null);
+
+  // Delete Confirmation Modal State
+  const [recordToDelete, setRecordToDelete] = useState<TrafficRecord | null>(null);
+  const [deletingRecord, setDeletingRecord] = useState<boolean>(false);
+
   // Lock background scroll when any modal is open
-  useBodyScrollLock(isModalOpen || !!viewingRecord);
+  useBodyScrollLock(isModalOpen || !!viewingRecord || !!previewImage || !!recordToDelete);
 
   // Form State
   const [quantityInput, setQuantityInput] = useState<string>('1');
@@ -146,12 +160,16 @@ export const TrafficManagementPage: React.FC = () => {
       notes: '',
       trafficDate: new Date().toISOString().split('T')[0],
     });
+    setSelectedFiles([]);
+    setExistingAttachments([]);
     setModalError(null);
     setIsModalOpen(true);
   };
 
   const openEditModal = (rec: TrafficRecord) => {
     setEditingRecord(rec);
+    setSelectedFiles([]);
+    setExistingAttachments(rec.attachments || []);
     setQuantityInput(String(rec.quantity));
     setFormData({
       recordNumber: rec.recordNumber,
@@ -173,15 +191,67 @@ export const TrafficManagementPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string, recordNum: string) => {
-    if (!window.confirm(`Yakin ingin menghapus catatan lalu lintas ${recordNum}? Tindakan ini akan tercatat di log audit.`)) {
-      return;
+  const handleFileSelection = (files: File[]) => {
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+    const maxSizeBytes = 10 * 1024 * 1024;
+    const valid: File[] = [];
+
+    for (const file of files) {
+      const lower = file.name.toLowerCase();
+      const isAllowedExt =
+        lower.endsWith('.pdf') ||
+        lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg') ||
+        lower.endsWith('.png') ||
+        lower.endsWith('.webp');
+
+      if (!allowedTypes.includes(file.type) && !isAllowedExt) {
+        alert(`Berkas "${file.name}" tidak didukung. Harap pilih berkas PDF atau Gambar (JPG, PNG, WEBP).`);
+        continue;
+      }
+      if (file.size > maxSizeBytes) {
+        alert(`Berkas "${file.name}" melebihi batas 10MB (${(file.size / (1024 * 1024)).toFixed(1)} MB).`);
+        continue;
+      }
+      valid.push(file);
     }
+
+    if (valid.length > 0) {
+      setSelectedFiles((prev) => [...prev, ...valid]);
+    }
+  };
+
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    if (!window.confirm('Hapus berkas lampiran ini? Tindakan ini tidak dapat dibatalkan.')) return;
     try {
-      await deleteTrafficRecord(id);
+      setDeletingAttachmentId(attachmentId);
+      await deleteTrafficAttachment(attachmentId);
+      setExistingAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+      if (editingRecord) {
+        setEditingRecord({
+          ...editingRecord,
+          attachments: (editingRecord.attachments || []).filter((a) => a.id !== attachmentId),
+        });
+      }
       loadData();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Gagal menghapus');
+      alert(err instanceof Error ? err.message : 'Gagal menghapus lampiran');
+    } finally {
+      setDeletingAttachmentId(null);
+    }
+  };
+
+  const confirmDeleteRecord = async () => {
+    if (!recordToDelete || deletingRecord) return;
+    setDeletingRecord(true);
+    try {
+      await deleteTrafficRecord(recordToDelete.id);
+      setRecordToDelete(null);
+      loadData();
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Gagal menghapus catatan lalu lintas');
+    } finally {
+      setDeletingRecord(false);
     }
   };
 
@@ -199,11 +269,18 @@ export const TrafficManagementPage: React.FC = () => {
     const payload = { ...formData, quantity: parsedQuantity };
 
     try {
+      let recordId = editingRecord?.id;
       if (editingRecord) {
         await updateTrafficRecord(editingRecord.id, payload);
       } else {
-        await createTrafficRecord(payload);
+        const created = await createTrafficRecord(payload);
+        recordId = created.id;
       }
+
+      if (recordId && selectedFiles.length > 0) {
+        await uploadTrafficAttachments(recordId, selectedFiles);
+      }
+
       setIsModalOpen(false);
       loadData();
     } catch (err: unknown) {
@@ -400,7 +477,17 @@ export const TrafficManagementPage: React.FC = () => {
                     <tr key={r.id} className="hover:bg-[#f6f8fa]/70 transition-colors">
                       <td className="py-3 px-3.5 font-mono text-xs">
                         <div className="font-semibold text-[#1f2328]">{r.trafficDate}</div>
-                        <div className="text-[#57606a] font-medium truncate max-w-[150px]">{r.recordNumber}</div>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[#57606a] font-medium truncate max-w-[130px]">{r.recordNumber}</span>
+                          {r.attachments && r.attachments.length > 0 && (
+                            <span
+                              title={`${r.attachments.length} berkas lampiran terlampir`}
+                              className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-[#ddf4ff] text-[#0969da] border border-[#54aeff]/40 shrink-0"
+                            >
+                              &#128206; {r.attachments.length}
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       <td className="py-3 px-3.5">
@@ -476,7 +563,7 @@ export const TrafficManagementPage: React.FC = () => {
                         {canCreate && (
                           <button
                             type="button"
-                            onClick={() => handleDelete(r.id, r.recordNumber)}
+                            onClick={() => setRecordToDelete(r)}
                             className="text-xs text-[#cf222e] hover:underline font-semibold cursor-pointer"
                           >
                             Hapus
@@ -664,6 +751,113 @@ export const TrafficManagementPage: React.FC = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Dokumen & Lampiran Bukti Pendukung (Screen View with Action Buttons) */}
+                <div className="print:hidden p-3.5 bg-white border border-[#d0d7de] space-y-2 mt-4">
+                  <div className="flex items-center justify-between">
+                    <div className="font-semibold text-sm text-[#1f2328] flex items-center gap-1.5">
+                      <span>Dokumen &amp; Lampiran Pendukung</span>
+                      {viewingRecord.attachments && viewingRecord.attachments.length > 0 && (
+                        <span className="px-2 py-0.5 text-xs bg-[#ddf4ff] text-[#0969da] rounded-full font-semibold">
+                          {viewingRecord.attachments.length} berkas
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {(!viewingRecord.attachments || viewingRecord.attachments.length === 0) ? (
+                    <div className="text-xs text-[#57606a] italic py-2">
+                      Tidak ada dokumen atau foto yang dilampirkan pada catatan ini.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                      {viewingRecord.attachments.map((att) => {
+                        const isPdf = att.mimeType === 'application/pdf' || att.fileName.toLowerCase().endsWith('.pdf');
+                        const fileUrl = getAttachmentFileUrl(att.id, false);
+                        const downloadUrl = getAttachmentFileUrl(att.id, true);
+                        const sizeStr = (att.fileSize / 1024).toFixed(1) + ' KB';
+
+                        return (
+                          <div
+                            key={att.id}
+                            className="flex items-center justify-between p-2.5 border border-[#d0d7de] bg-[#f6f8fa] hover:bg-[#f3f4f6] transition-colors"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                              {isPdf ? (
+                                <div className="w-8 h-8 rounded bg-[#ffebe9] text-[#cf222e] flex items-center justify-center font-bold text-[11px] shrink-0 border border-[#ff8182]/40">
+                                  PDF
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewImage({ url: fileUrl, title: att.fileName })}
+                                  className="w-8 h-8 rounded bg-white border border-[#d0d7de] overflow-hidden shrink-0 cursor-pointer hover:opacity-80"
+                                >
+                                  <img
+                                    src={fileUrl}
+                                    alt={att.fileName}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </button>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <div className="text-xs font-semibold text-[#1f2328] truncate" title={att.fileName}>
+                                  {att.fileName}
+                                </div>
+                                <div className="text-[11px] text-[#57606a]">{sizeStr}</div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 ml-2 shrink-0">
+                              {isPdf ? (
+                                <a
+                                  href={fileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-2 py-1 text-xs bg-white border border-[#d0d7de] hover:border-[#0969da] hover:text-[#0969da] font-medium transition-colors cursor-pointer"
+                                >
+                                  Lihat
+                                </a>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewImage({ url: fileUrl, title: att.fileName })}
+                                  className="px-2 py-1 text-xs bg-white border border-[#d0d7de] hover:border-[#0969da] hover:text-[#0969da] font-medium transition-colors cursor-pointer"
+                                >
+                                  Lihat
+                                </button>
+                              )}
+                              <a
+                                href={downloadUrl}
+                                download={att.fileName}
+                                className="px-2 py-1 text-xs bg-white border border-[#d0d7de] hover:border-[#1a7f37] hover:text-[#1a7f37] font-medium transition-colors cursor-pointer"
+                                title="Unduh berkas"
+                              >
+                                Unduh
+                              </a>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Dokumen & Lampiran Bukti Pendukung (A4 Official Print View: Nama Berkas Saja) */}
+                {viewingRecord.attachments && viewingRecord.attachments.length > 0 && (
+                  <div className="hidden print:block p-3 border border-black mt-3 text-xs text-black">
+                    <div className="font-bold uppercase mb-1">
+                      Lampiran Dokumen Pendukung ({viewingRecord.attachments.length} berkas):
+                    </div>
+                    <ol className="list-decimal list-inside space-y-0.5 font-medium">
+                      {viewingRecord.attachments.map((a) => (
+                        <li key={a.id} className="font-mono text-[11px]">
+                          {a.fileName}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
 
                 {/* Official Signature Footer (shown when printing A4) */}
                 <div className="hidden print:flex justify-end pt-10">
@@ -1054,6 +1248,162 @@ export const TrafficManagementPage: React.FC = () => {
                       className="w-full px-3 py-2 text-sm border border-[#d0d7de] bg-white text-[#1f2328] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                     />
                   </div>
+
+                  {/* File Attachments Section */}
+                  <div className="sm:col-span-2 space-y-3 pt-3 border-t border-[#d0d7de]">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                      <label className="block font-semibold text-[#1f2328] text-xs uppercase tracking-wide">
+                        Lampiran Dokumen &amp; Foto (SKKH / Surat Karantina / Foto Pemeriksaan)
+                      </label>
+                      <span className="text-[11px] text-[#57606a]">
+                        Maks. 10MB per berkas (PDF, JPG, PNG, WEBP)
+                      </span>
+                    </div>
+
+                    {/* Existing Attachments when Editing */}
+                    {editingRecord && existingAttachments.length > 0 && (
+                      <div className="space-y-1.5 mb-2">
+                        <div className="text-xs font-semibold text-[#57606a]">Berkas terunggah:</div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {existingAttachments.map((att) => {
+                            const isPdf = att.mimeType === 'application/pdf' || att.fileName.toLowerCase().endsWith('.pdf');
+                            const fileUrl = getAttachmentFileUrl(att.id, false);
+                            return (
+                              <div
+                                key={att.id}
+                                className="flex items-center justify-between p-2 border border-[#d0d7de] bg-[#f6f8fa] text-xs"
+                              >
+                                <div className="flex items-center gap-2 truncate flex-1 min-w-0 mr-2">
+                                  <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded ${isPdf ? 'bg-[#ffebe9] text-[#cf222e]' : 'bg-[#ddf4ff] text-[#0969da]'}`}>
+                                    {isPdf ? 'PDF' : 'IMG'}
+                                  </span>
+                                  <span className="truncate font-medium text-[#1f2328]" title={att.fileName}>
+                                    {att.fileName}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  {isPdf ? (
+                                    <a
+                                      href={fileUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-[#0969da] hover:underline"
+                                    >
+                                      Buka
+                                    </a>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => setPreviewImage({ url: fileUrl, title: att.fileName })}
+                                      className="text-[#0969da] hover:underline cursor-pointer"
+                                    >
+                                      Lihat
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    disabled={deletingAttachmentId === att.id}
+                                    onClick={() => handleDeleteAttachment(att.id)}
+                                    className="text-[#cf222e] hover:underline disabled:opacity-50 ml-1 cursor-pointer"
+                                    title="Hapus berkas ini"
+                                  >
+                                    {deletingAttachmentId === att.id ? '...' : 'Hapus'}
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Drag and Drop / File Input Zone */}
+                    <div
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                          handleFileSelection(Array.from(e.dataTransfer.files));
+                        }
+                      }}
+                      className="border-2 border-dashed border-[#d0d7de] hover:border-[#0969da] bg-[#f6f8fa] hover:bg-[#ddf4ff]/10 transition-colors p-4 text-center cursor-pointer relative"
+                    >
+                      <input
+                        type="file"
+                        multiple
+                        accept=".pdf,image/jpeg,image/png,image/webp"
+                        id="traffic-attachments-input"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files.length > 0) {
+                            handleFileSelection(Array.from(e.target.files));
+                            e.target.value = '';
+                          }
+                        }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      <div className="flex flex-col items-center justify-center gap-1 pointer-events-none">
+                        <div className="text-xl text-[#57606a]">&#128196;</div>
+                        <div className="text-xs font-semibold text-[#1f2328]">
+                          Tarik &amp; lepas berkas ke sini, atau <span className="text-[#0969da] underline">pilih dari perangkat</span>
+                        </div>
+                        <div className="text-[11px] text-[#57606a]">
+                          Pilih PDF atau Foto (JPG/PNG/WEBP). Bisa memilih lebih dari 1 berkas.
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* New Selected Files List */}
+                    {selectedFiles.length > 0 && (
+                      <div className="space-y-1.5 pt-1">
+                        <div className="text-xs font-semibold text-[#1a7f37] flex items-center justify-between">
+                          <span>{selectedFiles.length} berkas baru akan diunggah:</span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedFiles([])}
+                            className="text-[11px] text-[#cf222e] hover:underline cursor-pointer"
+                          >
+                            Hapus Semua
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {selectedFiles.map((file, idx) => {
+                            const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+                            const sizeStr = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+                            return (
+                              <div
+                                key={idx}
+                                className="flex items-center justify-between p-2 border border-[#4ac26b]/50 bg-[#dafbe1]/30 text-xs"
+                              >
+                                <div className="flex items-center gap-2 truncate flex-1 min-w-0 mr-2">
+                                  <span className={`px-1.5 py-0.5 text-[10px] font-bold rounded ${isPdf ? 'bg-[#ffebe9] text-[#cf222e]' : 'bg-[#ddf4ff] text-[#0969da]'}`}>
+                                    {isPdf ? 'PDF' : 'IMG'}
+                                  </span>
+                                  <div className="truncate">
+                                    <div className="font-semibold text-[#1f2328] truncate" title={file.name}>
+                                      {file.name}
+                                    </div>
+                                    <div className="text-[10px] text-[#57606a]">{sizeStr}</div>
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedFiles((prev) => prev.filter((_, i) => i !== idx))}
+                                  className="text-[#cf222e] hover:text-[#a40e26] font-bold text-sm px-1.5 cursor-pointer"
+                                  title="Batalkan berkas ini"
+                                >
+                                  &times;
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="pt-4 border-t border-[#d0d7de] flex justify-end gap-3">
@@ -1073,6 +1423,155 @@ export const TrafficManagementPage: React.FC = () => {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Image Lightbox Modal */}
+      <AnimatePresence>
+        {previewImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="no-print fixed inset-0 z-60 bg-black/80 flex items-center justify-center p-4 backdrop-blur-xs"
+            onClick={() => setPreviewImage(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-4xl max-h-[90vh] bg-white shadow-2xl flex flex-col overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="px-4 py-2.5 bg-[#f6f8fa] border-b border-[#d0d7de] flex items-center justify-between">
+                <span className="font-semibold text-xs text-[#1f2328] truncate max-w-[80%]">
+                  {previewImage.title}
+                </span>
+                <div className="flex items-center gap-3">
+                  <a
+                    href={previewImage.url + (previewImage.url.includes('?') ? '&' : '?') + 'download=true'}
+                    download={previewImage.title}
+                    className="text-xs text-[#0969da] hover:underline font-medium"
+                  >
+                    Unduh
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewImage(null)}
+                    className="text-[#57606a] hover:text-[#1f2328] text-lg leading-none cursor-pointer"
+                    aria-label="Tutup Pratinjau Gambar"
+                  >
+                    &times;
+                  </button>
+                </div>
+              </div>
+              <div className="p-3 flex items-center justify-center bg-black/5 overflow-auto max-h-[80vh]">
+                <img
+                  src={previewImage.url}
+                  alt={previewImage.title}
+                  className="max-h-[75vh] w-auto object-contain mx-auto border border-[#d0d7de]"
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Record Confirmation Modal */}
+      <AnimatePresence>
+        {recordToDelete && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="no-print fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
+            role="dialog"
+            aria-modal="true"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              className="bg-white border border-[#d0d7de] shadow-2xl max-w-md w-full p-5 sm:p-6 space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start gap-3.5">
+                <div className="p-2.5 bg-[#ffebe9] border border-[#ff8182]/40 rounded-full shrink-0 text-[#cf222e]">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-[#1f2328]">Hapus Catatan Lalu Lintas?</h3>
+                  <p className="text-xs text-[#57606a] mt-0.5">
+                    Tindakan ini permanen dan akan dicatat secara otomatis dalam log audit sistem.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-[#f6f8fa] border border-[#d0d7de] space-y-1.5 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-[#57606a]">Nomor Dokumen:</span>
+                  <span className="font-mono font-bold text-[#1f2328]">{recordToDelete.recordNumber}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#57606a]">Komoditas:</span>
+                  <span className="font-semibold text-[#1f2328]">
+                    {recordToDelete.itemName} ({recordToDelete.quantity.toLocaleString('id-ID')} {recordToDelete.unit})
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#57606a]">Rute &amp; Moda:</span>
+                  <span className="text-[#1f2328]">
+                    {recordToDelete.origin} &rarr; {recordToDelete.destination} ({recordToDelete.transportType})
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#57606a]">Tanggal:</span>
+                  <span className="text-[#1f2328]">{recordToDelete.trafficDate}</span>
+                </div>
+                {recordToDelete.attachments && recordToDelete.attachments.length > 0 && (
+                  <div className="pt-1.5 border-t border-[#d0d7de] text-[11px] text-[#cf222e] flex items-center gap-1 font-medium">
+                    <span>&#9888;</span>
+                    <span>{recordToDelete.attachments.length} berkas fisik lampiran di server akan ikut terhapus.</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  disabled={deletingRecord}
+                  onClick={() => setRecordToDelete(null)}
+                  className="px-4 py-2 border border-[#d0d7de] text-xs font-semibold text-[#1f2328] hover:bg-[#f6f8fa] transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  disabled={deletingRecord}
+                  onClick={confirmDeleteRecord}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#cf222e] hover:bg-[#a40e26] transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
+                >
+                  {deletingRecord ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Menghapus...</span>
+                    </>
+                  ) : (
+                    <span>Ya, Hapus Catatan</span>
+                  )}
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}

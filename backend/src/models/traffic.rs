@@ -24,6 +24,22 @@ pub struct TrafficRecord {
     pub traffic_date: NaiveDate,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    #[sqlx(skip)]
+    #[serde(default)]
+    pub attachments: Vec<TrafficAttachment>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct TrafficAttachment {
+    pub id: Uuid,
+    pub traffic_id: Uuid,
+    pub file_name: String,
+    pub file_path: String,
+    pub mime_type: String,
+    pub file_size: i64,
+    pub uploaded_by: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Deserialize)]

@@ -46,6 +46,20 @@ CREATE INDEX IF NOT EXISTS idx_traffic_type ON silantas.traffic_records(traffic_
 CREATE INDEX IF NOT EXISTS idx_traffic_category ON silantas.traffic_records(category);
 CREATE INDEX IF NOT EXISTS idx_traffic_item_name ON silantas.traffic_records(item_name);
 
+-- Traffic attachments table (PDF & Images supporting documents)
+CREATE TABLE IF NOT EXISTS silantas.traffic_attachments (
+	id UUID PRIMARY KEY,
+	traffic_id UUID NOT NULL REFERENCES silantas.traffic_records(id) ON DELETE CASCADE,
+	file_name VARCHAR(255) NOT NULL,
+	file_path VARCHAR(500) NOT NULL,
+	mime_type VARCHAR(100) NOT NULL,
+	file_size BIGINT NOT NULL,
+	uploaded_by UUID REFERENCES silantas.users(id),
+	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_traffic_attachments_traffic_id ON silantas.traffic_attachments(traffic_id);
+
 -- Audit logs table
 CREATE TABLE IF NOT EXISTS silantas.audit_logs (
 	id UUID PRIMARY KEY,

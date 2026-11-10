@@ -1,10 +1,16 @@
+use std::collections::HashMap;
+use std::path::PathBuf;
+use tokio::io::AsyncWriteExt;
+
 use axum::{
-    extract::{Path, Query, State},
-    http::{HeaderMap, StatusCode},
-    response::IntoResponse,
-    routing::get,
+    body::Body,
+    extract::{DefaultBodyLimit, Multipart, Path, Query, State},
+    http::{header, HeaderMap, StatusCode},
+    response::{IntoResponse, Response},
+    routing::{get, post},
     Json, Router,
 };
+use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
 
@@ -12,13 +18,26 @@ use crate::{
     appstate::AppState,
     db,
     models::traffic::{
-        CreateTrafficRequest, TrafficFilterParams, TrafficRecord, TrafficRouteSummaryItem,
-        TrafficSummaryItem, UpdateTrafficRequest,
+        CreateTrafficRequest, TrafficAttachment, TrafficFilterParams, TrafficRecord,
+        TrafficRouteSummaryItem, TrafficSummaryItem, UpdateTrafficRequest,
     },
-    services::{audit::record_audit_log, auth::extract_claims_from_headers},
+    services::{
+        audit::record_audit_log,
+        auth::{extract_claims_from_headers, verify_jwt},
+    },
 };
 
 const SUMMARY_CACHE_KEY: &str = "silantas:cache:traffic_summary";
+const UPLOADS_DIR: &str = "./uploads/traffic_attachments";
+
+pub fn get_uploads_dir() -> PathBuf {
+    let dir = std::env::var("TRAFFIC_ATTACHMENT_DIR").unwrap_or_else(|_| UPLOADS_DIR.to_string());
+    let path = PathBuf::from(dir);
+    if !path.exists() {
+        let _ = std::fs::create_dir_all(&path);
+    }
+    path
+}
 
 async fn invalidate_summary_cache(state: &AppState) {
     if let Some(ref redis) = state.redis {
@@ -38,6 +57,13 @@ pub fn traffic_routes() -> Router<AppState> {
                 .put(update_traffic_handler)
                 .delete(delete_traffic_handler),
         )
+        .route(
+            "/{id}/attachments",
+            post(upload_attachments_handler)
+                .layer(DefaultBodyLimit::max(100 * 1024 * 1024))
+                .get(list_attachments_handler),
+        )
+        .route("/attachments/{id}", get(get_attachment_file_handler).delete(delete_attachment_handler))
 }
 
 pub async fn list_traffic_handler(
@@ -125,7 +151,29 @@ pub async fn list_traffic_handler(
         .await;
 
     match records {
-        Ok(items) => {
+        Ok(mut items) => {
+            let record_ids: Vec<Uuid> = items.iter().map(|r| r.id).collect();
+            if !record_ids.is_empty() {
+                if let Ok(attachments) = db::query_as::<sqlx::Postgres, TrafficAttachment>(
+                    "SELECT id, traffic_id, file_name, file_path, mime_type, file_size, uploaded_by, created_at
+                     FROM silantas.traffic_attachments WHERE traffic_id = ANY($1) ORDER BY created_at ASC;"
+                )
+                .bind(&record_ids)
+                .fetch_all(&state.pool)
+                .await
+                {
+                    let mut att_map: HashMap<Uuid, Vec<TrafficAttachment>> = HashMap::new();
+                    for att in attachments {
+                        att_map.entry(att.traffic_id).or_default().push(att);
+                    }
+                    for item in &mut items {
+                        if let Some(atts) = att_map.remove(&item.id) {
+                            item.attachments = atts;
+                        }
+                    }
+                }
+            }
+
             let count_record = db::query_scalar::<sqlx::Postgres, i64>(
                 "SELECT COUNT(*) FROM silantas.traffic_records;"
             )
@@ -291,7 +339,19 @@ pub async fn get_traffic_handler(
     .await;
 
     match record {
-        Ok(Some(r)) => (StatusCode::OK, Json(json!(r))),
+        Ok(Some(mut r)) => {
+            let attachments = db::query_as::<sqlx::Postgres, TrafficAttachment>(
+                "SELECT id, traffic_id, file_name, file_path, mime_type, file_size, uploaded_by, created_at
+                 FROM silantas.traffic_attachments WHERE traffic_id = $1 ORDER BY created_at ASC;"
+            )
+            .bind(r.id)
+            .fetch_all(&state.pool)
+            .await
+            .unwrap_or_default();
+
+            r.attachments = attachments;
+            (StatusCode::OK, Json(json!(r)))
+        }
         Ok(None) => (
             StatusCode::NOT_FOUND,
             Json(json!({ "message": "Data tidak ditemukan", "code": "NOT_FOUND" })),
@@ -405,6 +465,7 @@ pub async fn create_traffic_handler(
         traffic_date,
         created_at: now,
         updated_at: now,
+        attachments: vec![],
     };
 
     invalidate_summary_cache(&state).await;
@@ -527,6 +588,15 @@ pub async fn update_traffic_handler(
     )
     .await;
 
+    let attachments = db::query_as::<sqlx::Postgres, TrafficAttachment>(
+        "SELECT id, traffic_id, file_name, file_path, mime_type, file_size, uploaded_by, created_at
+         FROM silantas.traffic_attachments WHERE traffic_id = $1 ORDER BY created_at ASC;"
+    )
+    .bind(id)
+    .fetch_all(&state.pool)
+    .await
+    .unwrap_or_default();
+
     let updated = TrafficRecord {
         id,
         record_number,
@@ -546,6 +616,7 @@ pub async fn update_traffic_handler(
         traffic_date,
         created_at: current.created_at,
         updated_at: now,
+        attachments,
     };
 
     invalidate_summary_cache(&state).await;
@@ -575,6 +646,16 @@ pub async fn delete_traffic_handler(
         );
     }
 
+    // Fetch attachments so we can delete their physical files from disk
+    let attachments = db::query_as::<sqlx::Postgres, TrafficAttachment>(
+        "SELECT id, traffic_id, file_name, file_path, mime_type, file_size, uploaded_by, created_at
+         FROM silantas.traffic_attachments WHERE traffic_id = $1;"
+    )
+    .bind(id)
+    .fetch_all(&state.pool)
+    .await
+    .unwrap_or_default();
+
     let del_res = db::query("DELETE FROM silantas.traffic_records WHERE id = $1;")
         .bind(id)
         .execute(&state.pool)
@@ -582,6 +663,14 @@ pub async fn delete_traffic_handler(
 
     match del_res {
         Ok(res) if res.rows_affected() > 0 => {
+            let uploads_dir = get_uploads_dir();
+            for att in attachments {
+                if let Some(file_name) = std::path::Path::new(&att.file_path).file_name() {
+                    let full_path = uploads_dir.join(file_name);
+                    let _ = tokio::fs::remove_file(full_path).await;
+                }
+            }
+
             record_audit_log(
                 &state.pool,
                 Uuid::parse_str(&claims.sub).ok(),
@@ -611,4 +700,452 @@ pub async fn delete_traffic_handler(
             )
         }
     }
+}
+
+pub async fn upload_attachments_handler(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(traffic_id): Path<Uuid>,
+    mut multipart: Multipart,
+) -> impl IntoResponse {
+    let claims = match extract_claims_from_headers(&headers, &state.config.jwt_secret) {
+        Ok(c) => c,
+        Err(code) => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(json!({ "message": "Otorisasi tidak valid", "code": code })),
+            )
+                .into_response();
+        }
+    };
+
+    if claims.role == "pimpinan" {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({ "message": "Pimpinan memiliki akses baca-saja", "code": "FORBIDDEN" })),
+        )
+            .into_response();
+    }
+
+    // Check if traffic record exists
+    let record_exists = db::query_scalar::<sqlx::Postgres, i64>(
+        "SELECT COUNT(*) FROM silantas.traffic_records WHERE id = $1;"
+    )
+    .bind(traffic_id)
+    .fetch_one(&state.pool)
+    .await
+    .unwrap_or(0);
+
+    if record_exists == 0 {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(json!({ "message": "Data lalu lintas tidak ditemukan", "code": "NOT_FOUND" })),
+        )
+            .into_response();
+    }
+
+    let uploads_dir = get_uploads_dir();
+    let mut saved_attachments: Vec<TrafficAttachment> = Vec::new();
+    let user_id = Uuid::parse_str(&claims.sub).ok();
+
+    // 10MB per file limit
+    const MAX_FILE_SIZE: usize = 10 * 1024 * 1024;
+
+    while let Some(mut field) = match multipart.next_field().await {
+        Ok(f) => f,
+        Err(e) => {
+            tracing::error!("Failed to parse multipart field: {e}");
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "message": format!("Gagal memproses form berkas: {e}"),
+                    "code": "MULTIPART_ERROR"
+                })),
+            )
+                .into_response();
+        }
+    } {
+        let field_name = field.name().unwrap_or_default().to_string();
+        if field_name != "files" && field_name != "attachments" && field_name != "file" {
+            continue;
+        }
+
+        let raw_filename = field.file_name().unwrap_or("document").to_string();
+        let content_type = field.content_type().unwrap_or("application/octet-stream").to_string();
+
+        let ext = match content_type.as_str() {
+            "application/pdf" => "pdf",
+            "image/jpeg" | "image/jpg" => "jpg",
+            "image/png" => "png",
+            "image/webp" => "webp",
+            _ => {
+                let lower = raw_filename.to_lowercase();
+                if lower.ends_with(".pdf") {
+                    "pdf"
+                } else if lower.ends_with(".jpg") || lower.ends_with(".jpeg") {
+                    "jpg"
+                } else if lower.ends_with(".png") {
+                    "png"
+                } else if lower.ends_with(".webp") {
+                    "webp"
+                } else {
+                    return (
+                        StatusCode::BAD_REQUEST,
+                        Json(json!({
+                            "message": format!("Tipe berkas tidak didukung: {raw_filename}. Hanya PDF dan Gambar (JPG/PNG/WEBP) yang diperbolehkan."),
+                            "code": "INVALID_FILE_TYPE"
+                        })),
+                    )
+                        .into_response();
+                }
+            }
+        };
+
+        let mime = match ext {
+            "pdf" => "application/pdf",
+            "jpg" => "image/jpeg",
+            "png" => "image/png",
+            "webp" => "image/webp",
+            _ => "application/octet-stream",
+        };
+
+        let attachment_id = Uuid::new_v4();
+        let stored_filename = format!("{}.{}", attachment_id, ext);
+        let dest_path = uploads_dir.join(&stored_filename);
+
+        let mut file = match tokio::fs::File::create(&dest_path).await {
+            Ok(f) => f,
+            Err(e) => {
+                tracing::error!("Failed to create destination file {}: {e}", dest_path.display());
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "message": "Gagal mempersiapkan berkas di server", "code": "IO_ERROR" })),
+                )
+                    .into_response();
+            }
+        };
+
+        let mut file_size: i64 = 0;
+        let mut stream_err: Option<String> = None;
+
+        loop {
+            match field.chunk().await {
+                Ok(Some(chunk)) => {
+                    file_size += chunk.len() as i64;
+                    if file_size > MAX_FILE_SIZE as i64 {
+                        stream_err = Some(format!("Ukuran berkas {} melebihi batas 10MB", raw_filename));
+                        break;
+                    }
+                    if let Err(e) = file.write_all(&chunk).await {
+                        tracing::error!("Failed to write chunk: {e}");
+                        stream_err = Some("Gagal menulis data berkas ke penyimpanan server".to_string());
+                        break;
+                    }
+                }
+                Ok(None) => break,
+                Err(e) => {
+                    tracing::error!("Failed to stream multipart chunk: {e}");
+                    stream_err = Some(format!("Gagal membaca konten berkas: {e}"));
+                    break;
+                }
+            }
+        }
+
+        if let Some(err_msg) = stream_err {
+            let _ = tokio::fs::remove_file(&dest_path).await;
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({ "message": err_msg, "code": "UPLOAD_ERROR" })),
+            )
+                .into_response();
+        }
+
+        if let Err(e) = file.flush().await {
+            tracing::error!("Failed to flush file: {e}");
+            let _ = tokio::fs::remove_file(&dest_path).await;
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "message": "Gagal menyimpan berkas ke server", "code": "IO_ERROR" })),
+            )
+                .into_response();
+        }
+
+        if file_size == 0 {
+            let _ = tokio::fs::remove_file(&dest_path).await;
+            continue;
+        }
+
+        let now = chrono::Utc::now();
+        let relative_path = format!("uploads/traffic_attachments/{}", stored_filename);
+
+        let insert_res = db::query(
+            "INSERT INTO silantas.traffic_attachments (id, traffic_id, file_name, file_path, mime_type, file_size, uploaded_by, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8);"
+        )
+        .bind(attachment_id)
+        .bind(traffic_id)
+        .bind(&raw_filename)
+        .bind(&relative_path)
+        .bind(mime)
+        .bind(file_size)
+        .bind(user_id)
+        .bind(now)
+        .execute(&state.pool)
+        .await;
+
+        if let Err(e) = insert_res {
+            tracing::error!("Failed to save attachment metadata: {e}");
+            let _ = tokio::fs::remove_file(&dest_path).await;
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "message": "Gagal menyimpan metadata lampiran ke database", "code": "DB_ERROR" })),
+            )
+                .into_response();
+        }
+
+        saved_attachments.push(TrafficAttachment {
+            id: attachment_id,
+            traffic_id,
+            file_name: raw_filename,
+            file_path: relative_path,
+            mime_type: mime.to_string(),
+            file_size,
+            uploaded_by: user_id,
+            created_at: now,
+        });
+    }
+
+    if !saved_attachments.is_empty() {
+        record_audit_log(
+            &state.pool,
+            user_id,
+            &claims.sub,
+            &claims.role,
+            "UPLOAD",
+            "TRAFFIC_ATTACHMENT",
+            Some(&traffic_id.to_string()),
+            &format!("Mengunggah {} berkas lampiran pendukung", saved_attachments.len()),
+            Some(json!({ "trafficId": traffic_id, "count": saved_attachments.len() })),
+        )
+        .await;
+    }
+
+    (StatusCode::CREATED, Json(json!(saved_attachments))).into_response()
+}
+
+pub async fn list_attachments_handler(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(traffic_id): Path<Uuid>,
+) -> impl IntoResponse {
+    let _claims = match extract_claims_from_headers(&headers, &state.config.jwt_secret) {
+        Ok(c) => c,
+        Err(code) => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(json!({ "message": "Otorisasi tidak valid", "code": code })),
+            );
+        }
+    };
+
+    let attachments = db::query_as::<sqlx::Postgres, TrafficAttachment>(
+        "SELECT id, traffic_id, file_name, file_path, mime_type, file_size, uploaded_by, created_at
+         FROM silantas.traffic_attachments WHERE traffic_id = $1 ORDER BY created_at ASC;"
+    )
+    .bind(traffic_id)
+    .fetch_all(&state.pool)
+    .await
+    .unwrap_or_default();
+
+    (StatusCode::OK, Json(json!(attachments)))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AttachmentQuery {
+    pub download: Option<bool>,
+    pub token: Option<String>,
+}
+
+pub async fn get_attachment_file_handler(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<Uuid>,
+    Query(query): Query<AttachmentQuery>,
+) -> Response {
+    let claims = match extract_claims_from_headers(&headers, &state.config.jwt_secret) {
+        Ok(c) => Ok(c),
+        Err(e) => {
+            if let Some(tok) = &query.token {
+                verify_jwt(tok, &state.config.jwt_secret).map_err(|_| e)
+            } else {
+                Err(e)
+            }
+        }
+    };
+
+    if claims.is_err() {
+        return (
+            StatusCode::UNAUTHORIZED,
+            Json(json!({ "message": "Otorisasi tidak valid", "code": "UNAUTHORIZED" })),
+        )
+            .into_response();
+    }
+
+    let attachment = db::query_as::<sqlx::Postgres, TrafficAttachment>(
+        "SELECT id, traffic_id, file_name, file_path, mime_type, file_size, uploaded_by, created_at
+         FROM silantas.traffic_attachments WHERE id = $1;"
+    )
+    .bind(id)
+    .fetch_optional(&state.pool)
+    .await;
+
+    let att = match attachment {
+        Ok(Some(a)) => a,
+        Ok(None) => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(json!({ "message": "Berkas lampiran tidak ditemukan", "code": "NOT_FOUND" })),
+            )
+                .into_response();
+        }
+        Err(e) => {
+            tracing::error!("Fetch attachment error: {e}");
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "message": "Terjadi kesalahan database", "code": "DB_ERROR" })),
+            )
+                .into_response();
+        }
+    };
+
+    let file_part = std::path::Path::new(&att.file_path)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or_default();
+
+    let full_path = get_uploads_dir().join(file_part);
+
+    let content = match tokio::fs::read(&full_path).await {
+        Ok(c) => c,
+        Err(e) => {
+            tracing::error!("Attachment file not found on disk {}: {e}", full_path.display());
+            return (
+                StatusCode::NOT_FOUND,
+                Json(json!({ "message": "Berkas fisik tidak ditemukan di server", "code": "FILE_NOT_FOUND" })),
+            )
+                .into_response();
+        }
+    };
+
+    let file_size = content.len();
+    let body = Body::from(content);
+
+    let disposition_type = if query.download.unwrap_or(false) {
+        "attachment"
+    } else {
+        "inline"
+    };
+    let clean_filename = att.file_name.replace('"', "").replace('\n', "").replace('\r', "");
+
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, att.mime_type)
+        .header(
+            header::CONTENT_DISPOSITION,
+            format!("{disposition_type}; filename=\"{clean_filename}\""),
+        )
+        .header(header::CONTENT_LENGTH, file_size.to_string())
+        .body(body)
+        .unwrap_or_else(|_| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Error generating download response",
+            )
+                .into_response()
+        })
+}
+
+pub async fn delete_attachment_handler(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<Uuid>,
+) -> impl IntoResponse {
+    let claims = match extract_claims_from_headers(&headers, &state.config.jwt_secret) {
+        Ok(c) => c,
+        Err(code) => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(json!({ "message": "Otorisasi tidak valid", "code": code })),
+            );
+        }
+    };
+
+    if claims.role == "pimpinan" {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({ "message": "Pimpinan memiliki akses baca-saja", "code": "FORBIDDEN" })),
+        );
+    }
+
+    let attachment = db::query_as::<sqlx::Postgres, TrafficAttachment>(
+        "SELECT id, traffic_id, file_name, file_path, mime_type, file_size, uploaded_by, created_at
+         FROM silantas.traffic_attachments WHERE id = $1;"
+    )
+    .bind(id)
+    .fetch_optional(&state.pool)
+    .await;
+
+    let att = match attachment {
+        Ok(Some(a)) => a,
+        Ok(None) => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(json!({ "message": "Berkas lampiran tidak ditemukan", "code": "NOT_FOUND" })),
+            );
+        }
+        Err(e) => {
+            tracing::error!("Fetch attachment error: {e}");
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "message": "Terjadi kesalahan database", "code": "DB_ERROR" })),
+            );
+        }
+    };
+
+    let del_res = db::query("DELETE FROM silantas.traffic_attachments WHERE id = $1;")
+        .bind(id)
+        .execute(&state.pool)
+        .await;
+
+    if let Err(e) = del_res {
+        tracing::error!("Delete attachment error: {e}");
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "message": "Gagal menghapus lampiran dari database", "code": "DB_ERROR" })),
+        );
+    }
+
+    // Delete physical file
+    if let Some(file_part) = std::path::Path::new(&att.file_path).file_name() {
+        let full_path = get_uploads_dir().join(file_part);
+        let _ = tokio::fs::remove_file(full_path).await;
+    }
+
+    record_audit_log(
+        &state.pool,
+        Uuid::parse_str(&claims.sub).ok(),
+        &claims.sub,
+        &claims.role,
+        "DELETE",
+        "TRAFFIC_ATTACHMENT",
+        Some(&id.to_string()),
+        &format!("Menghapus lampiran: {}", att.file_name),
+        Some(json!({ "trafficId": att.traffic_id, "attachmentId": id, "fileName": att.file_name })),
+    )
+    .await;
+
+    (
+        StatusCode::OK,
+        Json(json!({ "message": "Lampiran berhasil dihapus" })),
+    )
 }
