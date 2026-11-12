@@ -23,7 +23,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://env-silantas.user.cloudjkt02.com/api/$1"
+      "destination": "https://env-opentask.user.cloudjkt02.com/api/silantas/$1"
     },
     {
       "source": "/(.*)",

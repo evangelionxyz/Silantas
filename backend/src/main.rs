@@ -83,13 +83,10 @@ async fn main() -> anyhow::Result<()> {
         .layer(cors)
         .layer(Extension(pool));
 
-    let host_ip: std::net::IpAddr = config.host.parse()
-        .unwrap_or(std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1)));
-    let addr = SocketAddr::new(host_ip, config.port);
-
+    let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
     let listener = match tokio::net::TcpListener::bind(addr).await {
         Ok(l) => {
-            tracing::info!("Server listening on http://{}:{}", config.host, config.port);
+            tracing::info!("Server listening on http://{}", addr);
             l
         }
         Err(e) => {
