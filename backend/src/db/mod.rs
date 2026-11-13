@@ -118,6 +118,34 @@ pub async fn init_database(
         );
         CREATE INDEX IF NOT EXISTS idx_traffic_attachments_traffic_id ON silantas.traffic_attachments(traffic_id);
 
+        -- Create WhatsApp Recaps Table
+        CREATE TABLE IF NOT EXISTS silantas.whatsapp_recaps (
+            id UUID PRIMARY KEY,
+            reporter_name VARCHAR(255) NOT NULL,
+            reporter_phone VARCHAR(50),
+            address TEXT NOT NULL,
+            service_type VARCHAR(50) NOT NULL,
+            description TEXT NOT NULL,
+            status VARCHAR(50) NOT NULL DEFAULT 'BARU',
+            recorded_by VARCHAR(255),
+            notes TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+
+        -- Create WhatsApp Attachments Table
+        CREATE TABLE IF NOT EXISTS silantas.whatsapp_attachments (
+            id UUID PRIMARY KEY,
+            recap_id UUID REFERENCES silantas.whatsapp_recaps(id) ON DELETE CASCADE,
+            file_name VARCHAR(255) NOT NULL,
+            file_path VARCHAR(500) NOT NULL,
+            mime_type VARCHAR(100) NOT NULL,
+            file_size BIGINT NOT NULL,
+            uploaded_by UUID REFERENCES silantas.users(id),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_whatsapp_attachments_recap_id ON silantas.whatsapp_attachments(recap_id);
+
         -- Create Audit Logs Table
         CREATE TABLE IF NOT EXISTS silantas.audit_logs (
             id UUID PRIMARY KEY,

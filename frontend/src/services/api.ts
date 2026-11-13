@@ -27,6 +27,32 @@ export interface TrafficAttachment {
   createdAt: string;
 }
 
+export interface WhatsappAttachment {
+  id: string;
+  recapId?: string;
+  fileName: string;
+  filePath: string;
+  mimeType: string;
+  fileSize: number;
+  uploadedBy?: string;
+  createdAt: string;
+}
+
+export interface WhatsappRecapBackend {
+  id: string;
+  reporterName: string;
+  reporterPhone?: string;
+  address: string;
+  serviceType: 'INFORMASI' | 'BANTUAN';
+  description: string;
+  status: 'BARU' | 'DIPROSES' | 'SELESAI';
+  recordedBy?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  attachments?: WhatsappAttachment[];
+}
+
 export interface TrafficRecord {
   id: string;
   recordNumber: string;
@@ -246,6 +272,100 @@ export function getAttachmentFileUrl(attachmentId: string, download = false): st
   if (token) params.set('token', token);
   const qs = params.toString();
   return `${API_BASE}/api/traffic/attachments/${attachmentId}${qs ? `?${qs}` : ''}`;
+}
+
+export async function uploadWhatsappAttachments(
+  files: File[]
+): Promise<WhatsappAttachment[]> {
+  const formData = new FormData();
+  for (const file of files) {
+    formData.append('files', file);
+  }
+
+  const res = await fetch(`${API_BASE}/api/whatsapp/attachments`, {
+    method: 'POST',
+    headers: { ...getAuthHeader() },
+    body: formData,
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Gagal mengunggah berkas lampiran WhatsApp');
+  return data;
+}
+
+export async function deleteWhatsappAttachment(attachmentId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/whatsapp/attachments/${attachmentId}`, {
+    method: 'DELETE',
+    headers: { ...getAuthHeader() },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Gagal menghapus berkas lampiran WhatsApp');
+  }
+}
+
+export function getWhatsappAttachmentUrl(attachmentId: string, download = false): string {
+  const token = localStorage.getItem('silantas_token');
+  const params = new URLSearchParams();
+  if (download) params.set('download', 'true');
+  if (token) params.set('token', token);
+  const qs = params.toString();
+  return `${API_BASE}/api/whatsapp/attachments/${attachmentId}${qs ? `?${qs}` : ''}`;
+}
+
+export async function fetchWhatsappRecaps(params?: {
+  search?: string;
+  serviceType?: string;
+  status?: string;
+}): Promise<WhatsappRecapBackend[]> {
+  const url = new URL(`${API_BASE}/api/whatsapp/recaps`);
+  if (params?.search) url.searchParams.set('search', params.search);
+  if (params?.serviceType) url.searchParams.set('service_type', params.serviceType);
+  if (params?.status) url.searchParams.set('status', params.status);
+
+  const res = await fetch(url.toString(), { headers: { ...getAuthHeader() } });
+  if (!res.ok) throw new Error('Gagal mengambil data rekapan WhatsApp');
+  const json = await res.json();
+  return json.data || [];
+}
+
+export async function createWhatsappRecap(
+  recap: Partial<WhatsappRecapBackend>,
+  attachmentIds?: string[]
+): Promise<WhatsappRecapBackend> {
+  const res = await fetch(`${API_BASE}/api/whatsapp/recaps`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+    body: JSON.stringify({ ...recap, attachmentIds }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Gagal menambahkan rekapan WhatsApp');
+  return data;
+}
+
+export async function updateWhatsappRecap(
+  id: string,
+  recap: Partial<WhatsappRecapBackend>
+): Promise<WhatsappRecapBackend> {
+  const res = await fetch(`${API_BASE}/api/whatsapp/recaps/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+    body: JSON.stringify(recap),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Gagal memperbarui rekapan WhatsApp');
+  return data;
+}
+
+export async function deleteWhatsappRecap(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/whatsapp/recaps/${id}`, {
+    method: 'DELETE',
+    headers: { ...getAuthHeader() },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Gagal menghapus rekapan WhatsApp');
+  }
 }
 
 export async function fetchUsers(): Promise<User[]> {

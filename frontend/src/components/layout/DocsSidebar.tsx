@@ -65,6 +65,9 @@ export const DocsSidebar: React.FC<DocsSidebarProps> = ({
               <NavLink to="/" end className={navItemClass} onClick={handleLinkClick}>
                 <span>Beranda & Fitur Utama</span>
               </NavLink>
+              <NavLink to="/about" className={navItemClass} onClick={handleLinkClick}>
+                <span>Profil & Makna SUANGGI</span>
+              </NavLink>
             </div>
           )}
         </div>

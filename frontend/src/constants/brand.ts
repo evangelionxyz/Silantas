@@ -23,7 +23,8 @@ export interface LivestockGalleryImage {
 export const SUANGGI_BRAND = {
   name: 'SUANGGI CARI KO',
   initials: 'SG',
-  fullName: 'SISTEM UPDATE ARUS NIAGA DAN GERAK HEWAN, PRODUK HEWAN, DAN OLAHANNYA - CATATAN ARUS, REKAPITULASI, DAN INFORMASI KOMODITAS',
+  fullName:
+    'Sistem Updating Arus Niaga dan Gerak Hewan, produk hewan, dan olahannya – Catatan Arus, Rekapitulasi, dan Informasi KOmoditas',
   motto: 'Data Terpadu - Akurat - Terkini',
   mottoParts: ['Data Terpadu', 'Data Akurat', 'Data Terkini'] as const,
   slogan: 'Satu Sistem, Satu Data, Terpantau Arus Niaga dan Gerak Hewan serta Produk Hewan',

@@ -4,6 +4,7 @@ import { LoginPage } from './pages/auth/LoginPage';
 import { AuditLogsPage } from './pages/dashboard/AuditLogsPage';
 import { DashboardLayout } from './pages/dashboard/DashboardLayout';
 import { DatabaseBackupPage } from './pages/dashboard/DatabaseBackupPage';
+import { WhatsappRecapPage } from './pages/dashboard/WhatsappRecapPage';
 import { SettingsPage } from './pages/dashboard/SettingsPage';
 import { SummaryCalculationsPage } from './pages/dashboard/SummaryCalculationsPage';
 import { TrafficManagementPage } from './pages/dashboard/TrafficManagementPage';
@@ -14,6 +15,7 @@ import { IsikhnasStatusDoc } from './pages/public/IsikhnasStatusDoc';
 import { RequirementsDoc } from './pages/public/RequirementsDoc';
 import { WhatsAppConsultation } from './pages/public/WhatsAppConsultation';
 import { PublicLayout } from './components/layout/PublicLayout';
+import { ProfilePage } from './pages/public/ProfilePage';
 
 function App() {
   return (
@@ -23,6 +25,7 @@ function App() {
           {/* Public Documentation & Information (Citizen & Farm Owners) */}
           <Route element={<PublicLayout />}>
             <Route path="/" element={<DocsHome />} />
+            <Route path="/about" element={<ProfilePage />} />
             <Route path="/persyaratan" element={<RequirementsDoc />} />
             <Route path="/pemeriksaan" element={<HealthCheckDoc />} />
             <Route path="/isikhnas" element={<IsikhnasStatusDoc />} />
@@ -36,6 +39,7 @@ function App() {
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<TrafficManagementPage />} />
             <Route path="kalkulasi" element={<SummaryCalculationsPage />} />
+            <Route path="whatsapp-recap" element={<WhatsappRecapPage />} />
             <Route path="audit" element={<AuditLogsPage />} />
             <Route path="users" element={<UserManagementPage />} />
             <Route path="settings" element={<SettingsPage />} />

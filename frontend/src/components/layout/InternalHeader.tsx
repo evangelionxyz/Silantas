@@ -30,7 +30,7 @@ export const InternalHeader: React.FC<InternalHeaderProps> = ({ onToggleMobileSi
                 <span className="text-[#f4d16b]">{SUANGGI_BRAND.region}</span>
             </div>
 
-            <div className="flex min-h-[4.5rem] w-full items-center justify-between gap-3 px-3 sm:px-6 xl:px-10">
+            <div className="flex min-h-[5rem] w-full items-center justify-between gap-3 px-3 sm:px-6 xl:px-10">
                 {/* Left: Mobile hamburger & Internal Branding */}
                 <div className="flex shrink-0 items-center gap-2.5">
                     <button
@@ -47,16 +47,13 @@ export const InternalHeader: React.FC<InternalHeaderProps> = ({ onToggleMobileSi
                     </button>
 
                     <Link to="/dashboard" className="flex items-center gap-2.5 text-[#1d2b1f]">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center bg-[#174b2b] text-sm font-extrabold tracking-tight text-white">
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center bg-[#174b2b] text-sm font-extrabold tracking-tight text-white">
                             {SUANGGI_BRAND.initials}
                         </span>
                         <span className="min-w-0">
-                            <span className="block text-base font-extrabold leading-tight tracking-tight text-[#173d22] sm:text-lg">
-                                {SUANGGI_BRAND.name}
-                            </span>
-                            <span className="hidden text-[10px] font-semibold leading-tight text-[#566056] xl:block">
-                                {SUANGGI_BRAND.fullName}
-                            </span>
+                            <span className="block text-base font-extrabold leading-tight tracking-tight text-[#173d22] sm:text-[18px]">{SUANGGI_BRAND.name}</span>
+                                            <span className="hidden text-[12px] font-semibold leading-tight text-[#566056] xl:block">SISTEM UPDATE ARUS NIAGA DAN GERAK HEWAN, PRODUK HEWAN, DAN OLAHANNYA</span>
+                                            <span className="hidden text-[12px] font-semibold leading-tight text-[#566056] xl:block">CATATAN ARUS, REKAPITULASI, DAN INFORMASI KOMODITAS</span>
                         </span>
                     </Link>
                 </div>

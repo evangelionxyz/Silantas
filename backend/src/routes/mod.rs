@@ -4,6 +4,7 @@ pub mod backup;
 pub mod settings;
 pub mod traffic;
 pub mod users;
+pub mod whatsapp;
 
 use axum::{extract::State, routing::get, Json, Router};
 use serde_json::{json, Value};
@@ -19,6 +20,7 @@ pub fn build_router(state: AppState) -> Router {
         .nest("/api/audit-logs", audit::audit_routes())
         .nest("/api/settings", settings::settings_routes())
         .nest("/api/backup", backup::backup_routes())
+        .nest("/api/whatsapp", whatsapp::whatsapp_routes())
         .with_state(state)
 }
 
