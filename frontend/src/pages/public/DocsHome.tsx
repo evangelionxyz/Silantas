@@ -107,7 +107,7 @@ export const DocsHome: React.FC = () => {
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute bottom-0 inset-x-0 bg-black/70 px-2.5 py-1 text-[11px] font-semibold text-white truncate">
-                      Karantina Ternak Hidup
+                      Konsultasi Dokter Hewan
                     </div>
                   </div>
                   <div className="overflow-hidden border border-[#55704c] bg-[#14532d] relative aspect-16/10">
