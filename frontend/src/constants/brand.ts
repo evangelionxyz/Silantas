@@ -21,7 +21,7 @@ export interface LivestockGalleryImage {
 }
 
 export const SUANGGI_BRAND = {
-  name: 'SUANGGI',
+  name: 'SUANGGI CARI KO',
   initials: 'SG',
   fullName: 'SISTEM INFORMASI LALU LINTAS HEWAN',
   motto: 'Data Terpadu - Akurat - Terkini',
