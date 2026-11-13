@@ -23,15 +23,15 @@ export interface LivestockGalleryImage {
 export const SUANGGI_BRAND = {
   name: 'SUANGGI CARI KO',
   initials: 'SG',
-  fullName: 'SISTEM UPDATING ARUS NIAGA DAN GERAK HEWAN, PRODUK HEWAN, DAN OLAHANNYA - CATATAN ARUS, REKAPITULASI, DAN INFORMASI KOMODITAS',
+  fullName: 'SISTEM UPDATE ARUS NIAGA DAN GERAK HEWAN, PRODUK HEWAN, DAN OLAHANNYA - CATATAN ARUS, REKAPITULASI, DAN INFORMASI KOMODITAS',
   motto: 'Data Terpadu - Akurat - Terkini',
   mottoParts: ['Data Terpadu', 'Data Akurat', 'Data Terkini'] as const,
-  slogan: 'Satu Sistem, Satu Data, Terpantau Lalu Lintas Hewan dan Produk Hewan',
+  slogan: 'Satu Sistem, Satu Data, Terpantau Arus Niaga dan Gerak Hewan serta Produk Hewan',
   agency: 'Dinas Peternakan dan Kesehatan Hewan Kabupaten Mimika',
   agencyShort: 'Dinas Peternakan & Keswan Kab. Mimika',
   region: 'Kabupaten Mimika, Papua Tengah',
   defaultWhatsappMessage:
-    'Halo Admin SUANGGI (Sistem Informasi Lalu Lintas Hewan) Kabupaten Mimika, saya ingin berkonsultasi mengenai layanan lalu lintas hewan dan produk hewan.',
+    'Halo Admin SUANGGI (Sisitem Arus Niaga dan Gerak Hewan) Kabupaten Mimika, saya ingin berkonsultasi mengenai layanan lalu lintas hewan dan produk hewan.',
 } as const;
 
 export const SUANGGI_CORE_FEATURES: CoreFeatureItem[] = [
@@ -90,7 +90,7 @@ export const LIVESTOCK_HERO_IMAGE: LivestockGalleryImage = {
   url: 'https://images.unsplash.com/photo-1500595046743-cd271d694d30?auto=format&fit=crop&w=1200&q=80',
   alt: 'Peternakan sapi sehat di padang penggembalaan hijau dalam pengawasan SUANGGI',
   caption: 'Pengawasan Kesehatan Ternak & Biosekuriti Kabupaten Mimika',
-  categoryLabel: 'Hewan Hidup & Ruminansia',
+  categoryLabel: 'Hewan Hidup & Produk Olahan',
   width: 1200,
   height: 750,
 };
@@ -100,7 +100,7 @@ export const LOGIN_IMAGE: LivestockGalleryImage = {
     url: 'https://images.unsplash.com/photo-1546445317-29f4545e9d53?auto=format&fit=crop&w=800&q=80',
     alt: 'Sapi ternak sehat di padang rumput hijau',
     caption: 'Pemasukan & Pengeluaran Ternak Besar',
-    categoryLabel: 'Ternak Ruminansia',
+    categoryLabel: 'Ternak Hewan',
     width: 700,
     height: 460,
 };
