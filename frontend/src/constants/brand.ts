@@ -23,9 +23,9 @@ export interface LivestockGalleryImage {
 export const SUANGGI_BRAND = {
   name: 'SUANGGI CARI KO',
   initials: 'SG',
-  fullName: 'SISTEM INFORMASI LALU LINTAS HEWAN',
+  fullName: 'SISTEM UPDATING ARUS NIAGA DAN GERAK HEWAN, PRODUK HEWAN, DAN OLAHANNYA - CATATAN ARUS, REKAPITULASI, DAN INFORMASI KOMODITAS',
   motto: 'Data Terpadu - Akurat - Terkini',
-  mottoParts: ['Data Terpadu', 'Akurat', 'Terkini'] as const,
+  mottoParts: ['Data Terpadu', 'Data Akurat', 'Data Terkini'] as const,
   slogan: 'Satu Sistem, Satu Data, Terpantau Lalu Lintas Hewan dan Produk Hewan',
   agency: 'Dinas Peternakan dan Kesehatan Hewan Kabupaten Mimika',
   agencyShort: 'Dinas Peternakan & Keswan Kab. Mimika',
