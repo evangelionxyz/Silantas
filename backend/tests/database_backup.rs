@@ -1,31 +1,33 @@
 use std::fs::{self, File};
-use std::io::Write;
+use std::io::{Read, Write};
 use chrono::{Duration, Utc};
 use sha2::{Digest, Sha256};
 use silantas_api::models::backup::BackupConfigResponse;
 use silantas_api::services::backup::{
-    calculate_file_sha256, format_bytes, is_auto_backup_due, prune_old_backups,
+    calculate_file_sha256, format_bytes, is_auto_backup_due, package_backup_zip, prune_old_backups,
     sanitize_backup_filename,
 };
 
 #[test]
 fn test_backup_filename_sanitization_and_path_traversal() {
-    // Valid filenames
+    // Valid filenames (both .zip and legacy .sql)
+    assert!(sanitize_backup_filename("suanggi_backup_20261113_120000_manual.zip").is_ok());
+    assert!(sanitize_backup_filename("suanggi_backup_20261113_120000_auto.zip").is_ok());
     assert!(sanitize_backup_filename("silantas_backup_20261110_120000_manual.sql").is_ok());
     assert!(sanitize_backup_filename("silantas_backup_20261110_120000_auto.sql").is_ok());
-    assert!(sanitize_backup_filename("my-backup_test.123.sql").is_ok());
+    assert!(sanitize_backup_filename("my-backup_test.123.zip").is_ok());
 
     // Path traversal attempts
     assert!(sanitize_backup_filename("../Cargo.toml").is_err());
     assert!(sanitize_backup_filename("../../etc/passwd").is_err());
     assert!(sanitize_backup_filename("..\\windows\\system32\\cmd.exe").is_err());
-    assert!(sanitize_backup_filename("folder/backup.sql").is_err());
-    assert!(sanitize_backup_filename("C:\\backup.sql").is_err());
+    assert!(sanitize_backup_filename("folder/backup.zip").is_err());
+    assert!(sanitize_backup_filename("C:\\backup.zip").is_err());
 
     // Invalid extensions & dangerous characters
     assert!(sanitize_backup_filename("backup.txt").is_err());
     assert!(sanitize_backup_filename("backup.sh").is_err());
-    assert!(sanitize_backup_filename("backup;rm -rf.sql").is_err());
+    assert!(sanitize_backup_filename("backup;rm -rf.zip").is_err());
     assert!(sanitize_backup_filename("").is_err());
     assert!(sanitize_backup_filename("   ").is_err());
 }
@@ -185,4 +187,63 @@ fn test_sql_schema_and_universal_compatibility_assertions() {
     // Ensure NO machine-specific or user-locking clauses are present
     assert!(!sample_sql.contains("OWNER TO"));
     assert!(!sample_sql.contains("GRANT ALL ON SCHEMA"));
+}
+
+#[test]
+fn test_backup_zip_packaging_and_contents() {
+    let temp_dir = std::env::temp_dir().join(format!("silantas_test_zip_{}", Utc::now().timestamp_nanos_opt().unwrap_or(0)));
+    fs::create_dir_all(&temp_dir).expect("create temp test dir");
+
+    // Create dummy SQL dump
+    let dummy_sql_path = temp_dir.join("test_db.sql");
+    let sql_content = b"-- DUMMY SILANTAS SQL DUMP\nCREATE SCHEMA silantas;\n";
+    fs::write(&dummy_sql_path, sql_content).expect("write dummy sql");
+
+    let sql_checksum = calculate_file_sha256(&dummy_sql_path).expect("sql checksum");
+
+    // Create zip target
+    let zip_target_path = temp_dir.join("test_backup.zip");
+
+    let (zip_size, zip_checksum, _packed_count, _bytes) = package_backup_zip(
+        &dummy_sql_path,
+        &zip_target_path,
+        "MANUAL",
+        &sql_checksum,
+    ).expect("packaging zip should succeed");
+
+    assert!(zip_size > 0);
+    assert!(!zip_checksum.is_empty());
+    assert!(zip_target_path.exists());
+
+    // Inspect archive contents using zip crate
+    let zip_file = File::open(&zip_target_path).expect("open zip");
+    let mut archive = zip::ZipArchive::new(zip_file).expect("read zip archive");
+
+    // 1. Must contain database.sql
+    {
+        let mut sql_entry = archive.by_name("database.sql").expect("database.sql in zip");
+        let mut extracted_sql = Vec::new();
+        sql_entry.read_to_end(&mut extracted_sql).expect("read database.sql");
+        assert_eq!(extracted_sql, sql_content);
+    }
+
+    // 2. Must contain manifest.json
+    {
+        let mut manifest_entry = archive.by_name("manifest.json").expect("manifest.json in zip");
+        let mut manifest_str = String::new();
+        manifest_entry.read_to_string(&mut manifest_str).expect("read manifest.json");
+        assert!(manifest_str.contains("SUANGGI - SILANTAS"));
+        assert!(manifest_str.contains(&sql_checksum));
+    }
+
+    // 3. Must contain MIGRATION_GUIDE.txt
+    {
+        let mut guide_entry = archive.by_name("MIGRATION_GUIDE.txt").expect("MIGRATION_GUIDE.txt in zip");
+        let mut guide_str = String::new();
+        guide_entry.read_to_string(&mut guide_str).expect("read guide");
+        assert!(guide_str.contains("PANDUAN LENGKAP RESTORASI DAN MIGRASI DATA"));
+    }
+
+    // Clean up
+    let _ = fs::remove_dir_all(&temp_dir);
 }

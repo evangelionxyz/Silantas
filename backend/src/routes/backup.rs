@@ -286,9 +286,15 @@ pub async fn download_backup_file_handler(
     let file_size = content.len();
     let body = Body::from(content);
 
+    let content_type = if safe_filename.ends_with(".zip") {
+        "application/zip"
+    } else {
+        "application/sql; charset=utf-8"
+    };
+
     Response::builder()
         .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "application/sql; charset=utf-8")
+        .header(header::CONTENT_TYPE, content_type)
         .header(
             header::CONTENT_DISPOSITION,
             format!("attachment; filename=\"{}\"", safe_filename),

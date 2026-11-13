@@ -500,14 +500,14 @@ export const DatabaseBackupPage: React.FC = () => {
             <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-[#d0d7de]">
               <div>
                 <h2 className="text-sm font-bold uppercase tracking-wider text-[#1f2920]">
-                  Pencadangan Manual Instan
+                  Pencadangan Terpadu Instan
                 </h2>
                 <p className="text-xs text-[#57606a] mt-0.5">
-                  Buat snapshot basis data saat ini secara langsung tanpa menunggu jadwal otomatis.
+                  Buat arsip cadangan terpadu (Database SQL + Seluruh Berkas Lampiran Uploads) secara langsung.
                 </p>
               </div>
-              <span className="px-2 py-0.5 text-xs font-semibold bg-[#dafbe1] text-[#1a7f37] border border-[#aceebb]">
-                Universal SQL
+              <span className="px-2 py-0.5 text-xs font-semibold bg-[#ddf4ff] text-[#0969da] border border-[#a5d6ff]">
+                ZIP Archive (DB + Uploads)
               </span>
             </div>
 
@@ -516,17 +516,20 @@ export const DatabaseBackupPage: React.FC = () => {
                 <svg className="w-4 h-4 text-[#15803d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
-                Jaminan Kompatibilitas Portabel (Universal SQL Format):
+                Jaminan Kompatibilitas Portabel &amp; Keutuhan Berkas (Zero Path Drift):
               </div>
-              <ul className="list-disc list-inside space-y-1 text-[#57606a]">
+              <ul className="list-disc list-inside space-y-1.5 text-[#57606a]">
                 <li>
-                  Diekspor dalam format <strong className="text-[#1f2920]">ANSI/PostgreSQL SQL murni (.sql)</strong> ber-skema <code className="text-[#174b2b] font-semibold">silantas</code>.
+                  <strong className="text-[#1f2920]">Bundel Terpadu (.zip):</strong> Mengemas <code className="text-[#174b2b] font-semibold">database.sql</code> bersama seluruh folder berkas fisik <code className="text-[#174b2b] font-semibold">uploads/traffic_attachments/</code> (SV, SKKH/SKKHP) dan <code className="text-[#174b2b] font-semibold">uploads/whatsapp_attachments/</code> (bukti chat pengaduan).
                 </li>
                 <li>
-                  Bebas dari kepemilikan pengguna host (<strong className="text-[#1f2920]">tanpa klausul OWNER TO</strong>) dan bebas konflik perizinan sehingga tidak akan ditolak saat diimpor pada server lain.
+                  <strong className="text-[#1f2920]">Struktur Jalur Presisi (Path Preserved):</strong> Struktur direktori di dalam ZIP persis sama dengan referensi path di PostgreSQL, sehingga saat diekstrak ke server baru, database dapat langsung mengakses semua berkas tanpa perlu mengubah path.
                 </li>
                 <li>
-                  Dapat langsung diimpor ke <em>pgAdmin, DBeaver, psql, Supabase, Neon, AWS RDS,</em> maupun seluruh versi PostgreSQL (v12 s/d v18+).
+                  <strong className="text-[#1f2920]">Universal PostgreSQL Format:</strong> Berkas SQL bebas kepemilikan host (<code className="text-[#174b2b] font-semibold">tanpa klausul OWNER TO</code>) dan dapat langsung diimpor ke <em>psql, pgAdmin, DBeaver, mau pun Cloud PostgreSQL</em>.
+                </li>
+                <li>
+                  <strong className="text-[#1f2920]">Integritas &amp; Panduan:</strong> Dilengkapi <code className="text-[#174b2b] font-semibold">manifest.json</code> (hash SHA-256) serta petunjuk pemulihan langkah-demi-langkah (<code className="text-[#174b2b] font-semibold">MIGRATION_GUIDE.txt</code>).
                 </li>
               </ul>
             </div>
@@ -534,7 +537,7 @@ export const DatabaseBackupPage: React.FC = () => {
 
           <div className="pt-4 border-t border-[#d0d7de] flex flex-col sm:flex-row items-center justify-between gap-3">
             <span className="text-xs text-[#57606a]">
-              Waktu proses cadangan berkisar antara 1 - 5 detik.
+              Proses cadangan mengompresi SQL dan berkas lampiran secara otomatis.
             </span>
             <button
               type="button"
@@ -545,14 +548,14 @@ export const DatabaseBackupPage: React.FC = () => {
               {backingUp ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Membuat Cadangan Basis Data...</span>
+                  <span>Mengemas Database &amp; Berkas Lampiran...</span>
                 </>
               ) : (
                 <>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                   </svg>
-                  <span>Cadangkan Sekarang</span>
+                  <span>Cadangkan Sekarang (DB + Uploads)</span>
                 </>
               )}
             </button>
@@ -568,7 +571,7 @@ export const DatabaseBackupPage: React.FC = () => {
               Daftar Berkas Cadangan Tersimpan
             </h2>
             <p className="text-xs text-[#57606a] mt-0.5">
-              Berkas cadangan disimpan dalam direktori lokal server dan siap diunduh langsung ke komputer Anda.
+              Berkas cadangan (.zip / .sql) disimpan di direktori server dan siap diunduh langsung untuk arsip lokal atau migrasi.
             </p>
           </div>
           <span className="text-xs font-semibold text-[#57606a]">
@@ -592,6 +595,7 @@ export const DatabaseBackupPage: React.FC = () => {
               <thead>
                 <tr className="bg-[#f6f8fa] border-b border-[#d0d7de] text-[#57606a] uppercase tracking-wider font-semibold">
                   <th className="py-2.5 px-4">Nama Berkas</th>
+                  <th className="py-2.5 px-4">Format</th>
                   <th className="py-2.5 px-4">Tanggal &amp; Waktu</th>
                   <th className="py-2.5 px-4">Ukuran</th>
                   <th className="py-2.5 px-4">Tipe Pemicu</th>
@@ -600,97 +604,120 @@ export const DatabaseBackupPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#d0d7de]">
-                {backupFiles.map((file) => (
-                  <tr key={file.filename} className="hover:bg-[#f6f8fa]/70 transition-colors">
-                    <td className="py-3 px-4 font-mono font-medium text-[#1f2920]">
-                      <div className="flex items-center gap-2">
-                        <svg className="w-4 h-4 text-[#0969da] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span className="truncate max-w-[260px]" title={file.filename}>
-                          {file.filename}
+                {backupFiles.map((file) => {
+                  const isZip = file.filename.toLowerCase().endsWith('.zip');
+                  return (
+                    <tr key={file.filename} className="hover:bg-[#f6f8fa]/70 transition-colors">
+                      <td className="py-3 px-4 font-mono font-medium text-[#1f2920]">
+                        <div className="flex items-center gap-2">
+                          {isZip ? (
+                            <svg className="w-4 h-4 text-[#8250df] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                            </svg>
+                          ) : (
+                            <svg className="w-4 h-4 text-[#0969da] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          )}
+                          <span className="truncate max-w-[260px]" title={file.filename}>
+                            {file.filename}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        {isZip ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold bg-[#fbefff] text-[#8250df] border border-[#d8b4fe]">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                            ZIP (DB + Uploads)
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 text-[11px] font-semibold bg-[#f6f8fa] text-[#57606a] border border-[#d0d7de]">
+                            SQL DUMP
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-[#57606a] whitespace-nowrap">
+                        {formatDate(file.createdAt)}
+                      </td>
+                      <td className="py-3 px-4 font-semibold text-[#1f2920] whitespace-nowrap">
+                        {file.sizeDisplay}
+                      </td>
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 text-[11px] font-semibold border ${
+                            file.triggerType === 'AUTO'
+                              ? 'bg-[#ddf4ff] text-[#0969da] border-[#a5d6ff]'
+                              : 'bg-[#dafbe1] text-[#1a7f37] border-[#aceebb]'
+                          }`}
+                        >
+                          {file.triggerType === 'AUTO' ? 'Otomatis' : 'Manual'}
                         </span>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-[#57606a] whitespace-nowrap">
-                      {formatDate(file.createdAt)}
-                    </td>
-                    <td className="py-3 px-4 font-semibold text-[#1f2920] whitespace-nowrap">
-                      {file.sizeDisplay}
-                    </td>
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 text-[11px] font-semibold border ${
-                          file.triggerType === 'AUTO'
-                            ? 'bg-[#ddf4ff] text-[#0969da] border-[#a5d6ff]'
-                            : 'bg-[#dafbe1] text-[#1a7f37] border-[#aceebb]'
-                        }`}
-                      >
-                        {file.triggerType === 'AUTO' ? 'Otomatis' : 'Manual'}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 font-mono text-[11px] text-[#57606a] whitespace-nowrap">
-                      <div className="flex items-center gap-1.5">
-                        <span title={file.checksumSha256}>
-                          {file.checksumSha256 ? `${file.checksumSha256.substring(0, 12)}...` : '-'}
-                        </span>
-                        {file.checksumSha256 && (
+                      </td>
+                      <td className="py-3 px-4 font-mono text-[11px] text-[#57606a] whitespace-nowrap">
+                        <div className="flex items-center gap-1.5">
+                          <span title={file.checksumSha256}>
+                            {file.checksumSha256 ? `${file.checksumSha256.substring(0, 12)}...` : '-'}
+                          </span>
+                          {file.checksumSha256 && (
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(file.checksumSha256)}
+                              className="p-1 text-[#57606a] hover:text-[#1f2920] hover:bg-[#eaeef2] transition-colors"
+                              title="Salin Hash SHA-256 lengkap"
+                            >
+                              {copiedHash === file.checksumSha256 ? (
+                                <span className="text-[10px] text-[#1a7f37] font-sans font-semibold">Tersalin!</span>
+                              ) : (
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-2">
                           <button
                             type="button"
-                            onClick={() => copyToClipboard(file.checksumSha256)}
-                            className="p-1 text-[#57606a] hover:text-[#1f2920] hover:bg-[#eaeef2] transition-colors"
-                            title="Salin Hash SHA-256 lengkap"
+                            onClick={() => handleDownload(file.filename)}
+                            disabled={downloadingFile === file.filename}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#0969da] bg-white border border-[#0969da]/30 hover:bg-[#ddf4ff] active:bg-[#b6e3ff] transition-colors disabled:opacity-50"
+                            title={isZip ? "Unduh paket arsip cadangan terpadu (.zip)" : "Unduh berkas .sql cadangan"}
                           >
-                            {copiedHash === file.checksumSha256 ? (
-                              <span className="text-[10px] text-[#1a7f37] font-sans font-semibold">Tersalin!</span>
+                            {downloadingFile === file.filename ? (
+                              <>
+                                <div className="w-3 h-3 border-2 border-[#0969da] border-t-transparent rounded-full animate-spin" />
+                                <span>Mengunduh...</span>
+                              </>
                             ) : (
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                              </svg>
+                              <>
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                <span>Unduh</span>
+                              </>
                             )}
                           </button>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleDownload(file.filename)}
-                          disabled={downloadingFile === file.filename}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#0969da] bg-white border border-[#0969da]/30 hover:bg-[#ddf4ff] active:bg-[#b6e3ff] transition-colors disabled:opacity-50"
-                          title="Unduh berkas .sql cadangan"
-                        >
-                          {downloadingFile === file.filename ? (
-                            <>
-                              <div className="w-3 h-3 border-2 border-[#0969da] border-t-transparent rounded-full animate-spin" />
-                              <span>Mengunduh...</span>
-                            </>
-                          ) : (
-                            <>
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                              </svg>
-                              <span>Unduh</span>
-                            </>
-                          )}
-                        </button>
 
-                        <button
-                          type="button"
-                          onClick={() => setFileToDelete(file.filename)}
-                          className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold text-[#cf222e] bg-white border border-[#cf222e]/30 hover:bg-[#ffebe9] active:bg-[#ffcecb] transition-colors"
-                          title="Hapus berkas cadangan"
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                          <span>Hapus</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          <button
+                            type="button"
+                            onClick={() => setFileToDelete(file.filename)}
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold text-[#cf222e] bg-white border border-[#cf222e]/30 hover:bg-[#ffebe9] active:bg-[#ffcecb] transition-colors"
+                            title="Hapus berkas cadangan"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <span>Hapus</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

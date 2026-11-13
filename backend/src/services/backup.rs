@@ -9,6 +9,8 @@ use hex;
 use sha2::{Digest, Sha256};
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
+use zip::write::SimpleFileOptions;
+use zip::ZipWriter;
 
 use crate::{
     config::Config,
@@ -37,7 +39,7 @@ pub fn get_backup_dir() -> PathBuf {
     path
 }
 
-/// Sanitize filename to prevent directory traversal and ensure .sql extension
+/// Sanitize filename to prevent directory traversal and ensure .zip or .sql extension
 pub fn sanitize_backup_filename(raw_name: &str) -> Result<String, &'static str> {
     let trimmed = raw_name.trim();
     if trimmed.is_empty() {
@@ -46,8 +48,8 @@ pub fn sanitize_backup_filename(raw_name: &str) -> Result<String, &'static str> 
     if trimmed.contains("..") || trimmed.contains('/') || trimmed.contains('\\') || trimmed.contains(':') {
         return Err("Filename contains forbidden path characters");
     }
-    if !trimmed.ends_with(".sql") {
-        return Err("Backup file must have .sql extension");
+    if !(trimmed.ends_with(".zip") || trimmed.ends_with(".sql")) {
+        return Err("Backup file must have .zip or .sql extension");
     }
     // Must contain only safe characters: alphanumeric, underscore, hyphen, dot
     if !trimmed.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-' || c == '.') {
@@ -225,7 +227,7 @@ pub fn list_backup_files() -> Vec<BackupFileItem> {
             let path = entry.path();
             if path.is_file() {
                 if let Some(fname) = path.file_name().and_then(|n| n.to_str()) {
-                    if fname.ends_with(".sql") {
+                    if fname.ends_with(".zip") || fname.ends_with(".sql") {
                         let metadata = entry.metadata().ok();
                         let size_bytes = metadata.as_ref().map(|m| m.len()).unwrap_or(0);
                         let size_display = format_bytes(size_bytes);
@@ -277,7 +279,7 @@ pub fn prune_old_backups(backup_dir: &Path, max_retention: usize) -> anyhow::Res
             let path = entry.path();
             if path.is_file() {
                 if let Some(fname) = path.file_name().and_then(|n| n.to_str()) {
-                    if fname.ends_with(".sql") {
+                    if fname.ends_with(".zip") || fname.ends_with(".sql") {
                         files.push(path);
                     }
                 }
@@ -378,7 +380,57 @@ pub async fn generate_portable_sql_backup(pool: &PgPool, out_path: &Path, trigge
     sql.push_str("CREATE INDEX IF NOT EXISTS idx_traffic_category ON silantas.traffic_records(category);\n");
     sql.push_str("CREATE INDEX IF NOT EXISTS idx_traffic_item_name ON silantas.traffic_records(item_name);\n\n");
 
-    // 3. DDL: audit_logs
+    // 3. DDL: traffic_attachments
+    sql.push_str("-- --------------------------------------------------------\n");
+    sql.push_str("-- Table structure for: silantas.traffic_attachments\n");
+    sql.push_str("-- --------------------------------------------------------\n");
+    sql.push_str("CREATE TABLE IF NOT EXISTS silantas.traffic_attachments (\n");
+    sql.push_str("    id UUID PRIMARY KEY,\n");
+    sql.push_str("    traffic_id UUID NOT NULL REFERENCES silantas.traffic_records(id) ON DELETE CASCADE,\n");
+    sql.push_str("    file_name VARCHAR(255) NOT NULL,\n");
+    sql.push_str("    file_path VARCHAR(500) NOT NULL,\n");
+    sql.push_str("    mime_type VARCHAR(100) NOT NULL,\n");
+    sql.push_str("    file_size BIGINT NOT NULL,\n");
+    sql.push_str("    uploaded_by UUID REFERENCES silantas.users(id),\n");
+    sql.push_str("    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n");
+    sql.push_str(");\n");
+    sql.push_str("CREATE INDEX IF NOT EXISTS idx_traffic_attachments_traffic_id ON silantas.traffic_attachments(traffic_id);\n\n");
+
+    // 4. DDL: whatsapp_recaps
+    sql.push_str("-- --------------------------------------------------------\n");
+    sql.push_str("-- Table structure for: silantas.whatsapp_recaps\n");
+    sql.push_str("-- --------------------------------------------------------\n");
+    sql.push_str("CREATE TABLE IF NOT EXISTS silantas.whatsapp_recaps (\n");
+    sql.push_str("    id UUID PRIMARY KEY,\n");
+    sql.push_str("    reporter_name VARCHAR(255) NOT NULL,\n");
+    sql.push_str("    reporter_phone VARCHAR(50),\n");
+    sql.push_str("    address TEXT NOT NULL,\n");
+    sql.push_str("    service_type VARCHAR(50) NOT NULL,\n");
+    sql.push_str("    description TEXT NOT NULL,\n");
+    sql.push_str("    status VARCHAR(50) NOT NULL DEFAULT 'BARU',\n");
+    sql.push_str("    recorded_by VARCHAR(255),\n");
+    sql.push_str("    notes TEXT,\n");
+    sql.push_str("    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),\n");
+    sql.push_str("    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n");
+    sql.push_str(");\n\n");
+
+    // 5. DDL: whatsapp_attachments
+    sql.push_str("-- --------------------------------------------------------\n");
+    sql.push_str("-- Table structure for: silantas.whatsapp_attachments\n");
+    sql.push_str("-- --------------------------------------------------------\n");
+    sql.push_str("CREATE TABLE IF NOT EXISTS silantas.whatsapp_attachments (\n");
+    sql.push_str("    id UUID PRIMARY KEY,\n");
+    sql.push_str("    recap_id UUID REFERENCES silantas.whatsapp_recaps(id) ON DELETE CASCADE,\n");
+    sql.push_str("    file_name VARCHAR(255) NOT NULL,\n");
+    sql.push_str("    file_path VARCHAR(500) NOT NULL,\n");
+    sql.push_str("    mime_type VARCHAR(100) NOT NULL,\n");
+    sql.push_str("    file_size BIGINT NOT NULL,\n");
+    sql.push_str("    uploaded_by UUID REFERENCES silantas.users(id),\n");
+    sql.push_str("    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n");
+    sql.push_str(");\n");
+    sql.push_str("CREATE INDEX IF NOT EXISTS idx_whatsapp_attachments_recap_id ON silantas.whatsapp_attachments(recap_id);\n\n");
+
+    // 6. DDL: audit_logs
     sql.push_str("-- --------------------------------------------------------\n");
     sql.push_str("-- Table structure for: silantas.audit_logs\n");
     sql.push_str("-- --------------------------------------------------------\n");
@@ -543,6 +595,126 @@ pub async fn generate_portable_sql_backup(pool: &PgPool, out_path: &Path, trigge
     sql.push('\n');
 
     // --------------------------------------------------------
+    // DATA DUMP: silantas.traffic_attachments
+    // --------------------------------------------------------
+    sql.push_str("-- Data dump for: silantas.traffic_attachments\n");
+    let traffic_att_rows = sqlx::query(
+        "SELECT id, traffic_id, file_name, file_path, mime_type, file_size, uploaded_by, created_at FROM silantas.traffic_attachments ORDER BY created_at ASC;"
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+
+    for row in traffic_att_rows {
+        let id: Uuid = row.get(0);
+        let traffic_id: Uuid = row.get(1);
+        let file_name: String = row.get(2);
+        let file_path: String = row.get(3);
+        let mime_type: String = row.get(4);
+        let file_size: i64 = row.get(5);
+        let uploaded_by: Option<Uuid> = row.get(6);
+        let created_at: DateTime<Utc> = row.get(7);
+
+        let up_by_sql = uploaded_by.map(|u| format!("'{}'", u)).unwrap_or_else(|| "NULL".to_string());
+
+        sql.push_str(&format!(
+            "INSERT INTO silantas.traffic_attachments (id, traffic_id, file_name, file_path, mime_type, file_size, uploaded_by, created_at) VALUES ('{}', '{}', '{}', '{}', '{}', {}, {}, '{}') ON CONFLICT (id) DO NOTHING;\n",
+            id,
+            traffic_id,
+            escape_sql_string(&file_name),
+            escape_sql_string(&file_path),
+            escape_sql_string(&mime_type),
+            file_size,
+            up_by_sql,
+            created_at.to_rfc3339()
+        ));
+    }
+    sql.push('\n');
+
+    // --------------------------------------------------------
+    // DATA DUMP: silantas.whatsapp_recaps
+    // --------------------------------------------------------
+    sql.push_str("-- Data dump for: silantas.whatsapp_recaps\n");
+    let wa_recaps_rows = sqlx::query(
+        "SELECT id, reporter_name, reporter_phone, address, service_type, description, status, recorded_by, notes, created_at, updated_at FROM silantas.whatsapp_recaps ORDER BY created_at ASC;"
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+
+    for row in wa_recaps_rows {
+        let id: Uuid = row.get(0);
+        let reporter_name: String = row.get(1);
+        let reporter_phone: Option<String> = row.get(2);
+        let address: String = row.get(3);
+        let service_type: String = row.get(4);
+        let description: String = row.get(5);
+        let status: String = row.get(6);
+        let recorded_by: Option<String> = row.get(7);
+        let notes: Option<String> = row.get(8);
+        let created_at: DateTime<Utc> = row.get(9);
+        let updated_at: DateTime<Utc> = row.get(10);
+
+        let phone_sql = reporter_phone.map(|p| format!("'{}'", escape_sql_string(&p))).unwrap_or_else(|| "NULL".to_string());
+        let rec_by_sql = recorded_by.map(|r| format!("'{}'", escape_sql_string(&r))).unwrap_or_else(|| "NULL".to_string());
+        let notes_sql = notes.map(|n| format!("'{}'", escape_sql_string(&n))).unwrap_or_else(|| "NULL".to_string());
+
+        sql.push_str(&format!(
+            "INSERT INTO silantas.whatsapp_recaps (id, reporter_name, reporter_phone, address, service_type, description, status, recorded_by, notes, created_at, updated_at) VALUES ('{}', '{}', {}, '{}', '{}', '{}', '{}', {}, {}, '{}', '{}') ON CONFLICT (id) DO NOTHING;\n",
+            id,
+            escape_sql_string(&reporter_name),
+            phone_sql,
+            escape_sql_string(&address),
+            escape_sql_string(&service_type),
+            escape_sql_string(&description),
+            escape_sql_string(&status),
+            rec_by_sql,
+            notes_sql,
+            created_at.to_rfc3339(),
+            updated_at.to_rfc3339()
+        ));
+    }
+    sql.push('\n');
+
+    // --------------------------------------------------------
+    // DATA DUMP: silantas.whatsapp_attachments
+    // --------------------------------------------------------
+    sql.push_str("-- Data dump for: silantas.whatsapp_attachments\n");
+    let wa_att_rows = sqlx::query(
+        "SELECT id, recap_id, file_name, file_path, mime_type, file_size, uploaded_by, created_at FROM silantas.whatsapp_attachments ORDER BY created_at ASC;"
+    )
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+
+    for row in wa_att_rows {
+        let id: Uuid = row.get(0);
+        let recap_id: Option<Uuid> = row.get(1);
+        let file_name: String = row.get(2);
+        let file_path: String = row.get(3);
+        let mime_type: String = row.get(4);
+        let file_size: i64 = row.get(5);
+        let uploaded_by: Option<Uuid> = row.get(6);
+        let created_at: DateTime<Utc> = row.get(7);
+
+        let recap_id_sql = recap_id.map(|r| format!("'{}'", r)).unwrap_or_else(|| "NULL".to_string());
+        let up_by_sql = uploaded_by.map(|u| format!("'{}'", u)).unwrap_or_else(|| "NULL".to_string());
+
+        sql.push_str(&format!(
+            "INSERT INTO silantas.whatsapp_attachments (id, recap_id, file_name, file_path, mime_type, file_size, uploaded_by, created_at) VALUES ('{}', {}, '{}', '{}', '{}', {}, {}, '{}') ON CONFLICT (id) DO NOTHING;\n",
+            id,
+            recap_id_sql,
+            escape_sql_string(&file_name),
+            escape_sql_string(&file_path),
+            escape_sql_string(&mime_type),
+            file_size,
+            up_by_sql,
+            created_at.to_rfc3339()
+        ));
+    }
+    sql.push('\n');
+
+    // --------------------------------------------------------
     // DATA DUMP: silantas.audit_logs
     // --------------------------------------------------------
     sql.push_str("-- Data dump for: silantas.audit_logs\n");
@@ -620,7 +792,150 @@ fn try_pg_dump(config: &Config, out_path: &Path) -> Result<(), String> {
     Ok(())
 }
 
-/// Generate database backup (pg_dump with fallback to native exporter)
+/// Helper to zip database SQL, uploads folder, manifest, and restoration guide into a unified backup package
+pub fn package_backup_zip(
+    sql_path: &Path,
+    zip_path: &Path,
+    trigger_type: &str,
+    db_checksum: &str,
+) -> anyhow::Result<(u64, String, usize, u64)> {
+    let zip_file = File::create(zip_path)?;
+    let mut zip = ZipWriter::new(zip_file);
+    let file_options = SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated);
+
+    // 1. Add database.sql
+    zip.start_file("database.sql", file_options)?;
+    let mut sql_file = File::open(sql_path)?;
+    std::io::copy(&mut sql_file, &mut zip)?;
+
+    // 2. Discover and add all uploads
+    let uploads_root = PathBuf::from(std::env::var("UPLOADS_BASE_DIR").unwrap_or_else(|_| "./uploads".to_string()));
+    let mut packed_files: Vec<String> = Vec::new();
+    let mut total_upload_bytes: u64 = 0;
+
+    fn walk_directory(
+        current_dir: &Path,
+        root_dir: &Path,
+        files_out: &mut Vec<(PathBuf, String)>,
+    ) {
+        if let Ok(entries) = fs::read_dir(current_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.is_file() {
+                    if let Ok(rel) = path.strip_prefix(root_dir) {
+                        let normalized_rel = format!("uploads/{}", rel.to_string_lossy().replace('\\', "/"));
+                        files_out.push((path, normalized_rel));
+                    }
+                } else if path.is_dir() {
+                    walk_directory(&path, root_dir, files_out);
+                }
+            }
+        }
+    }
+
+    if uploads_root.exists() && uploads_root.is_dir() {
+        let mut upload_items = Vec::new();
+        walk_directory(&uploads_root, &uploads_root, &mut upload_items);
+
+        for (disk_path, entry_name) in upload_items {
+            if let Ok(mut f) = File::open(&disk_path) {
+                if let Ok(meta) = f.metadata() {
+                    total_upload_bytes += meta.len();
+                }
+                zip.start_file(&entry_name, file_options)?;
+                std::io::copy(&mut f, &mut zip)?;
+                packed_files.push(entry_name);
+            }
+        }
+    }
+
+    // 3. Add manifest.json
+    let now = Utc::now();
+    let manifest = serde_json::json!({
+        "system": "SUANGGI - SILANTAS HEWAN MIMIKA",
+        "description": "Arsip Cadangan Terpadu Basis Data dan Berkas Lampiran Fisik",
+        "version": "2.0",
+        "createdAt": now.to_rfc3339(),
+        "triggerType": trigger_type.to_uppercase(),
+        "databaseFile": "database.sql",
+        "databaseSha256": db_checksum,
+        "totalUploadedFiles": packed_files.len(),
+        "totalUploadedBytes": total_upload_bytes,
+        "uploadedFiles": packed_files,
+    });
+    zip.start_file("manifest.json", file_options)?;
+    zip.write_all(serde_json::to_string_pretty(&manifest)?.as_bytes())?;
+
+    // 4. Add MIGRATION_GUIDE.txt
+    let guide = format!(
+r#"================================================================================
+SUANGGI (SILANTAS) - PANDUAN LENGKAP RESTORASI DAN MIGRASI DATA
+================================================================================
+Arsip cadangan ini memuat snapshot lengkap dari sistem SUANGGI (SILANTAS), mencakup:
+1. Skema dan seluruh data basis data PostgreSQL (database.sql).
+2. Seluruh berkas fisik lampiran dokumen lalu lintas hewan (surat rekomendasi, SKKH, SV, dsb).
+3. Seluruh berkas fisik tangkapan layar aduan/laporan WhatsApp (uploads/whatsapp_attachments).
+
+INFORMASI ARSIP:
+- Tanggal Dibuat        : {}
+- Tipe Pemicu           : {}
+- SHA-256 Basis Data    : {}
+- Jumlah Berkas Upload  : {} berkas ({})
+
+STRUKTUR ISI ARSIP ZIP:
+├── database.sql                    (Dump lengkap PostgreSQL schema silantas)
+├── manifest.json                   (Metadata verifikasi dan daftar berkas)
+├── MIGRATION_GUIDE.txt             (Petunjuk ini)
+└── uploads/
+    ├── traffic_attachments/        (Sertifikat Veteriner, SKKH, dsb)
+    └── whatsapp_attachments/       (Tangkapan layar pengaduan WhatsApp)
+
+--------------------------------------------------------------------------------
+LANGKAH MIGRASI / PEMULIHAN KE SERVER BARU:
+--------------------------------------------------------------------------------
+Langkah 1: Ekstrak seluruh isi arsip ZIP ke folder aplikasi backend Silantas:
+   # Contoh pada Linux / macOS / PowerShell:
+   unzip suanggi_backup_xxx.zip -d /path/ke/backend/
+
+   *Catatan penting*:
+   Folder `uploads/` akan otomatis menempati posisi `./uploads/` pada backend.
+   Seluruh referensi path di basis data (misalnya: 'uploads/traffic_attachments/xxx.pdf'
+   atau 'uploads/whatsapp_attachments/yyy.png') akan langsung cocok 100% secara presisi
+   tanpa perlu mengubah nama atau jalur berkas di basis data!
+
+Langkah 2: Impor berkas SQL ke server PostgreSQL baru:
+   psql -h <HOST_DB> -U <USER_DB> -d <NAMA_DB> -f database.sql
+
+   *Atau melalui pgAdmin / DBeaver*:
+   Buka file database.sql di Query Tool, lalu klik tombol 'Execute'.
+
+Langkah 3: Jalankan aplikasi Silantas Backend.
+   Semua data rekapan lalu lintas, aduan WhatsApp, dan berkas lampiran
+   dapat langsung diakses dan diunduh seperti sedia kala!
+================================================================================
+"#,
+        now.to_rfc3339(),
+        trigger_type.to_uppercase(),
+        db_checksum,
+        packed_files.len(),
+        format_bytes(total_upload_bytes)
+    );
+
+    zip.start_file("MIGRATION_GUIDE.txt", file_options)?;
+    zip.write_all(guide.as_bytes())?;
+
+    // 5. Finalize archive
+    zip.finish()?;
+
+    // 6. Compute stats of the resulting .zip file
+    let zip_size = fs::metadata(zip_path)?.len();
+    let zip_checksum = calculate_file_sha256(zip_path)?;
+
+    Ok((zip_size, zip_checksum, packed_files.len(), total_upload_bytes))
+}
+
+/// Generate database backup (pg_dump with fallback to native exporter, packaged as .zip with uploads)
 pub async fn create_database_backup(
     pool: &PgPool,
     config: &Config,
@@ -628,28 +943,47 @@ pub async fn create_database_backup(
 ) -> anyhow::Result<BackupFileItem> {
     let dir = get_backup_dir();
     let now = Utc::now();
-    let filename = format!(
-        "suanggi_backup_{}_{}.sql",
-        now.format("%Y%m%d_%H%M%S"),
+    let timestamp = now.format("%Y%m%d_%H%M%S");
+    let zip_filename = format!(
+        "suanggi_backup_{}_{}.zip",
+        timestamp,
         trigger_type.to_lowercase()
     );
-    let target_path = dir.join(&filename);
+    let target_zip_path = dir.join(&zip_filename);
 
-    tracing::info!("Starting database backup -> target: {}", target_path.display());
+    let temp_sql_filename = format!(
+        ".temp_suanggi_{}_{}.sql",
+        timestamp,
+        trigger_type.to_lowercase()
+    );
+    let temp_sql_path = dir.join(&temp_sql_filename);
+
+    tracing::info!("Starting database backup -> target zip: {}", target_zip_path.display());
 
     // 1. Attempt pg_dump first for best performance
-    let dump_result = try_pg_dump(config, &target_path);
+    let dump_result = try_pg_dump(config, &temp_sql_path);
     if let Err(e) = dump_result {
         tracing::warn!("pg_dump not available or failed ({e}). Falling back to Silantas native SQL exporter.");
-        generate_portable_sql_backup(pool, &target_path, trigger_type).await?;
+        generate_portable_sql_backup(pool, &temp_sql_path, trigger_type).await?;
     }
 
-    // 2. Compute checksum and file size
-    let size_bytes = fs::metadata(&target_path)?.len();
-    let size_display = format_bytes(size_bytes);
-    let checksum = calculate_file_sha256(&target_path)?;
+    // 2. Compute checksum of the raw SQL dump
+    let db_checksum = calculate_file_sha256(&temp_sql_path)?;
 
-    // 3. Update backup status in silantas.settings
+    // 3. Package database.sql + uploads/ + manifest.json + MIGRATION_GUIDE.txt into the zip archive
+    let (zip_size, zip_checksum, upload_count, upload_bytes) = package_backup_zip(
+        &temp_sql_path,
+        &target_zip_path,
+        trigger_type,
+        &db_checksum,
+    )?;
+
+    // 4. Remove intermediate raw SQL file to keep the backup directory clean
+    let _ = fs::remove_file(&temp_sql_path);
+
+    let size_display = format_bytes(zip_size);
+
+    // 5. Update backup status in silantas.settings
     let _ = sqlx::query(
         "INSERT INTO silantas.settings (key, value, updated_at)
          VALUES ($1, $2, $3)
@@ -672,24 +1006,26 @@ pub async fn create_database_backup(
     .execute(pool)
     .await;
 
-    // 4. Prune old backups based on retention policy
+    // 6. Prune old backups based on retention policy
     let config_state = get_backup_config(pool).await;
     let _ = prune_old_backups(&dir, config_state.retention_count as usize);
 
     tracing::info!(
-        "Database backup created successfully: {} ({}, SHA256: {})",
-        filename,
+        "Unified backup archive created: {} ({}, uploads: {} files / {}, SHA256: {})",
+        zip_filename,
         size_display,
-        &checksum[..8]
+        upload_count,
+        format_bytes(upload_bytes),
+        &zip_checksum[..8]
     );
 
     Ok(BackupFileItem {
-        filename,
-        size_bytes,
+        filename: zip_filename,
+        size_bytes: zip_size,
         size_display,
         created_at: now.to_rfc3339(),
         trigger_type: trigger_type.to_uppercase(),
-        checksum_sha256: checksum,
+        checksum_sha256: zip_checksum,
     })
 }
 
