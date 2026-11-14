@@ -40,6 +40,7 @@ export interface WhatsappAttachment {
 
 export interface WhatsappRecapBackend {
   id: string;
+  ticketId?: string;
   reporterName: string;
   reporterPhone?: string;
   address: string;

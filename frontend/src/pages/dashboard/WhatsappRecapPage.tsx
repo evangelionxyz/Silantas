@@ -15,6 +15,7 @@ import {
 
 export interface WhatsappRecapItem {
   id: string;
+  ticketId?: string;
   reporterName: string;
   reporterPhone?: string;
   address: string;
@@ -35,6 +36,7 @@ const STORAGE_KEY = 'suanggi_whatsapp_recaps_v1';
 const INITIAL_RECAP_DATA: WhatsappRecapItem[] = [
   {
     id: 'wa-rec-001',
+    ticketId: 'ADU-REC001',
     reporterName: 'Yohanes Maturbongs',
     reporterPhone: '081248901234',
     address: 'Jl. Hasanuddin, Distrik Mimika Baru, Timika',
@@ -50,6 +52,7 @@ const INITIAL_RECAP_DATA: WhatsappRecapItem[] = [
   },
   {
     id: 'wa-rec-002',
+    ticketId: 'ADU-REC002',
     reporterName: 'Mama Maria Omaleng',
     reporterPhone: '082199887766',
     address: 'Kampung Naena Muktipura (SP 6), Distrik Kuala Kencana',
@@ -65,6 +68,7 @@ const INITIAL_RECAP_DATA: WhatsappRecapItem[] = [
   },
   {
     id: 'wa-rec-003',
+    ticketId: 'ADU-REC003',
     reporterName: 'H. Syamsul Bahri (Toko Hasil Laut & Daging)',
     reporterPhone: '081344556677',
     address: 'Kawasan Pelabuhan Rakyat Pomako, Distrik Mimika Timur',
@@ -137,6 +141,7 @@ export const WhatsappRecapPage: React.FC = () => {
           const firstAtt = r.attachments && r.attachments.length > 0 ? r.attachments[0] : undefined;
           return {
             id: r.id,
+            ticketId: r.ticketId,
             reporterName: r.reporterName,
             reporterPhone: r.reporterPhone,
             address: r.address,
@@ -349,8 +354,10 @@ export const WhatsappRecapPage: React.FC = () => {
         )
       );
     } else {
+      const randomTicket = `ADU-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
       const newItem: WhatsappRecapItem = {
         id: `wa-rec-${Date.now().toString(36)}`,
+        ticketId: randomTicket,
         reporterName: formData.reporterName.trim(),
         reporterPhone: formData.reporterPhone.trim() || undefined,
         address: formData.address.trim(),
@@ -413,6 +420,8 @@ export const WhatsappRecapPage: React.FC = () => {
   const filteredRecaps = recaps.filter((item) => {
     const matchSearch =
       search === '' ||
+      (item.ticketId && item.ticketId.toLowerCase().includes(search.toLowerCase())) ||
+      item.id.toLowerCase().includes(search.toLowerCase()) ||
       item.reporterName.toLowerCase().includes(search.toLowerCase()) ||
       item.address.toLowerCase().includes(search.toLowerCase()) ||
       (item.reporterPhone && item.reporterPhone.includes(search)) ||
@@ -434,9 +443,10 @@ export const WhatsappRecapPage: React.FC = () => {
   const pendingCount = recaps.filter((r) => r.status !== 'SELESAI').length;
 
   const exportCsv = () => {
-    const headers = ['ID', 'Tanggal', 'Nama Pelapor', 'Nomor Kontak', 'Alamat', 'Jenis Layanan', 'Laporan / Aduan', 'Status', 'Petugas Pencatat', 'Lokasi Berkas Server', 'Catatan'];
+    const headers = ['ID', 'Nomor Tiket', 'Tanggal', 'Nama Pelapor', 'Nomor Kontak', 'Alamat', 'Jenis Layanan', 'Laporan / Aduan', 'Status', 'Petugas Pencatat', 'Lokasi Berkas Server', 'Catatan'];
     const rows = filteredRecaps.map((r) => [
       r.id,
+      r.ticketId || '',
       r.date,
       `"${r.reporterName.replace(/"/g, '""')}"`,
       r.reporterPhone || '',
@@ -549,7 +559,7 @@ export const WhatsappRecapPage: React.FC = () => {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari nama pelapor, nomor telepon, alamat, atau isi keluhan..."
+              placeholder="Cari nomor tiket (contoh: ADU-7AFC7026), nama, telepon, atau keluhan..."
               className="w-full px-3 py-2 text-sm border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
             />
             {search && (
@@ -596,7 +606,7 @@ export const WhatsappRecapPage: React.FC = () => {
           <table className="w-full min-w-[950px] text-left text-sm text-[#1f2328]">
             <thead className="bg-[#f6f8fa] border-b border-[#d0d7de] font-semibold text-[#57606a] text-xs uppercase tracking-wider">
               <tr>
-                <th className="py-3 px-3.5 w-36">Waktu / ID</th>
+                <th className="py-3 px-3.5 w-44">Waktu / Tiket / ID</th>
                 <th className="py-3 px-3.5 w-56">Pelapor &amp; Kontak</th>
                 <th className="py-3 px-3.5 w-48">Alamat</th>
                 <th className="py-3 px-3.5 w-32">Jenis Layanan</th>
@@ -618,10 +628,15 @@ export const WhatsappRecapPage: React.FC = () => {
                   const fileUrl = getItemViewUrl(item);
                   return (
                     <tr key={item.id} className="hover:bg-[#f6f8fa]/70 transition-colors">
-                      {/* Waktu / ID */}
+                      {/* Waktu / Tiket / ID */}
                       <td className="py-3 px-3.5 font-mono text-xs">
                         <div className="font-semibold text-[#1f2328]">{item.date}</div>
-                        <div className="text-[10px] text-[#57606a]">{item.id}</div>
+                        {item.ticketId && (
+                          <div className="inline-flex items-center gap-1 my-1 px-1.5 py-0.5 bg-[#ddf4ff] text-[#0969da] border border-[#54aeff]/40 rounded text-[11px] font-bold tracking-wide">
+                            <span>{item.ticketId}</span>
+                          </div>
+                        )}
+                        <div className="text-[10px] text-[#57606a] truncate max-w-[150px]" title={item.id}>{item.id}</div>
                       </td>
 
                       {/* Pelapor & Kontak */}
@@ -1054,7 +1069,7 @@ export const WhatsappRecapPage: React.FC = () => {
             >
               <div className="px-5 py-3.5 border-b border-[#d0d7de] flex items-center justify-between bg-[#f6f8fa]">
                 <h3 className="font-bold text-sm sm:text-base text-[#1f2328]">
-                  Detail Rekapan WhatsApp #{viewingItem.id}
+                  Detail Rekapan WhatsApp {viewingItem.ticketId ? `[Tiket: ${viewingItem.ticketId}]` : `#${viewingItem.id}`}
                 </h3>
                 <button
                   type="button"
@@ -1066,7 +1081,13 @@ export const WhatsappRecapPage: React.FC = () => {
               </div>
 
               <div className="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs sm:text-sm">
-                <div className="grid grid-cols-2 gap-3 pb-3 border-b border-[#d0d7de]">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pb-3 border-b border-[#d0d7de]">
+                  <div>
+                    <div className="text-[11px] font-bold text-[#57606a] uppercase">Nomor Tiket:</div>
+                    <div className="font-mono font-bold text-[#0969da] mt-0.5">
+                      {viewingItem.ticketId || '-'}
+                    </div>
+                  </div>
                   <div>
                     <div className="text-[11px] font-bold text-[#57606a] uppercase">Tanggal &amp; Waktu:</div>
                     <div className="font-semibold text-[#1f2328] mt-0.5">{viewingItem.date}</div>
@@ -1091,7 +1112,7 @@ export const WhatsappRecapPage: React.FC = () => {
                   <div className="text-[11px] font-bold text-[#57606a] uppercase">Pelapor:</div>
                   <div className="font-extrabold text-base text-[#1f2328] mt-0.5">{viewingItem.reporterName}</div>
                   {viewingItem.reporterPhone && (
-                    <div className="text-xs text-[#0969da] font-mono mt-0.5">
+                    <div className="text-sm text-[#0969da] font-mono mt-0.5">
                       No. WhatsApp: {viewingItem.reporterPhone}
                     </div>
                   )}

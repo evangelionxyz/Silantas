@@ -7,6 +7,7 @@ use uuid::Uuid;
 #[serde(rename_all = "camelCase")]
 pub struct WhatsappRecap {
     pub id: Uuid,
+    pub ticket_id: Option<String>,
     pub reporter_name: String,
     pub reporter_phone: Option<String>,
     pub address: String,
@@ -39,6 +40,7 @@ pub struct WhatsappAttachment {
 #[serde(rename_all = "camelCase")]
 pub struct CreateWhatsappRecapRequest {
     pub id: Option<Uuid>,
+    pub ticket_id: Option<String>,
     pub reporter_name: String,
     pub reporter_phone: Option<String>,
     pub address: String,
@@ -53,6 +55,7 @@ pub struct CreateWhatsappRecapRequest {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateWhatsappRecapRequest {
+    pub ticket_id: Option<String>,
     pub reporter_name: Option<String>,
     pub reporter_phone: Option<String>,
     pub address: Option<String>,

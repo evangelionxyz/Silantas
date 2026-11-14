@@ -63,6 +63,7 @@ CREATE INDEX IF NOT EXISTS idx_traffic_attachments_traffic_id ON silantas.traffi
 -- WhatsApp recaps table
 CREATE TABLE IF NOT EXISTS silantas.whatsapp_recaps (
 	id UUID PRIMARY KEY,
+	ticket_id VARCHAR(50),
 	reporter_name VARCHAR(255) NOT NULL,
 	reporter_phone VARCHAR(50),
 	address TEXT NOT NULL,
@@ -74,6 +75,8 @@ CREATE TABLE IF NOT EXISTS silantas.whatsapp_recaps (
 	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_whatsapp_recaps_ticket_id ON silantas.whatsapp_recaps(ticket_id);
 
 -- WhatsApp attachments table
 CREATE TABLE IF NOT EXISTS silantas.whatsapp_attachments (

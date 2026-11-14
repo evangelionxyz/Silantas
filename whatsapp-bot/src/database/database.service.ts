@@ -7,6 +7,7 @@ export interface CreateComplaintDto {
   reporterPhone: string;
   address?: string;
   description: string;
+  ticketId?: string;
 }
 
 export interface ComplaintResult {
@@ -60,19 +61,20 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   async createComplaintRecap(data: CreateComplaintDto): Promise<ComplaintResult> {
     const id = randomUUID();
     const shortCode = id.slice(0, 8).toUpperCase();
-    const ticketNo = `ADU-${shortCode}`;
+    const ticketNo = data.ticketId || `ADU-${shortCode}`;
     const address = data.address?.trim() || 'Kabupaten Mimika';
     const now = new Date();
 
     const query = `
       INSERT INTO silantas.whatsapp_recaps
-      (id, reporter_name, reporter_phone, address, service_type, description, status, recorded_by, notes, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, 'BANTUAN', $5, 'BARU', 'Bot WhatsApp (Otomatis)', 'Aduan Masuk via WhatsApp Bot', $6, $7)
+      (id, ticket_id, reporter_name, reporter_phone, address, service_type, description, status, recorded_by, notes, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, 'BANTUAN', $6, 'BARU', 'Bot WhatsApp (Otomatis)', 'Aduan Masuk via WhatsApp Bot', $7, $8)
       RETURNING id;
     `;
 
     const values = [
       id,
+      ticketNo,
       data.reporterName || 'Warga (Tanpa Nama)',
       data.reporterPhone || '',
       address,

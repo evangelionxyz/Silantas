@@ -65,6 +65,15 @@ export const CHATBOT_MENUS = {
     `──────────────────────\n` +
     `Ketik *0* untuk kembali ke Menu Utama, atau *4* untuk menyampaikan keluhan.`,
 
+  COMPLAINT_CHAT_1: 'Silahkan isi detail dibawah ini',
+
+  COMPLAINT_CHAT_2:
+    `Nama pemilik:\n` +
+    `Nomor telepon:\n` +
+    `Alamat lengkap:\n` +
+    `Jumlah hewan:\n` +
+    `Keluhan:`,
+
   COMPLAINT_STEP_1_NAME:
     `*LAYANAN ADUAN & KELUHAN MASYARAKAT*\n` +
     `*Dinas Peternakan dan Kesehatan Hewan Kabupaten Mimika*\n\n` +
@@ -104,12 +113,12 @@ export const CHATBOT_MENUS = {
     `Nomor telepon tidak valid.\n` +
     `Silakan masukkan nomor HP/WhatsApp yang benar (minimal 8 angka, contoh: 081240000000):`,
 
-  COMPLAINT_CONFIRMATION: (ticketNo: string, reporterName: string, phone: string) =>
+  COMPLAINT_CONFIRMATION: (ticketNo: string, reporterName: string, phone: string, address?: string) =>
     `*BUKTI PENCATATAN ADUAN MASYARAKAT*\n\n` +
     `Nomor Tiket: *${ticketNo}*` +
     `\nNama Pelapor: *${reporterName}*` +
     `\nNomor Kontak: *${phone}*` +
-    `\nWilayah: *Kabupaten Mimika*` +
+    `\nWilayah: *${address || 'Kabupaten Mimika'}*` +
     `\nStatus: *BARU (Menunggu Tindak Lanjut Petugas)*\n\n` +
     `Laporan Anda telah berhasil masuk ke antrean Dashboard Petugas Dinas Peternakan dan Kesehatan Hewan Kabupaten Mimika.\n\n` +
     `Petugas kami akan segera meninjau dan merespons langsung di percakapan ini. Chatbot otomatis dinonaktifkan sementara agar komunikasi dengan petugas berjalan lancar.\n\n` +

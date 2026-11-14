@@ -54,6 +54,111 @@ export class ChatbotService {
   }
 
   /**
+   * Melakukan ekstraksi parsing terhadap teks template aduan yang diisi oleh warga:
+   * Nama pemilik:
+   * Nomor telepon:
+   * Alamat lengkap:
+   * Jumlah hewan:
+   * Keluhan:
+   */
+  public parseComplaintTemplate(
+    rawText: string,
+    detectedPhone?: string,
+    fallbackName?: string,
+  ): {
+    reporterName: string;
+    reporterPhone: string;
+    address: string;
+    description: string;
+  } {
+    const lines = rawText.split('\n');
+    let name = '';
+    let phone = '';
+    let address = '';
+    let animalCount = '';
+    let complaint = '';
+    let currentField: 'name' | 'phone' | 'address' | 'animalCount' | 'complaint' | null = null;
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+
+      const nameMatch = line.match(/^(?:nama\s*pemilik|nama\s*pelapor|nama)\s*[:=]\s*(.*)$/i);
+      const phoneMatch = line.match(/^(?:nomor\s*telepon|no\s*telepon|no\s*hp|nomor\s*hp|telepon|hp|kontak)\s*[:=]\s*(.*)$/i);
+      const addressMatch = line.match(/^(?:alamat\s*lengkap|alamat|lokasi)\s*[:=]\s*(.*)$/i);
+      const animalMatch = line.match(/^(?:jumlah\s*hewan|jumlah\s*ternak|populasi|jumlah)\s*[:=]\s*(.*)$/i);
+      const complaintMatch = line.match(/^(?:keluhan|laporan|masalah|keterangan|aduan)\s*[:=]\s*(.*)$/i);
+
+      if (nameMatch) {
+        name = nameMatch[1].trim();
+        currentField = 'name';
+      } else if (phoneMatch) {
+        phone = phoneMatch[1].trim();
+        currentField = 'phone';
+      } else if (addressMatch) {
+        address = addressMatch[1].trim();
+        currentField = 'address';
+      } else if (animalMatch) {
+        animalCount = animalMatch[1].trim();
+        currentField = 'animalCount';
+      } else if (complaintMatch) {
+        complaint = complaintMatch[1].trim();
+        currentField = 'complaint';
+      } else if (currentField === 'complaint' && line) {
+        complaint = complaint ? `${complaint}\n${line}` : line;
+      }
+    }
+
+    // Jika tidak ada label yang cocok (warga mengetik keluhan bebas tanpa format template)
+    if (!name && !complaint && !address && !animalCount) {
+      complaint = rawText.trim();
+    }
+
+    // 1. Validasi / Sanitasi Nama
+    const cleanName = name.replace(/^[.\s\-_]+|[.\s\-_]+$/g, '').trim();
+    const finalName =
+      cleanName && cleanName.length >= 2
+        ? cleanName
+        : fallbackName && fallbackName.trim() !== '.'
+          ? fallbackName.trim()
+          : 'Warga (WhatsApp)';
+
+    // 2. Validasi / Sanitasi Nomor Telepon
+    let finalPhone = '';
+    const phoneDigits = phone.replace(/\D/g, '');
+    if (phoneDigits.length >= 8 && phoneDigits.length <= 16) {
+      if (phoneDigits.startsWith('62')) {
+        finalPhone = '0' + phoneDigits.slice(2);
+      } else if (phoneDigits.startsWith('0')) {
+        finalPhone = phoneDigits;
+      } else {
+        finalPhone = '0' + phoneDigits;
+      }
+    } else if (detectedPhone) {
+      finalPhone = detectedPhone;
+    } else {
+      finalPhone = 'Tidak disertakan';
+    }
+
+    // 3. Sanitasi Alamat (Default ke Kabupaten Mimika jika kosong)
+    const finalAddress = address && address.length >= 2 ? address : 'Kabupaten Mimika';
+
+    // 4. Sanitasi Keterangan / Keluhan
+    let finalDescription = '';
+    if (animalCount && animalCount.trim()) {
+      finalDescription = `Jumlah Hewan: ${animalCount.trim()}\nKeluhan: ${complaint || '-'}`;
+    } else {
+      finalDescription = complaint || '-';
+    }
+
+    return {
+      reporterName: finalName,
+      reporterPhone: finalPhone,
+      address: finalAddress,
+      description: finalDescription,
+    };
+  }
+
+  /**
    * Dipanggil saat admin membalas chat secara manual dari HP atau WhatsApp Web.
    */
   handleAdminReply(jid: string): void {
@@ -63,9 +168,14 @@ export class ChatbotService {
 
   /**
    * Memproses pesan masuk dari masyarakat.
-   * Mengembalikan string teks balasan, atau null jika bot harus hening (misal saat admin cooldown atau spam).
+   * Mengembalikan string atau array string (jika mengirim beberapa chat berurutan),
+   * atau null jika bot harus hening (misal saat admin cooldown atau spam).
    */
-  async handleIncomingMessage(jid: string, rawText: string, senderName?: string): Promise<string | null> {
+  async handleIncomingMessage(
+    jid: string,
+    rawText: string,
+    senderName?: string,
+  ): Promise<string | string[] | null> {
     const text = rawText.trim();
     if (!text) return null;
 
@@ -119,6 +229,48 @@ export class ChatbotService {
       session.name = senderName.trim();
     }
     session.lastUserMessageAt = Date.now();
+
+    // 3. Alur Pengisian Template Aduan Keluhan (Kirim & parsing template 2 chat berurutan)
+    if (session.state === ChatSessionState.AWAITING_COMPLAINT_TEMPLATE) {
+      if (isExplicitMenuCommand) {
+        session.metadata = {};
+        session.state = ChatSessionState.MAIN_MENU;
+        session.invalidAttempts = 0;
+        session.lastBotReplyAt = Date.now();
+        this.sessionStore.saveSession(session);
+        return CHATBOT_MENUS.GREETING_HEADER(session.name, this.webUrl);
+      }
+
+      const parsed = this.parseComplaintTemplate(
+        text,
+        session.metadata?.detectedPhone as string | undefined,
+        session.name,
+      );
+
+      // Simpan langsung ke database silantas.whatsapp_recaps
+      const result = await this.databaseService.createComplaintRecap({
+        reporterName: parsed.reporterName,
+        reporterPhone: parsed.reporterPhone,
+        address: parsed.address,
+        description: parsed.description,
+      });
+
+      // Alihkan state ke WAITING_FOR_ADMIN dan aktifkan cooldown agar admin menindaklanjuti
+      session.metadata = {};
+      session.name = parsed.reporterName;
+      session.state = ChatSessionState.WAITING_FOR_ADMIN;
+      session.adminLastRepliedAt = Date.now();
+      session.invalidAttempts = 0;
+      session.lastBotReplyAt = Date.now();
+      this.sessionStore.saveSession(session);
+
+      return CHATBOT_MENUS.COMPLAINT_CONFIRMATION(
+        result.ticketNo,
+        parsed.reporterName,
+        parsed.reporterPhone,
+        parsed.address,
+      );
+    }
 
     // 3. Alur Form Keluhan: Langkah 1 - Pengisian Nama Lengkap (Wajib)
     if (session.state === ChatSessionState.COMPLAINT_AWAITING_NAME) {
@@ -295,14 +447,14 @@ export class ChatbotService {
         return CHATBOT_MENUS.SUBMENU_3_RANTAI_DINGIN;
 
       case '4': {
-        // Warga memilih lapor keluhan / aduan: masuk Langkah 1
+        // Warga memilih lapor keluhan / aduan: kirimkan 2 chat berurutan (instruksi + template)
         const detectedPhone = this.formatPhoneNumber(jid);
         session.metadata = { detectedPhone };
-        session.state = ChatSessionState.COMPLAINT_AWAITING_NAME;
+        session.state = ChatSessionState.AWAITING_COMPLAINT_TEMPLATE;
         session.invalidAttempts = 0;
         session.lastBotReplyAt = Date.now();
         this.sessionStore.saveSession(session);
-        return CHATBOT_MENUS.COMPLAINT_STEP_1_NAME;
+        return [CHATBOT_MENUS.COMPLAINT_CHAT_1, CHATBOT_MENUS.COMPLAINT_CHAT_2];
       }
     }
 

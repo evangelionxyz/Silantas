@@ -72,7 +72,7 @@ pub async fn list_recaps_handler(
     };
 
     let mut query_str = String::from(
-        "SELECT id, reporter_name, reporter_phone, address, service_type, description, status, recorded_by, notes, created_at, updated_at
+        "SELECT id, ticket_id, reporter_name, reporter_phone, address, service_type, description, status, recorded_by, notes, created_at, updated_at
          FROM silantas.whatsapp_recaps WHERE 1=1"
     );
 
@@ -82,7 +82,7 @@ pub async fn list_recaps_handler(
     let search = params.search.unwrap_or_default().trim().to_string();
     if !search.is_empty() {
         conditions.push(format!(
-            "(reporter_name ILIKE ${param_idx} OR address ILIKE ${param_idx} OR reporter_phone ILIKE ${param_idx} OR description ILIKE ${param_idx})"
+            "(ticket_id ILIKE ${param_idx} OR reporter_name ILIKE ${param_idx} OR address ILIKE ${param_idx} OR reporter_phone ILIKE ${param_idx} OR description ILIKE ${param_idx})"
         ));
         param_idx += 1;
     }
@@ -171,7 +171,7 @@ pub async fn get_recap_handler(
     };
 
     let recap = db::query_as::<sqlx::Postgres, WhatsappRecap>(
-        "SELECT id, reporter_name, reporter_phone, address, service_type, description, status, recorded_by, notes, created_at, updated_at
+        "SELECT id, ticket_id, reporter_name, reporter_phone, address, service_type, description, status, recorded_by, notes, created_at, updated_at
          FROM silantas.whatsapp_recaps WHERE id = $1;"
     )
     .bind(id)
@@ -223,16 +223,21 @@ pub async fn create_recap_handler(
 
     let user_id = Uuid::parse_str(&claims.sub).ok();
     let recap_id = payload.id.unwrap_or_else(Uuid::new_v4);
+    let ticket_id = payload.ticket_id.unwrap_or_else(|| {
+        let short = recap_id.to_string()[..8].to_uppercase();
+        format!("ADU-{short}")
+    });
     let now = chrono::Utc::now();
     let status = payload.status.unwrap_or_else(|| "BARU".to_string());
     let recorded_by = payload.recorded_by.or_else(|| Some(claims.sub.clone()));
 
     let insert_res = db::query(
         "INSERT INTO silantas.whatsapp_recaps
-         (id, reporter_name, reporter_phone, address, service_type, description, status, recorded_by, notes, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);"
+         (id, ticket_id, reporter_name, reporter_phone, address, service_type, description, status, recorded_by, notes, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);"
     )
     .bind(recap_id)
+    .bind(&ticket_id)
     .bind(&payload.reporter_name)
     .bind(&payload.reporter_phone)
     .bind(&payload.address)
@@ -277,7 +282,8 @@ pub async fn create_recap_handler(
         &format!("Mencatat aduan WhatsApp dari: {}", payload.reporter_name),
         Some(json!({
             "serviceType": payload.service_type,
-            "reporter": payload.reporter_name
+            "reporter": payload.reporter_name,
+            "ticketId": ticket_id
         })),
     )
     .await;
@@ -293,6 +299,7 @@ pub async fn create_recap_handler(
 
     let created = WhatsappRecap {
         id: recap_id,
+        ticket_id: Some(ticket_id),
         reporter_name: payload.reporter_name,
         reporter_phone: payload.reporter_phone,
         address: payload.address,
@@ -327,7 +334,7 @@ pub async fn update_recap_handler(
 
     let user_id = Uuid::parse_str(&claims.sub).ok();
     let current = db::query_as::<sqlx::Postgres, WhatsappRecap>(
-        "SELECT id, reporter_name, reporter_phone, address, service_type, description, status, recorded_by, notes, created_at, updated_at
+        "SELECT id, ticket_id, reporter_name, reporter_phone, address, service_type, description, status, recorded_by, notes, created_at, updated_at
          FROM silantas.whatsapp_recaps WHERE id = $1;"
     )
     .bind(id)
@@ -351,6 +358,7 @@ pub async fn update_recap_handler(
         }
     };
 
+    let ticket_id = payload.ticket_id.or(curr.ticket_id);
     let reporter_name = payload.reporter_name.unwrap_or(curr.reporter_name);
     let reporter_phone = payload.reporter_phone.or(curr.reporter_phone);
     let address = payload.address.unwrap_or(curr.address);
@@ -362,10 +370,11 @@ pub async fn update_recap_handler(
 
     let update_res = db::query(
         "UPDATE silantas.whatsapp_recaps
-         SET reporter_name = $1, reporter_phone = $2, address = $3, service_type = $4, description = $5,
-             status = $6, notes = $7, updated_at = $8
-         WHERE id = $9;"
+         SET ticket_id = $1, reporter_name = $2, reporter_phone = $3, address = $4, service_type = $5, description = $6,
+             status = $7, notes = $8, updated_at = $9
+         WHERE id = $10;"
     )
+    .bind(&ticket_id)
     .bind(&reporter_name)
     .bind(&reporter_phone)
     .bind(&address)
@@ -410,6 +419,7 @@ pub async fn update_recap_handler(
 
     let updated = WhatsappRecap {
         id,
+        ticket_id,
         reporter_name,
         reporter_phone,
         address,

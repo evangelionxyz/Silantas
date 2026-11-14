@@ -121,6 +121,7 @@ pub async fn init_database(
         -- Create WhatsApp Recaps Table
         CREATE TABLE IF NOT EXISTS silantas.whatsapp_recaps (
             id UUID PRIMARY KEY,
+            ticket_id VARCHAR(50),
             reporter_name VARCHAR(255) NOT NULL,
             reporter_phone VARCHAR(50),
             address TEXT NOT NULL,
@@ -132,6 +133,8 @@ pub async fn init_database(
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
+        ALTER TABLE silantas.whatsapp_recaps ADD COLUMN IF NOT EXISTS ticket_id VARCHAR(50);
+        CREATE INDEX IF NOT EXISTS idx_whatsapp_recaps_ticket_id ON silantas.whatsapp_recaps(ticket_id);
 
         -- Create WhatsApp Attachments Table
         CREATE TABLE IF NOT EXISTS silantas.whatsapp_attachments (

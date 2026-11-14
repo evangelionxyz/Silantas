@@ -402,6 +402,7 @@ pub async fn generate_portable_sql_backup(pool: &PgPool, out_path: &Path, trigge
     sql.push_str("-- --------------------------------------------------------\n");
     sql.push_str("CREATE TABLE IF NOT EXISTS silantas.whatsapp_recaps (\n");
     sql.push_str("    id UUID PRIMARY KEY,\n");
+    sql.push_str("    ticket_id VARCHAR(50),\n");
     sql.push_str("    reporter_name VARCHAR(255) NOT NULL,\n");
     sql.push_str("    reporter_phone VARCHAR(50),\n");
     sql.push_str("    address TEXT NOT NULL,\n");
@@ -636,7 +637,7 @@ pub async fn generate_portable_sql_backup(pool: &PgPool, out_path: &Path, trigge
     // --------------------------------------------------------
     sql.push_str("-- Data dump for: silantas.whatsapp_recaps\n");
     let wa_recaps_rows = sqlx::query(
-        "SELECT id, reporter_name, reporter_phone, address, service_type, description, status, recorded_by, notes, created_at, updated_at FROM silantas.whatsapp_recaps ORDER BY created_at ASC;"
+        "SELECT id, ticket_id, reporter_name, reporter_phone, address, service_type, description, status, recorded_by, notes, created_at, updated_at FROM silantas.whatsapp_recaps ORDER BY created_at ASC;"
     )
     .fetch_all(pool)
     .await
@@ -644,24 +645,27 @@ pub async fn generate_portable_sql_backup(pool: &PgPool, out_path: &Path, trigge
 
     for row in wa_recaps_rows {
         let id: Uuid = row.get(0);
-        let reporter_name: String = row.get(1);
-        let reporter_phone: Option<String> = row.get(2);
-        let address: String = row.get(3);
-        let service_type: String = row.get(4);
-        let description: String = row.get(5);
-        let status: String = row.get(6);
-        let recorded_by: Option<String> = row.get(7);
-        let notes: Option<String> = row.get(8);
-        let created_at: DateTime<Utc> = row.get(9);
-        let updated_at: DateTime<Utc> = row.get(10);
+        let ticket_id: Option<String> = row.get(1);
+        let reporter_name: String = row.get(2);
+        let reporter_phone: Option<String> = row.get(3);
+        let address: String = row.get(4);
+        let service_type: String = row.get(5);
+        let description: String = row.get(6);
+        let status: String = row.get(7);
+        let recorded_by: Option<String> = row.get(8);
+        let notes: Option<String> = row.get(9);
+        let created_at: DateTime<Utc> = row.get(10);
+        let updated_at: DateTime<Utc> = row.get(11);
 
+        let ticket_sql = ticket_id.map(|t| format!("'{}'", escape_sql_string(&t))).unwrap_or_else(|| "NULL".to_string());
         let phone_sql = reporter_phone.map(|p| format!("'{}'", escape_sql_string(&p))).unwrap_or_else(|| "NULL".to_string());
         let rec_by_sql = recorded_by.map(|r| format!("'{}'", escape_sql_string(&r))).unwrap_or_else(|| "NULL".to_string());
         let notes_sql = notes.map(|n| format!("'{}'", escape_sql_string(&n))).unwrap_or_else(|| "NULL".to_string());
 
         sql.push_str(&format!(
-            "INSERT INTO silantas.whatsapp_recaps (id, reporter_name, reporter_phone, address, service_type, description, status, recorded_by, notes, created_at, updated_at) VALUES ('{}', '{}', {}, '{}', '{}', '{}', '{}', {}, {}, '{}', '{}') ON CONFLICT (id) DO NOTHING;\n",
+            "INSERT INTO silantas.whatsapp_recaps (id, ticket_id, reporter_name, reporter_phone, address, service_type, description, status, recorded_by, notes, created_at, updated_at) VALUES ('{}', {}, '{}', {}, '{}', '{}', '{}', '{}', {}, {}, '{}', '{}') ON CONFLICT (id) DO NOTHING;\n",
             id,
+            ticket_sql,
             escape_sql_string(&reporter_name),
             phone_sql,
             escape_sql_string(&address),

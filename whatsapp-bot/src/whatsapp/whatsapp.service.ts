@@ -144,12 +144,19 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
 
   private async processMessage(jid: string, text: string, pushName?: string) {
     try {
-      const replyText = await this.chatbotService.handleIncomingMessage(jid, text, pushName);
-      if (!replyText || !this.sock) return;
+      const reply = await this.chatbotService.handleIncomingMessage(jid, text, pushName);
+      if (!reply || !this.sock) return;
 
-      const sent = await this.sock.sendMessage(jid, { text: replyText });
-      if (sent?.key?.id) {
-        this.recordBotSentId(sent.key.id);
+      const replies = Array.isArray(reply) ? reply : [reply];
+      for (const replyText of replies) {
+        if (!replyText) continue;
+        const sent = await this.sock.sendMessage(jid, { text: replyText });
+        if (sent?.key?.id) {
+          this.recordBotSentId(sent.key.id);
+        }
+        if (replies.length > 1) {
+          await new Promise((resolve) => setTimeout(resolve, 350));
+        }
       }
     } catch (err) {
       this.logger.error(`Error processing message from ${jid}: ${(err as Error).message}`);
