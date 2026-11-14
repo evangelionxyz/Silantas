@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { DatabaseService } from '../database/database.service.js';
 import { ChatbotSessionStore } from '../chatbot/chatbot-session.store.js';
 import { ChatbotService } from '../chatbot/chatbot.service.js';
 import { WhatsappService } from './whatsapp.service.js';
@@ -11,7 +12,17 @@ describe('WhatsappService', () => {
     vi.spyOn(WhatsappService.prototype as any, 'connect').mockImplementation(async () => {});
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [WhatsappService, ChatbotService, ChatbotSessionStore],
+      providers: [
+        WhatsappService,
+        ChatbotService,
+        ChatbotSessionStore,
+        {
+          provide: DatabaseService,
+          useValue: {
+            createComplaintRecap: vi.fn().mockResolvedValue({ id: 'mock-id', ticketNo: 'ADU-MOCK' }),
+          },
+        },
+      ],
     }).compile();
 
     service = module.get<WhatsappService>(WhatsappService);

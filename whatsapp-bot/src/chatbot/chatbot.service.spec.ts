@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { DatabaseService } from '../database/database.service.js';
 import { CHATBOT_MENUS } from './chatbot-menus.js';
 import { ChatbotSessionStore } from './chatbot-session.store.js';
 import { ChatbotService } from './chatbot.service.js';
@@ -7,39 +8,51 @@ import { ChatSessionState } from './chatbot.types.js';
 describe('ChatbotService', () => {
   let service: ChatbotService;
   let sessionStore: ChatbotSessionStore;
+  let databaseService: DatabaseService;
   const testJid = '628123456789@s.whatsapp.net';
 
+  const mockDatabaseService = {
+    createComplaintRecap: vi.fn().mockImplementation(async (_data) => ({
+      id: 'mock-uuid-1234',
+      ticketNo: 'ADU-TEST1234',
+    })),
+  };
+
   beforeEach(async () => {
+    vi.clearAllMocks();
+    process.env.FRONTEND_WEB_URL = 'https://silantas.vercel.app';
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [ChatbotService, ChatbotSessionStore],
+      providers: [
+        ChatbotService,
+        ChatbotSessionStore,
+        {
+          provide: DatabaseService,
+          useValue: mockDatabaseService,
+        },
+      ],
     }).compile();
 
     service = module.get<ChatbotService>(ChatbotService);
     sessionStore = module.get<ChatbotSessionStore>(ChatbotSessionStore);
+    databaseService = module.get<DatabaseService>(DatabaseService);
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
     expect(sessionStore).toBeDefined();
+    expect(databaseService).toBeDefined();
   });
 
-  describe('Menu Navigasi & Opsi Layanan', () => {
-    it('harus membalas dengan Menu Utama pada pesan pembuka', async () => {
+  describe('Menu Navigasi & Opsi Layanan (4 Menu)', () => {
+    it('harus membalas dengan Menu Utama pada pesan pembuka dan menyertakan URL env', async () => {
       const reply = await service.handleIncomingMessage(testJid, 'Halo', 'Budi');
       expect(reply).toBeDefined();
       expect(reply).toContain('LAYANAN INFORMASI LALU LINTAS HEWAN & TERNAK');
       expect(reply).toContain('SUANGGI CARI KO');
       expect(reply).toContain('Persyaratan Pemasukan Hewan & Produk Masuk');
-      expect(reply).toContain('Pengeluaran Hewan & Penerbitan SKKH');
-    });
-
-    it('harus merespons pesan template resmi dari frontend WhatsAppConsultation', async () => {
-      const templateMsg =
-        'Halo Dokter Hewan SUANGGI Mimika, saya ingin mengajukan jadwal pemeriksaan kesehatan ternak untuk penerbitan SKKH Pengeluaran (keluar daerah).';
-      const reply = await service.handleIncomingMessage(testJid, templateMsg, 'Yohanes');
-      expect(reply).toBeDefined();
-      expect(reply).toContain('LAYANAN INFORMASI LALU LINTAS HEWAN & TERNAK');
-      expect(reply).toContain('Yohanes');
+      expect(reply).toContain('Lapor Keluhan / Aduan Masyarakat & Penyakit Ternak');
+      expect(reply).toContain('https://silantas.vercel.app');
     });
 
     it('harus membuka Submenu 1 (Pemasukan) saat memilih angka 1', async () => {
@@ -69,26 +82,41 @@ describe('ChatbotService', () => {
       expect(reply).toContain('Pelabuhan Pomako');
     });
 
-    it('harus meminta nomor permohonan saat memilih angka 4', async () => {
-      await service.handleIncomingMessage(testJid, 'Halo');
-      const reply = await service.handleIncomingMessage(testJid, '4');
+    it('harus membuka panduan aduan saat memilih angka 4, dan menyimpan keluhan ke database saat teks aduan dikirim', async () => {
+      // 1. Masuk menu
+      await service.handleIncomingMessage(testJid, 'Halo', 'Yohanes');
 
-      expect(reply).toBe(CHATBOT_MENUS.SUBMENU_4_CEK_STATUS);
-      expect(reply).toContain('CEK STATUS PERMOHONAN REKOMENDASI');
-    });
+      // 2. Pilih menu 4
+      const promptReply = await service.handleIncomingMessage(testJid, '4');
+      expect(promptReply).toBe(CHATBOT_MENUS.SUBMENU_4_PANDUAN_KELUHAN);
 
-    it('harus mencatat dan mengalihkan ke petugas saat memilih angka 5', async () => {
-      await service.handleIncomingMessage(testJid, 'Halo');
-      const reply = await service.handleIncomingMessage(testJid, '5');
+      const sessionDuring = sessionStore.getSession(testJid);
+      expect(sessionDuring.state).toBe(ChatSessionState.AWAITING_COMPLAINT_TEXT);
 
-      expect(reply).toBe(CHATBOT_MENUS.SUBMENU_5_HUBUNGI_PETUGAS);
-      expect(reply).toContain('Dokter Hewan Dinas Peternakan');
+      // 3. Warga mengetikkan keluhan
+      const complaintText = 'Lapor ada 3 ekor sapi demam dan air liur berlebih di Distrik Kuala Kencana';
+      const confirmReply = await service.handleIncomingMessage(testJid, complaintText);
 
-      const session = sessionStore.getSession(testJid);
-      expect(session.state).toBe(ChatSessionState.WAITING_FOR_ADMIN);
+      // Verifikasi database service dipanggil dengan benar
+      expect(mockDatabaseService.createComplaintRecap).toHaveBeenCalledWith({
+        reporterName: 'Yohanes',
+        reporterPhone: '08123456789',
+        address: 'Kabupaten Mimika',
+        description: complaintText,
+      });
 
-      // Setelah memilih 5, pesan rincian berikutnya tidak diinterupsi oleh menu bot
-      const followUp = await service.handleIncomingMessage(testJid, 'Pak sapi saya demam 3 hari');
+      // Verifikasi bukti tiket aduan
+      expect(confirmReply).toContain('BUKTI PENCATATAN ADUAN MASYARAKAT');
+      expect(confirmReply).toContain('ADU-TEST1234');
+      expect(confirmReply).toContain('Kabupaten Mimika');
+
+      // State beralih ke WAITING_FOR_ADMIN dan admin cooldown aktif
+      const sessionAfter = sessionStore.getSession(testJid);
+      expect(sessionAfter.state).toBe(ChatSessionState.WAITING_FOR_ADMIN);
+      expect(sessionAfter.adminLastRepliedAt).toBeDefined();
+
+      // Pesan lanjutan dari warga diabaikan agar admin menindaklanjuti
+      const followUp = await service.handleIncomingMessage(testJid, 'Mohon segera dibalas ya');
       expect(followUp).toBeNull();
     });
 
@@ -102,32 +130,23 @@ describe('ChatbotService', () => {
 
   describe('Admin Interlock & Cooldown (Spare Waktu 4 Jam)', () => {
     it('harus diam (return null) setelah admin membalas manual', async () => {
-      // 1. Warga menyapa bot
       const reply1 = await service.handleIncomingMessage(testJid, 'Halo admin');
       expect(reply1).not.toBeNull();
 
-      // 2. Admin membalas langsung dari HP / WA Web
       service.handleAdminReply(testJid);
 
-      // 3. Warga membalas lagi dalam kurun waktu cooldown (misal 5 menit kemudian)
       const replyAfterAdmin = await service.handleIncomingMessage(testJid, 'Terima kasih banyak pak admin');
-
-      // Bot HARUS diam dan tidak mengirim menu apapun!
       expect(replyAfterAdmin).toBeNull();
     });
 
     it('harus aktif kembali setelah spare waktu 4 jam telah lewat', async () => {
-      // Set admin reply timestamp 4.5 jam yang lalu
       const fourAndHalfHoursAgo = Date.now() - 4.5 * 60 * 60 * 1000;
       const session = sessionStore.getSession(testJid);
       session.adminLastRepliedAt = fourAndHalfHoursAgo;
       session.state = ChatSessionState.MUTED_BY_ADMIN;
       sessionStore.saveSession(session);
 
-      // Warga mengirim pesan baru setelah 4 jam
       const reply = await service.handleIncomingMessage(testJid, 'Halo, saya mau tanya lagi');
-
-      // Bot harus merespons kembali dengan Menu Utama
       expect(reply).not.toBeNull();
       expect(reply).toContain('LAYANAN INFORMASI LALU LINTAS HEWAN & TERNAK');
     });
@@ -144,26 +163,20 @@ describe('ChatbotService', () => {
     });
 
     it('harus memunculkan kembali menu jika warga mengetik command #menu atau menu saat masih dalam cooldown admin', async () => {
-      // Admin baru saja membalas 10 menit yang lalu (cooldown masih aktif)
       const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
       const session = sessionStore.getSession(testJid);
       session.adminLastRepliedAt = tenMinutesAgo;
       session.state = ChatSessionState.MUTED_BY_ADMIN;
       sessionStore.saveSession(session);
 
-      // Warga mengetik #menu secara eksplisit
       const reply = await service.handleIncomingMessage(testJid, '#menu');
-
-      // Cooldown harus di-override dan bot harus menampilkan Menu Utama
       expect(reply).not.toBeNull();
       expect(reply).toContain('LAYANAN INFORMASI LALU LINTAS HEWAN & TERNAK');
 
-      // Status sesi harus kembali ke MAIN_MENU
       const updatedSession = sessionStore.getSession(testJid);
       expect(updatedSession.state).toBe(ChatSessionState.MAIN_MENU);
       expect(updatedSession.adminLastRepliedAt).toBeUndefined();
 
-      // Warga sekarang bisa memilih menu lain, misalnya opsi 1
       const sub1 = await service.handleIncomingMessage(testJid, '1');
       expect(sub1).toBe(CHATBOT_MENUS.SUBMENU_1_PEMASUKAN);
     });
@@ -200,7 +213,6 @@ describe('ChatbotService', () => {
       const session = sessionStore.getSession(testJid);
       expect(session.state).toBe(ChatSessionState.WAITING_FOR_ADMIN);
 
-      // Pesan berikutnya tidak dibalas bot lagi
       const nextMsg = await service.handleIncomingMessage(testJid, 'masih salah');
       expect(nextMsg).toBeNull();
     });

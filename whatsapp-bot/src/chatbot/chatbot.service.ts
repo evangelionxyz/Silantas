@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { DatabaseService } from '../database/database.service.js';
 import { CHATBOT_MENUS } from './chatbot-menus.js';
 import { ChatbotSessionStore } from './chatbot-session.store.js';
 import { ChatSessionState } from './chatbot.types.js';
@@ -8,7 +9,7 @@ export class ChatbotService {
   private readonly logger = new Logger(ChatbotService.name);
 
   /**
-   * Durasi jeda hening bot setelah admin membalas manual (4 jam).
+   * Durasi jeda hening bot setelah admin membalas manual (default 4 jam).
    */
   private readonly adminCooldownHours = Number(process.env.ADMIN_COOLDOWN_HOURS ?? 4);
 
@@ -19,7 +20,26 @@ export class ChatbotService {
   private readonly maxMessagesPerWindow = 6;
   private readonly rateLimitWindowMs = 30 * 1000; // 30 detik
 
-  constructor(private readonly sessionStore: ChatbotSessionStore) {}
+  constructor(
+    private readonly sessionStore: ChatbotSessionStore,
+    private readonly databaseService: DatabaseService,
+  ) {}
+
+  private get webUrl(): string {
+    return (process.env.FRONTEND_WEB_URL || 'https://silantas.vercel.app').replace(/\/+$/, '');
+  }
+
+  /**
+   * Mengubah format JID WhatsApp menjadi nomor telepon lokal.
+   * Contoh: 6281234567890@s.whatsapp.net -> 081234567890
+   */
+  private formatPhoneNumber(jid: string): string {
+    const raw = jid.split('@')[0] || '';
+    if (raw.startsWith('62')) {
+      return '0' + raw.slice(2);
+    }
+    return raw;
+  }
 
   /**
    * Dipanggil saat admin membalas chat secara manual dari HP atau WhatsApp Web.
@@ -64,7 +84,7 @@ export class ChatbotService {
         session.lastUserMessageAt = Date.now();
         session.lastBotReplyAt = Date.now();
         this.sessionStore.saveSession(session);
-        return CHATBOT_MENUS.GREETING_HEADER(session.name);
+        return CHATBOT_MENUS.GREETING_HEADER(session.name, this.webUrl);
       }
 
       const remainingMs = this.sessionStore.getRemainingCooldownMs(jid, this.adminCooldownHours);
@@ -87,22 +107,53 @@ export class ChatbotService {
     }
     session.lastUserMessageAt = Date.now();
 
-    // 3. Tangani pengguna yang sedang menunggu respon admin manusia
-    if (session.state === ChatSessionState.WAITING_FOR_ADMIN) {
-      // Jika warga secara eksplisit ingin kembali ke bot dengan mengetik menu atau command
+    // 3. Tangani pengguna yang sedang dalam alur pengisian keluhan
+    if (session.state === ChatSessionState.AWAITING_COMPLAINT_TEXT) {
       if (isExplicitMenuCommand) {
         session.state = ChatSessionState.MAIN_MENU;
         session.invalidAttempts = 0;
         session.lastBotReplyAt = Date.now();
         this.sessionStore.saveSession(session);
-        return CHATBOT_MENUS.GREETING_HEADER(session.name);
+        return CHATBOT_MENUS.GREETING_HEADER(session.name, this.webUrl);
       }
-      // Selain itu, biarkan warga mengetik rincian untuk dibaca admin manusia tanpa bot menginterupsi
+
+      // Warga mengirimkan rincian keluhannya
+      const reporterPhone = this.formatPhoneNumber(jid);
+      const reporterName = session.name || senderName || 'Warga (WhatsApp)';
+
+      // Simpan langsung ke database silantas.whatsapp_recaps
+      const result = await this.databaseService.createComplaintRecap({
+        reporterName,
+        reporterPhone,
+        address: 'Kabupaten Mimika',
+        description: text,
+      });
+
+      // Alihkan state ke WAITING_FOR_ADMIN dan aktifkan cooldown agar admin menindaklanjuti
+      session.state = ChatSessionState.WAITING_FOR_ADMIN;
+      session.adminLastRepliedAt = Date.now();
+      session.invalidAttempts = 0;
+      session.lastBotReplyAt = Date.now();
+      this.sessionStore.saveSession(session);
+
+      return CHATBOT_MENUS.COMPLAINT_CONFIRMATION(result.ticketNo, reporterName, reporterPhone);
+    }
+
+    // 4. Tangani pengguna yang sedang menunggu respon admin manusia
+    if (session.state === ChatSessionState.WAITING_FOR_ADMIN) {
+      if (isExplicitMenuCommand) {
+        session.state = ChatSessionState.MAIN_MENU;
+        session.invalidAttempts = 0;
+        session.lastBotReplyAt = Date.now();
+        this.sessionStore.saveSession(session);
+        return CHATBOT_MENUS.GREETING_HEADER(session.name, this.webUrl);
+      }
+      // Biarkan warga mengetik pesan untuk dibaca admin manusia tanpa bot menginterupsi
       this.sessionStore.saveSession(session);
       return null;
     }
 
-    // 4. Perintah kembali ke Menu Utama atau salam pembuka
+    // 5. Perintah kembali ke Menu Utama atau salam pembuka
     const isGreetingOrReset =
       isExplicitMenuCommand ||
       lower === 'halo' ||
@@ -119,10 +170,10 @@ export class ChatbotService {
       session.invalidAttempts = 0;
       session.lastBotReplyAt = Date.now();
       this.sessionStore.saveSession(session);
-      return CHATBOT_MENUS.GREETING_HEADER(session.name);
+      return CHATBOT_MENUS.GREETING_HEADER(session.name, this.webUrl);
     }
 
-    // 5. Pilihan Menu Utama (1 - 5)
+    // 6. Pilihan Menu Utama (1 - 4)
     switch (lower) {
       case '1':
         session.state = ChatSessionState.SUBMENU_PEMASUKAN;
@@ -146,37 +197,12 @@ export class ChatbotService {
         return CHATBOT_MENUS.SUBMENU_3_RANTAI_DINGIN;
 
       case '4':
-        session.state = ChatSessionState.AWAITING_TRACKING_NO;
+        // Warga memilih lapor keluhan / aduan
+        session.state = ChatSessionState.AWAITING_COMPLAINT_TEXT;
         session.invalidAttempts = 0;
         session.lastBotReplyAt = Date.now();
         this.sessionStore.saveSession(session);
-        return CHATBOT_MENUS.SUBMENU_4_CEK_STATUS;
-
-      case '5':
-        // Warga memilih hubungi petugas / lapor bantuan
-        session.state = ChatSessionState.WAITING_FOR_ADMIN;
-        session.invalidAttempts = 0;
-        session.lastBotReplyAt = Date.now();
-        this.sessionStore.saveSession(session);
-        return CHATBOT_MENUS.SUBMENU_5_HUBUNGI_PETUGAS;
-    }
-
-    // 6. Tangani input pada status AWAITING_TRACKING_NO (Cek status nomor permohonan)
-    if (session.state === ChatSessionState.AWAITING_TRACKING_NO) {
-      session.state = ChatSessionState.WAITING_FOR_ADMIN;
-      session.invalidAttempts = 0;
-      session.lastBotReplyAt = Date.now();
-      this.sessionStore.saveSession(session);
-
-      return (
-        `🔍 *HASIL PENGECEKAN BERKAS: ${text.toUpperCase()}*\n\n` +
-        `Data permohonan dengan nomor *${text}* sedang diverifikasi oleh Tim Teknis Dinas Peternakan & Keswan Kab. Mimika.\n\n` +
-        `Petugas verifikator kami akan mengonfirmasi pembaruan status rekomendasi langsung di percakapan ini.\n\n` +
-        `Anda juga dapat memeriksa arsip lengkap melalui portal:\n` +
-        `🌐 https://suanggi.mimikakab.go.id\n\n` +
-        `──────────────────────\n` +
-        `Ketik *0* untuk kembali ke Menu Utama.`
-      );
+        return CHATBOT_MENUS.SUBMENU_4_PANDUAN_KELUHAN;
     }
 
     // 7. Penanganan Input Tidak Valid (Anti-Loop Guard)
@@ -186,7 +212,7 @@ export class ChatbotService {
     if (session.invalidAttempts < 3) {
       return CHATBOT_MENUS.INVALID_OPTION_HINT;
     } else {
-      // Jika salah berturut-turut 3 kali, jangan terus membanjiri chat
+      // Jika salah berturut-turut 3 kali, hentikan loop dan alihkan ke admin
       session.state = ChatSessionState.WAITING_FOR_ADMIN;
       this.sessionStore.saveSession(session);
       return CHATBOT_MENUS.INVALID_LIMIT_REACHED;

@@ -486,7 +486,7 @@ export const WhatsappRecapPage: React.FC = () => {
             )}
           </div>
           <p className="text-xs sm:text-sm text-[#57606a] mt-1">
-            Pencatatan aduan dan permohonan layanan via WhatsApp resmi {SUANGGI_BRAND.agencyShort}. Berkas tangkapan layar tersimpan di <code className="px-1.5 py-0.5 bg-[#f6f8fa] border border-[#d0d7de] font-mono text-[11px] text-[#1a7f37]">backend/uploads/whatsapp_attachments</code>.
+            Pencatatan aduan dan permohonan layanan via WhatsApp resmi {SUANGGI_BRAND.agencyShort}.
           </p>
         </div>
 
