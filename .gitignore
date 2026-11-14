@@ -6,3 +6,8 @@
 backups/
 *.sql
 
+# WhatsApp Bot runtime state
+whatsapp-bot/auth_info/
+whatsapp-bot/data/
+whatsapp-bot/dist/
+whatsapp-bot/node_modules/

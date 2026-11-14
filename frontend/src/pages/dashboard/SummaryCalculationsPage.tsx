@@ -186,7 +186,7 @@ export const SummaryCalculationsPage: React.FC = () => {
           'Dokumen dengan status INSPECTED_REJECT',
         ],
         ['Instansi Pelaksana', 'Dinas Peternakan dan Kesehatan Hewan', 'Pemerintah Kabupaten Mimika'],
-        ['Tanggal Penarikan Data', dateStr, 'Diunduh dari SI-LANTAS SUANGGI'],
+        ['Tanggal Penarikan Data', dateStr, 'Diunduh dari SUANGGI'],
       ];
       const wsKPI = XLSX.utils.aoa_to_sheet(kpiRows);
       wsKPI['!cols'] = [{ wch: 34 }, { wch: 20 }, { wch: 42 }];

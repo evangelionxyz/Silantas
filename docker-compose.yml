@@ -1,0 +1,42 @@
+services:
+  silantas-api:
+    image: ghcr.io/evangelionxyz/silantas-api:latest
+    build:
+      context: ./backend
+      dockerfile: dockerfile
+    container_name: silantas-api
+    restart: unless-stopped
+    ports:
+      - "8002:8000"
+    env_file:
+      - .env
+    environment:
+      - PORT=8000
+    volumes:
+      - ./uploads:/app/uploads
+    networks:
+      - silantas-network
+
+  whatsapp-bot:
+    image: ghcr.io/evangelionxyz/silantas-whatsapp-bot:latest
+    build:
+      context: ./whatsapp-bot
+      dockerfile: dockerfile
+    container_name: silantas-whatsapp-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - PORT=3000
+      - SILANTAS_BACKEND_URL=http://silantas-api:8000
+    volumes:
+      - ./whatsapp-bot/auth_info:/app/auth_info
+      - ./whatsapp-bot/data:/app/data
+    depends_on:
+      - silantas-api
+    networks:
+      - silantas-network
+
+networks:
+  silantas-network:
+    driver: bridge

@@ -1,0 +1,12 @@
+node_modules
+dist
+auth_info
+data
+.git
+.gitignore
+*.log
+.env*
+.oxlintrc.json
+.prettierrc
+test
+*.spec.ts

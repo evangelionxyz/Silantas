@@ -7,6 +7,8 @@ on:
     paths:
       - 'backend/**'
       - 'frontend/**'
+      - 'whatsapp-bot/**'
+      - 'docker-compose.yml'
       - '.github/workflows/ci.yml'
       - 'vercel.json'
   workflow_dispatch:
@@ -19,7 +21,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: evangelionxyz/silantas-api
+  API_IMAGE_NAME: evangelionxyz/silantas-api
+  BOT_IMAGE_NAME: evangelionxyz/silantas-whatsapp-bot
 
 jobs:
   build-and-push:
@@ -43,29 +46,70 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels)
-        id: meta
+      - name: Extract metadata for API (tags, labels)
+        id: meta-api
         uses: docker/metadata-action@v6
         with:
-          images: ghcr.io/${{ env.IMAGE_NAME }}
+          images: ghcr.io/${{ env.API_IMAGE_NAME }}
           tags: |
             type=raw,value=latest
             type=sha,format=short
 
-      - name: Build and Push Docker Image
+      - name: Build and Push API Docker Image
         uses: docker/build-push-action@v7
         with:
           context: ./backend
           file: ./backend/dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta-api.outputs.tags }}
+          labels: ${{ steps.meta-api.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-and-push-bot:
+    name: Build & Push WhatsApp Bot Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Bot (tags, labels)
+        id: meta-bot
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ env.BOT_IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+
+      - name: Build and Push Bot Docker Image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./whatsapp-bot
+          file: ./whatsapp-bot/dockerfile
+          push: true
+          tags: ${{ steps.meta-bot.outputs.tags }}
+          labels: ${{ steps.meta-bot.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   deploy-to-dewacloud:
-    name: Deploy API to DewaCloud Docker CE
-    needs: build-and-push
+    name: Deploy to DewaCloud via Docker Compose
+    needs: [build-and-push, build-and-push-bot]
     runs-on: ubuntu-latest
 
     steps:
@@ -79,16 +123,67 @@ jobs:
           script: |
             set -e
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            OLD_IMAGE_ID=$(docker images -q ghcr.io/${{ env.IMAGE_NAME }}:latest)
-            docker pull ghcr.io/${{ env.IMAGE_NAME }}:latest
-            NEW_IMAGE_ID=$(docker images -q ghcr.io/${{ env.IMAGE_NAME }}:latest)
-            docker stop silantas-api || true
-            docker rm silantas-api || true
-            docker run -d --name silantas-api --restart unless-stopped -p 8002:8000 --env-file ~/Silantas/.env \
-              ghcr.io/${{ env.IMAGE_NAME }}:latest
-            if [ -n "$OLD_IMAGE_ID" ] && [ "$OLD_IMAGE_ID" != "$NEW_IMAGE_ID" ]; then
-              docker rmi "$OLD_IMAGE_ID" || true
+
+            # Ensure host directories for persistence exist
+            mkdir -p ~/Silantas/uploads ~/Silantas/whatsapp-bot/auth_info ~/Silantas/whatsapp-bot/data
+            cd ~/Silantas
+
+            # Stop and remove any legacy standalone containers if they exist to prevent name conflicts
+            docker stop silantas-api silantas-whatsapp-bot || true
+            docker rm silantas-api silantas-whatsapp-bot || true
+
+            # Pull latest images from GHCR
+            docker pull ghcr.io/${{ env.API_IMAGE_NAME }}:latest
+            docker pull ghcr.io/${{ env.BOT_IMAGE_NAME }}:latest
+
+            # Deploy / orchestrate with Docker Compose
+            cat << 'EOF' > ~/Silantas/docker-compose.yml
+            services:
+              silantas-api:
+                image: ghcr.io/evangelionxyz/silantas-api:latest
+                container_name: silantas-api
+                restart: unless-stopped
+                ports:
+                  - "8002:8000"
+                env_file:
+                  - .env
+                environment:
+                  - PORT=8000
+                volumes:
+                  - ./uploads:/app/uploads
+                networks:
+                  - silantas-network
+
+              whatsapp-bot:
+                image: ghcr.io/evangelionxyz/silantas-whatsapp-bot:latest
+                container_name: silantas-whatsapp-bot
+                restart: unless-stopped
+                env_file:
+                  - .env
+                environment:
+                  - PORT=3000
+                  - SILANTAS_BACKEND_URL=http://silantas-api:8000
+                volumes:
+                  - ./whatsapp-bot/auth_info:/app/auth_info
+                  - ./whatsapp-bot/data:/app/data
+                depends_on:
+                  - silantas-api
+                networks:
+                  - silantas-network
+
+            networks:
+              silantas-network:
+                driver: bridge
+            EOF
+
+            if command -v docker-compose >/dev/null 2>&1; then
+              docker-compose up -d --remove-orphans
+            else
+              docker compose up -d --remove-orphans
             fi
+
+            # Clean up old/dangling images
+            docker image prune -f || true
 
   deploy-to-vercel:
     name: Deploy Web to Vercel (event)
