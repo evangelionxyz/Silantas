@@ -1,4 +1,4 @@
-# SUANGGI CARI KO / SI-LANTAS
+# SUANGGI CARI KO
 
 Sistem Informasi Lalu Lintas Hewan, Produk Hewan, dan Olahannya
 Dinas Peternakan dan Kesehatan Hewan Kabupaten Mimika
@@ -7,7 +7,7 @@ Dinas Peternakan dan Kesehatan Hewan Kabupaten Mimika
 
 ## 1. Ringkasan Sistem
 
-SUANGGI CARI KO (Sistem Updating Arus Niaga dan Gerak Hewan, produk hewan, dan olahannya – Catatan Arus, Rekapitulasi, dan Informasi KOmoditas) atau SI-LANTAS merupakan platform digital terpadu milik Dinas Peternakan dan Kesehatan Hewan Kabupaten Mimika. Sistem ini berfungsi untuk memonitor, mencatat, merekapitulasi, dan melayani lalu lintas komoditas hewan hidup, bahan pangan asal hewan segar/beku, serta olahan hasil peternakan yang masuk maupun keluar dari wilayah Kabupaten Mimika melalui pos pemeriksaan Pelabuhan Laut Pomako dan Bandara Mozes Kilangin.
+SUANGGI CARI KO (Sistem Updating Arus Niaga dan Gerak Hewan, produk hewan, dan olahannya – Catatan Arus, Rekapitulasi, dan Informasi KOmoditas) merupakan platform digital terpadu milik Dinas Peternakan dan Kesehatan Hewan Kabupaten Mimika. Sistem ini berfungsi untuk memonitor, mencatat, merekapitulasi, dan melayani lalu lintas komoditas hewan hidup, bahan pangan asal hewan segar/beku, serta olahan hasil peternakan yang masuk maupun keluar dari wilayah Kabupaten Mimika melalui pos pemeriksaan Pelabuhan Laut Pomako dan Bandara Mozes Kilangin.
 
 Sistem terdiri atas tiga komponen utama dalam satu repositori (monorepo):
 - Frontend: Portal publik dan dashboard internal berbasis React, TypeScript, dan Tailwind CSS.

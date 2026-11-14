@@ -30,15 +30,27 @@ export class ChatbotService {
   }
 
   /**
-   * Mengubah format JID WhatsApp menjadi nomor telepon lokal.
-   * Contoh: 6281234567890@s.whatsapp.net -> 081234567890
+   * Mengubah format JID WhatsApp menjadi nomor telepon lokal yang valid.
+   * Jika JID merupakan akun privasi/LID (@lid), mengembalikan undefined
+   * karena LID bukan nomor telepon yang dapat dihubungi.
    */
-  private formatPhoneNumber(jid: string): string {
-    const raw = jid.split('@')[0] || '';
-    if (raw.startsWith('62')) {
-      return '0' + raw.slice(2);
+  private formatPhoneNumber(jid: string): string | undefined {
+    if (jid.includes('@lid') || jid.includes('lid')) {
+      return undefined;
     }
-    return raw;
+
+    const raw = jid.split('@')[0] || '';
+    const digits = raw.replace(/\D/g, '');
+
+    if (digits.length < 9) {
+      return undefined;
+    }
+
+    if (digits.startsWith('62')) {
+      return '0' + digits.slice(2);
+    }
+
+    return digits.startsWith('0') ? digits : '0' + digits;
   }
 
   /**
@@ -79,6 +91,7 @@ export class ChatbotService {
         if (senderName && !session.name) {
           session.name = senderName;
         }
+        session.metadata = {};
         session.state = ChatSessionState.MAIN_MENU;
         session.invalidAttempts = 0;
         session.lastUserMessageAt = Date.now();
@@ -102,14 +115,15 @@ export class ChatbotService {
     }
 
     const session = this.sessionStore.getSession(jid);
-    if (senderName && !session.name) {
-      session.name = senderName;
+    if (senderName && !session.name && senderName.trim() !== '.') {
+      session.name = senderName.trim();
     }
     session.lastUserMessageAt = Date.now();
 
-    // 3. Tangani pengguna yang sedang dalam alur pengisian keluhan
-    if (session.state === ChatSessionState.AWAITING_COMPLAINT_TEXT) {
+    // 3. Alur Form Keluhan: Langkah 1 - Pengisian Nama Lengkap (Wajib)
+    if (session.state === ChatSessionState.COMPLAINT_AWAITING_NAME) {
       if (isExplicitMenuCommand) {
+        session.metadata = {};
         session.state = ChatSessionState.MAIN_MENU;
         session.invalidAttempts = 0;
         session.lastBotReplyAt = Date.now();
@@ -117,19 +131,101 @@ export class ChatbotService {
         return CHATBOT_MENUS.GREETING_HEADER(session.name, this.webUrl);
       }
 
-      // Warga mengirimkan rincian keluhannya
-      const reporterPhone = this.formatPhoneNumber(jid);
-      const reporterName = session.name || senderName || 'Warga (WhatsApp)';
+      const cleanName = text.replace(/^[.\s\-_]+|[.\s\-_]+$/g, '').trim();
+      if (cleanName.length < 2) {
+        return CHATBOT_MENUS.COMPLAINT_INVALID_NAME;
+      }
+
+      session.metadata = { ...session.metadata, complaintName: cleanName };
+      session.name = cleanName;
+      session.state = ChatSessionState.COMPLAINT_AWAITING_PHONE;
+      session.invalidAttempts = 0;
+      session.lastBotReplyAt = Date.now();
+      this.sessionStore.saveSession(session);
+
+      const detected = session.metadata?.detectedPhone as string | undefined;
+      return CHATBOT_MENUS.COMPLAINT_STEP_2_PHONE(cleanName, detected);
+    }
+
+    // 4. Alur Form Keluhan: Langkah 2 - Pengisian Nomor Telepon / Kontak
+    if (session.state === ChatSessionState.COMPLAINT_AWAITING_PHONE) {
+      if (isExplicitMenuCommand) {
+        session.metadata = {};
+        session.state = ChatSessionState.MAIN_MENU;
+        session.invalidAttempts = 0;
+        session.lastBotReplyAt = Date.now();
+        this.sessionStore.saveSession(session);
+        return CHATBOT_MENUS.GREETING_HEADER(session.name, this.webUrl);
+      }
+
+      let chosenPhone: string | undefined;
+      const lowerInput = text.toLowerCase().trim();
+
+      if (lowerInput === 'ok' || lowerInput === 'lewati' || lowerInput === 'default') {
+        const detected = session.metadata?.detectedPhone as string | undefined;
+        if (detected) {
+          chosenPhone = detected;
+        } else {
+          return CHATBOT_MENUS.COMPLAINT_INVALID_PHONE;
+        }
+      } else {
+        const digits = text.replace(/\D/g, '');
+        if (digits.length >= 8 && digits.length <= 16) {
+          if (digits.startsWith('62')) {
+            chosenPhone = '0' + digits.slice(2);
+          } else if (digits.startsWith('0')) {
+            chosenPhone = digits;
+          } else {
+            chosenPhone = '0' + digits;
+          }
+        } else {
+          return CHATBOT_MENUS.COMPLAINT_INVALID_PHONE;
+        }
+      }
+
+      session.metadata = { ...session.metadata, complaintPhone: chosenPhone };
+      session.state = ChatSessionState.COMPLAINT_AWAITING_DESCRIPTION;
+      session.invalidAttempts = 0;
+      session.lastBotReplyAt = Date.now();
+      this.sessionStore.saveSession(session);
+
+      return CHATBOT_MENUS.COMPLAINT_STEP_3_DESC(chosenPhone);
+    }
+
+    // 5. Alur Form Keluhan: Langkah 3 - Pengisian Rincian Keluhan
+    if (session.state === ChatSessionState.COMPLAINT_AWAITING_DESCRIPTION) {
+      if (isExplicitMenuCommand) {
+        session.metadata = {};
+        session.state = ChatSessionState.MAIN_MENU;
+        session.invalidAttempts = 0;
+        session.lastBotReplyAt = Date.now();
+        this.sessionStore.saveSession(session);
+        return CHATBOT_MENUS.GREETING_HEADER(session.name, this.webUrl);
+      }
+
+      if (text.length < 3) {
+        return 'Rincian keluhan terlalu singkat. Silakan ketik isi keluhan Anda secara jelas:';
+      }
+
+      const reporterName =
+        (session.metadata?.complaintName as string) || session.name || 'Warga (WhatsApp)';
+      const reporterPhone =
+        (session.metadata?.complaintPhone as string) ||
+        this.formatPhoneNumber(jid) ||
+        'Tidak disertakan';
+      const address = 'Kabupaten Mimika';
+      const description = text;
 
       // Simpan langsung ke database silantas.whatsapp_recaps
       const result = await this.databaseService.createComplaintRecap({
         reporterName,
         reporterPhone,
-        address: 'Kabupaten Mimika',
-        description: text,
+        address,
+        description,
       });
 
       // Alihkan state ke WAITING_FOR_ADMIN dan aktifkan cooldown agar admin menindaklanjuti
+      session.metadata = {};
       session.state = ChatSessionState.WAITING_FOR_ADMIN;
       session.adminLastRepliedAt = Date.now();
       session.invalidAttempts = 0;
@@ -139,9 +235,10 @@ export class ChatbotService {
       return CHATBOT_MENUS.COMPLAINT_CONFIRMATION(result.ticketNo, reporterName, reporterPhone);
     }
 
-    // 4. Tangani pengguna yang sedang menunggu respon admin manusia
+    // 6. Tangani pengguna yang sedang menunggu respon admin manusia
     if (session.state === ChatSessionState.WAITING_FOR_ADMIN) {
       if (isExplicitMenuCommand) {
+        session.metadata = {};
         session.state = ChatSessionState.MAIN_MENU;
         session.invalidAttempts = 0;
         session.lastBotReplyAt = Date.now();
@@ -153,7 +250,7 @@ export class ChatbotService {
       return null;
     }
 
-    // 5. Perintah kembali ke Menu Utama atau salam pembuka
+    // 7. Perintah kembali ke Menu Utama atau salam pembuka
     const isGreetingOrReset =
       isExplicitMenuCommand ||
       lower === 'halo' ||
@@ -166,6 +263,7 @@ export class ChatbotService {
       lower.startsWith('assalam');
 
     if (isGreetingOrReset || session.state === ChatSessionState.IDLE) {
+      session.metadata = {};
       session.state = ChatSessionState.MAIN_MENU;
       session.invalidAttempts = 0;
       session.lastBotReplyAt = Date.now();
@@ -173,7 +271,7 @@ export class ChatbotService {
       return CHATBOT_MENUS.GREETING_HEADER(session.name, this.webUrl);
     }
 
-    // 6. Pilihan Menu Utama (1 - 4)
+    // 8. Pilihan Menu Utama (1 - 4)
     switch (lower) {
       case '1':
         session.state = ChatSessionState.SUBMENU_PEMASUKAN;
@@ -196,16 +294,19 @@ export class ChatbotService {
         this.sessionStore.saveSession(session);
         return CHATBOT_MENUS.SUBMENU_3_RANTAI_DINGIN;
 
-      case '4':
-        // Warga memilih lapor keluhan / aduan
-        session.state = ChatSessionState.AWAITING_COMPLAINT_TEXT;
+      case '4': {
+        // Warga memilih lapor keluhan / aduan: masuk Langkah 1
+        const detectedPhone = this.formatPhoneNumber(jid);
+        session.metadata = { detectedPhone };
+        session.state = ChatSessionState.COMPLAINT_AWAITING_NAME;
         session.invalidAttempts = 0;
         session.lastBotReplyAt = Date.now();
         this.sessionStore.saveSession(session);
-        return CHATBOT_MENUS.SUBMENU_4_PANDUAN_KELUHAN;
+        return CHATBOT_MENUS.COMPLAINT_STEP_1_NAME;
+      }
     }
 
-    // 7. Penanganan Input Tidak Valid (Anti-Loop Guard)
+    // 9. Penanganan Input Tidak Valid (Anti-Loop Guard)
     session.invalidAttempts = (session.invalidAttempts || 0) + 1;
     this.sessionStore.saveSession(session);
 

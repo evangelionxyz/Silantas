@@ -12,7 +12,13 @@ pub struct Config {
 }
 
 fn clean_val(v: String) -> String {
-    v.trim().trim_matches('"').trim_matches('\'').trim().to_string()
+    let trimmed = v.trim().trim_matches('"').trim_matches('\'').trim();
+    let without_comment = if let Some(idx) = trimmed.find('#') {
+        trimmed[..idx].trim()
+    } else {
+        trimmed
+    };
+    without_comment.to_string()
 }
 
 pub(crate) fn get_clean_env(key: &str) -> Option<String> {
@@ -64,7 +70,9 @@ impl Config {
 
     fn resolve_database_url() -> String {
         if let Some(url) = get_clean_env("POSTGRESQL_DATABASE_URL").or_else(|| get_clean_env("DATABASE_URL")) {
-            return url;
+            if url.starts_with("postgres://") || url.starts_with("postgresql://") {
+                return url;
+            }
         }
 
         let user = get_clean_env("POSTGRESQL_USERNAME").unwrap_or_else(|| "postgres".to_string());

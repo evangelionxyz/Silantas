@@ -82,25 +82,40 @@ describe('ChatbotService', () => {
       expect(reply).toContain('Pelabuhan Pomako');
     });
 
-    it('harus membuka panduan aduan saat memilih angka 4, dan menyimpan keluhan ke database saat teks aduan dikirim', async () => {
+    it('harus memandu 3 langkah formulir keluhan (nama eksplisit, nomor kontak kustom, dan isi keluhan)', async () => {
       // 1. Masuk menu
-      await service.handleIncomingMessage(testJid, 'Halo', 'Yohanes');
+      await service.handleIncomingMessage(testJid, 'Halo', '.');
 
-      // 2. Pilih menu 4
-      const promptReply = await service.handleIncomingMessage(testJid, '4');
-      expect(promptReply).toBe(CHATBOT_MENUS.SUBMENU_4_PANDUAN_KELUHAN);
+      // 2. Pilih menu 4 (Langkah 1: Nama)
+      const step1Reply = await service.handleIncomingMessage(testJid, '4');
+      expect(step1Reply).toBe(CHATBOT_MENUS.COMPLAINT_STEP_1_NAME);
+      expect(sessionStore.getSession(testJid).state).toBe(ChatSessionState.COMPLAINT_AWAITING_NAME);
 
-      const sessionDuring = sessionStore.getSession(testJid);
-      expect(sessionDuring.state).toBe(ChatSessionState.AWAITING_COMPLAINT_TEXT);
+      // Coba masukkan nama titik (.) -> ditolak
+      const invalidNameReply = await service.handleIncomingMessage(testJid, '.');
+      expect(invalidNameReply).toBe(CHATBOT_MENUS.COMPLAINT_INVALID_NAME);
 
-      // 3. Warga mengetikkan keluhan
+      // Masukkan nama lengkap yang valid -> lanjut Langkah 2
+      const step2Reply = await service.handleIncomingMessage(testJid, 'Yohanes Maturbongs');
+      expect(step2Reply).toContain('Halo Bapak/Ibu *Yohanes Maturbongs*');
+      expect(step2Reply).toContain('Langkah 2 dari 3');
+      expect(sessionStore.getSession(testJid).state).toBe(ChatSessionState.COMPLAINT_AWAITING_PHONE);
+
+      // 3. Masukkan nomor kontak kustom (penanggung jawab kandang di lokasi) -> lanjut Langkah 3
+      const customPhone = '082199887766';
+      const step3Reply = await service.handleIncomingMessage(testJid, customPhone);
+      expect(step3Reply).toContain(`Nomor kontak tersimpan: *${customPhone}*`);
+      expect(step3Reply).toContain('Langkah 3 dari 3');
+      expect(sessionStore.getSession(testJid).state).toBe(ChatSessionState.COMPLAINT_AWAITING_DESCRIPTION);
+
+      // 4. Masukkan isi keluhan
       const complaintText = 'Lapor ada 3 ekor sapi demam dan air liur berlebih di Distrik Kuala Kencana';
       const confirmReply = await service.handleIncomingMessage(testJid, complaintText);
 
-      // Verifikasi database service dipanggil dengan benar
+      // Verifikasi database service menerima nama dan nomor kontak kustom yang tepat
       expect(mockDatabaseService.createComplaintRecap).toHaveBeenCalledWith({
-        reporterName: 'Yohanes',
-        reporterPhone: '08123456789',
+        reporterName: 'Yohanes Maturbongs',
+        reporterPhone: '082199887766',
         address: 'Kabupaten Mimika',
         description: complaintText,
       });
@@ -108,7 +123,8 @@ describe('ChatbotService', () => {
       // Verifikasi bukti tiket aduan
       expect(confirmReply).toContain('BUKTI PENCATATAN ADUAN MASYARAKAT');
       expect(confirmReply).toContain('ADU-TEST1234');
-      expect(confirmReply).toContain('Kabupaten Mimika');
+      expect(confirmReply).toContain('Yohanes Maturbongs');
+      expect(confirmReply).toContain('082199887766');
 
       // State beralih ke WAITING_FOR_ADMIN dan admin cooldown aktif
       const sessionAfter = sessionStore.getSession(testJid);
@@ -118,6 +134,24 @@ describe('ChatbotService', () => {
       // Pesan lanjutan dari warga diabaikan agar admin menindaklanjuti
       const followUp = await service.handleIncomingMessage(testJid, 'Mohon segera dibalas ya');
       expect(followUp).toBeNull();
+    });
+
+    it('bisa memilih menggunakan nomor terdeteksi dengan mengetik OK pada langkah 2', async () => {
+      await service.handleIncomingMessage(testJid, 'Halo');
+      await service.handleIncomingMessage(testJid, '4');
+      await service.handleIncomingMessage(testJid, 'Maria Omaleng');
+
+      // Ketik OK untuk memakai nomor default WA
+      const step3Reply = await service.handleIncomingMessage(testJid, 'OK');
+      expect(step3Reply).toContain('08123456789');
+
+      await service.handleIncomingMessage(testJid, 'Babi sakit di SP6');
+      expect(mockDatabaseService.createComplaintRecap).toHaveBeenCalledWith(
+        expect.objectContaining({
+          reporterName: 'Maria Omaleng',
+          reporterPhone: '08123456789',
+        }),
+      );
     });
 
     it('harus kembali ke Menu Utama saat mengetik 0 dari submenu', async () => {
