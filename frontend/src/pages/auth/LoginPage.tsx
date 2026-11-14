@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LOGIN_IMAGE, SUANGGI_BRAND } from '../../constants/brand';
+import { SUANGGI_BRAND } from '../../constants/brand';
 import { useAuth } from '../../context/AuthContext';
 
 export const LoginPage: React.FC = () => {
@@ -28,15 +28,23 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-[#f6f5ef]">
-      <div className="relative min-h-[13rem] h-[30vh] max-h-72 lg:h-auto lg:max-h-none lg:min-h-screen overflow-hidden bg-[#173d22]">
-        <img
-          src={LOGIN_IMAGE.url}
-          alt={LOGIN_IMAGE.alt}
-          width={LOGIN_IMAGE.width}
-          height={LOGIN_IMAGE.height}
-          fetchPriority="high"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+      <div className="relative min-h-[14rem] h-[32vh] max-h-80 lg:h-auto lg:max-h-none lg:min-h-screen overflow-hidden bg-[#173d22] grid grid-cols-2 p-1.5 sm:p-2 bg-[#12311b]">
+        <div className="relative h-full w-full overflow-hidden bg-[#173d22]">
+          <img
+            src="/image1.jpg"
+            alt="Dokumentasi Pelayanan Peternakan Mimika 1"
+            className="absolute inset-0 h-full w-full object-cover"
+            fetchPriority="high"
+          />
+        </div>
+        <div className="relative h-full w-full overflow-hidden bg-[#173d22]">
+          <img
+            src="/image2.jpg"
+            alt="Dokumentasi Pelayanan Peternakan Mimika 2"
+            className="absolute inset-0 h-full w-full object-cover"
+            loading="lazy"
+          />
+        </div>
       </div>
 
       <main className="flex items-center justify-center px-5 py-10 sm:px-10 lg:px-12 xl:px-20">
@@ -96,7 +104,7 @@ export const LoginPage: React.FC = () => {
                 disabled={loading}
                 className="mt-2 w-full bg-[#174b2b] px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-[#10391f] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {loading ? 'Memeriksa kredensial...' : `Masuk ke Portal ${SUANGGI_BRAND.name}`}
+                {loading ? 'Memeriksa kredensial...' : 'Masuk ke Portal'}
               </button>
             </form>
 
