@@ -45,7 +45,7 @@ export const SUANGGI_CORE_FEATURES: CoreFeatureItem[] = [
     bgLight: '#edf1e7',
     borderColor: '#a6b39e',
     imageUrl:
-      'https://images.unsplash.com/photo-1500595046743-cd271d694d30?auto=format&fit=crop&w=800&q=80',
+      '/image1.jpg',
     imageAlt: 'Ternak sapi sehat di kawasan peternakan hijau untuk pemasukan daerah',
   },
   {
@@ -88,9 +88,9 @@ export const SUANGGI_CORE_FEATURES: CoreFeatureItem[] = [
 
 export const LIVESTOCK_HERO_IMAGE: LivestockGalleryImage = {
   id: 'hero-cattle-pasture',
-  url: 'https://images.unsplash.com/photo-1500595046743-cd271d694d30?auto=format&fit=crop&w=1200&q=80',
+  url: 'image1.jpg',
   alt: 'Peternakan sapi sehat di padang penggembalaan hijau dalam pengawasan SUANGGI',
-  caption: 'Pengawasan Kesehatan Ternak & Biosekuriti Kabupaten Mimika',
+  caption: 'Lalu Lintas hewan',
   categoryLabel: 'Hewan Hidup & Produk Olahan',
   width: 1200,
   height: 750,
@@ -98,9 +98,9 @@ export const LIVESTOCK_HERO_IMAGE: LivestockGalleryImage = {
 
 export const LOGIN_IMAGE: LivestockGalleryImage = {
     id: 'login-cattle',
-    url: 'https://images.unsplash.com/photo-1546445317-29f4545e9d53?auto=format&fit=crop&w=800&q=80',
+    url: '/login_image.jpeg',
     alt: 'Sapi ternak sehat di padang rumput hijau',
-    caption: 'Pemasukan & Pengeluaran Ternak Besar',
+    caption: 'Produk Hewan',
     categoryLabel: 'Ternak Hewan',
     width: 700,
     height: 460,

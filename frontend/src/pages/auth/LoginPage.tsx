@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { SUANGGI_BRAND } from '../../constants/brand';
+import { LOGIN_IMAGE, SUANGGI_BRAND } from '../../constants/brand';
 import { useAuth } from '../../context/AuthContext';
 
 export const LoginPage: React.FC = () => {
@@ -28,23 +28,12 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-[#f6f5ef]">
-      <div className="relative min-h-[14rem] h-[32vh] max-h-80 lg:h-auto lg:max-h-none lg:min-h-screen overflow-hidden bg-[#173d22] grid grid-cols-2 p-1.5 sm:p-2 bg-[#12311b]">
-        <div className="relative h-full w-full overflow-hidden bg-[#173d22]">
-          <img
-            src="/image1.jpg"
+      <div className="relative min-h-[14rem] h-[32vh] max-h-80 lg:h-auto lg:max-h-none lg:min-h-screen items-center overflow-hidden bg-[#173d22]">
+        <img
+            src={LOGIN_IMAGE.url}
             alt="Dokumentasi Pelayanan Peternakan Mimika 1"
-            className="absolute inset-0 h-full w-full object-cover"
-            fetchPriority="high"
+            className="p-4 object-contain w-full h-full"
           />
-        </div>
-        <div className="relative h-full w-full overflow-hidden bg-[#173d22]">
-          <img
-            src="/image2.jpg"
-            alt="Dokumentasi Pelayanan Peternakan Mimika 2"
-            className="absolute inset-0 h-full w-full object-cover"
-            loading="lazy"
-          />
-        </div>
       </div>
 
       <main className="flex items-center justify-center px-5 py-10 sm:px-10 lg:px-12 xl:px-20">
