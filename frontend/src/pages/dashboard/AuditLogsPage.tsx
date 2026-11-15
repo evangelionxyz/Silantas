@@ -109,6 +109,7 @@ export const AuditLogsPage: React.FC = () => {
           >
             <option value="ALL">Semua Entitas</option>
             <option value="TRAFFIC_RECORD">Data Lalu Lintas Hewan</option>
+            <option value="WHATSAPP_RECAP">Rekapan WhatsApp</option>
             <option value="USER">Akun Pengguna</option>
             <option value="SETTINGS">Pengaturan Sistem</option>
             <option value="AUTH">Autentikasi</option>

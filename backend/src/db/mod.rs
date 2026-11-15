@@ -185,6 +185,13 @@ pub async fn init_database(
             updated_at = NOW()
         WHERE key = 'whatsapp_message' AND value LIKE '%SI-LANTAS%';
 
+        -- Backfill audit_logs rows where user UUID was stored instead of username
+        UPDATE silantas.audit_logs a
+        SET username = u.username
+        FROM silantas.users u
+        WHERE (a.user_id = u.id OR (a.user_id IS NULL AND a.username = u.id::text))
+          AND (a.username = '' OR a.username = u.id::text);
+
         -- Seed Initial Accounts with Verified Argon2 Hashes
         -- admin: admin123
         -- drh_sarah, petugas_budi, pimpinan_yohanis: password123

@@ -616,7 +616,7 @@ export const WhatsappRecapPage: React.FC = () => {
                 <th className="py-3 px-3.5 w-48">Alamat</th>
                 <th className="py-3 px-3.5 w-32">Jenis Layanan</th>
                 <th className="py-3 px-3.5">Keterangan / Laporan Aduan</th>
-                <th className="py-3 px-3.5 w-36 text-center">Tangkapan Layar Server</th>
+                <th className="py-3 px-3.5 w-36 text-center">Tangkapan Layar</th>
                 <th className="py-3 px-3.5 w-28">Status</th>
                 <th className="py-3 px-3.5 text-right w-32">Aksi</th>
               </tr>
