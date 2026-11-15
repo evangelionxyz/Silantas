@@ -106,7 +106,7 @@ export const DocsHome: React.FC = () => {
                                 </div>
 
                                 <div className="mt-6 pt-5 border-t border-[#166534] flex flex-wrap items-center">
-                                    <label className='font-bold'>Si-Lantas Hewan Mimika{' '}</label>
+                                    <label className='font-bold'>Si-Lantas Hewan Mimika {' '}</label>
                                     <div className='flex flex-row gap-2 items-center'>
                                         <label> untuk mendapatkan Informasi & bantuan pendampingan layanan{' '}</label>
                                         <Link
