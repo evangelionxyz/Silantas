@@ -299,7 +299,7 @@ export const DocsHome: React.FC = () => {
                         </svg>
                         <div>
                             <span className="font-extrabold text-[#78350f]">Pemberitahuan Pelayanan {SUANGGI_BRAND.name}:</span>{' '}
-                            Seluruh pemasukan dan pengeluaran hewan, bahan asal hewan (BAH), dan hasil bahan asal hewan (HBAH) melalui pintu Pelabuhan Laut Pomako dan Bandara Mozes Kilangin wajib disertai dokumen karantina dan SKKH yang sah.
+                            Lalu Lintas Hewan, Produk Hewan dan Olahannya yang masuk dan keluar Kabupaten Mimika, harus sudah disertai Sertifikat Veteriner dari Dinas dan Surat Karantina dari Badan Karantina.
                         </div>
                     </div>
 
