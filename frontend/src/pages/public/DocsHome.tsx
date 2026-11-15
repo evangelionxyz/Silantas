@@ -32,7 +32,7 @@ const GALLERY_SLIDES = [
         id: 'eggs-processed',
         url: PUBLIC_COMMODITY_IMAGES.eggsAndProcessed.url,
         alt: PUBLIC_COMMODITY_IMAGES.eggsAndProcessed.alt,
-        caption: 'Produk Hewan & Telur ASUH',
+        caption: 'Produk Hewan',
         categoryLabel: 'Produk Hewan ASUH',
         width: PUBLIC_COMMODITY_IMAGES.eggsAndProcessed.width,
         height: PUBLIC_COMMODITY_IMAGES.eggsAndProcessed.height,
@@ -240,38 +240,38 @@ export const DocsHome: React.FC = () => {
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
                             {SUANGGI_CORE_FEATURES.map((feature) => (
                                 <div
                                     key={feature.id}
-                                    className="border overflow-hidden shadow-sm flex flex-col sm:flex-row bg-white transition-shadow hover:shadow-md"
+                                    className="group border overflow-hidden shadow-xs hover:shadow-md transition-all duration-200 flex flex-col bg-white"
                                     style={{ borderColor: feature.borderColor }}
                                 >
-                                    <div className="sm:w-44 w-77 bg-[#14532d]">
+                                    <div className="relative aspect-16/10 w-full overflow-hidden bg-[#14532d]">
                                         <img
                                             src={feature.imageUrl}
                                             alt={feature.imageAlt}
                                             width={400}
-                                            height={300}
+                                            height={250}
                                             loading="lazy"
-                                            className="w-full h-full object-cover"
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                         />
                                     </div>
                                     <div
-                                        className="p-4 sm:p-5 flex-1 flex flex-col justify-between"
+                                        className="p-4 flex-1 flex flex-col justify-between"
                                         style={{ backgroundColor: feature.bgLight }}
                                     >
                                         <div>
                                             <span
-                                                className="inline-block text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 text-white mb-2"
+                                                className="inline-block text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider px-2 py-0.5 text-white mb-2"
                                                 style={{ backgroundColor: feature.accentColor }}
                                             >
                                                 {feature.badge}
                                             </span>
-                                            <h3 className="text-lg sm:text-xl font-extrabold text-[#1f2328]">
+                                            <h3 className="text-base sm:text-lg font-extrabold text-[#1f2328]">
                                                 {feature.title}
                                             </h3>
-                                            <p className="text-sm sm:text-base font-medium text-[#374151] mt-1 leading-relaxed">
+                                            <p className="text-xs sm:text-sm font-medium text-[#374151] mt-1 leading-relaxed">
                                                 {feature.description}
                                             </p>
                                         </div>
