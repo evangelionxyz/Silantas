@@ -108,7 +108,7 @@ export const DocsHome: React.FC = () => {
                                 <div className="mt-6 pt-5 border-t border-[#166534] flex flex-wrap items-center">
                                     <label className='font-bold'>Si-Lantas Hewan Mimika{' '}</label>
                                     <div className='flex flex-row gap-2 items-center'>
-                                        <label>untuk mendapatkan Informasi & bantuan pendampingan layanan{' '}</label>
+                                        <label> untuk mendapatkan Informasi & bantuan pendampingan layanan{' '}</label>
                                         <Link
                                             to="https://lalin.isikhnas.co.id"
                                             className="px-4 py-1 text-sm font-bold bg-[#f59e0b] hover:bg-[#d97706] text-[#1f2328] transition-colors shadow-xs"
