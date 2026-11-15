@@ -42,7 +42,7 @@ export const WhatsAppConsultation: React.FC = () => {
     }, []);
 
     const templates: { [key: string]: string } = {
-        Umum: `Halo Admin ${SUANGGI_BRAND.name} (${SUANGGI_BRAND.fullName}) Kabupaten Mimika, saya ingin konsultasi umum mengenai pelayanan lalu lintas hewan dan produk hewan.`,
+        Umum: `Halo Admin ${SUANGGI_BRAND.name} Kabupaten Mimika, saya ingin konsultasi umum mengenai pelayanan lalu lintas hewan dan produk hewan.`,
         'Pemasukan Hewan & Produk': `Halo Admin ${SUANGGI_BRAND.name}, saya ingin menanyakan prosedur dan persyaratan izin Pemasukan (data hewan/produk masuk) ke Kabupaten Mimika.`,
         'Pengeluaran & Penerbitan SKKH': `Halo Dokter Hewan ${SUANGGI_BRAND.name} Mimika, saya ingin mengajukan jadwal pemeriksaan kesehatan ternak untuk penerbitan SKKH Pengeluaran (keluar daerah).`,
         'Pemeriksaan Daging & Rantai Dingin': `Halo Admin ${SUANGGI_BRAND.name}, saya pelaku usaha ingin berkonsultasi mengenai kelengkapan dokumen pengiriman daging beku / telur ayam ke Pelabuhan Pomako.`,
@@ -114,15 +114,6 @@ export const WhatsAppConsultation: React.FC = () => {
                                     <span>Jam Pelayanan: Senin - Jumat (08.00 - 16.00 WIT)</span>
                                 </div>
                             </div>
-
-                            <button
-                                type="button"
-                                disabled={isLoadingConfig || !config.whatsappNumber}
-                                onClick={handleOpenWhatsApp}
-                                className="px-5 py-3 text-sm font-bold text-white bg-[#15803d] hover:bg-[#14532d] transition-colors flex items-center justify-center gap-2 shadow-xs shrink-0 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                            >
-                                <span>Mulai Chatting WhatsApp</span>
-                            </button>
                         </div>
                     </div>
 
