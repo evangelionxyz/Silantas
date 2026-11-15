@@ -40,6 +40,7 @@ describe('ChatbotService', () => {
     service = module.get<ChatbotService>(ChatbotService);
     sessionStore = module.get<ChatbotSessionStore>(ChatbotSessionStore);
     databaseService = module.get<DatabaseService>(DatabaseService);
+    vi.spyOn(service, 'isOperationalHours').mockReturnValue(true);
   });
 
   it('should be defined', () => {
@@ -102,7 +103,7 @@ describe('ChatbotService', () => {
 
       expect(mockDatabaseService.createWhatsappRecap).toHaveBeenCalledWith({
         reporterName: 'Yohanes Maturbongs',
-        reporterPhone: '082199887766',
+        reporterPhone: '+6282199887766',
         address: 'Kampung Naena Muktipura (SP 6)',
         serviceType: 'INFORMASI',
         description: 'Permohonan Pemeriksaan Kesehatan - Jenis & Jumlah Hewan/Produk: 5 ekor babi',
@@ -136,7 +137,7 @@ describe('ChatbotService', () => {
 
       expect(mockDatabaseService.createWhatsappRecap).toHaveBeenCalledWith({
         reporterName: 'Mama Maria Omaleng',
-        reporterPhone: '08123456789',
+        reporterPhone: '+628123456789',
         address: 'Kabupaten Mimika',
         serviceType: 'INFORMASI',
         description: 'Permohonan Pemeriksaan Kesehatan - Jenis & Jumlah Hewan/Produk: 2 ekor sapi',
@@ -174,7 +175,7 @@ describe('ChatbotService', () => {
 
       expect(mockDatabaseService.createWhatsappRecap).toHaveBeenCalledWith({
         reporterName: 'Budi Santoso',
-        reporterPhone: '081244556677',
+        reporterPhone: '+6281244556677',
         address: 'SP 2 Timika',
         serviceType: 'BANTUAN',
         description: 'Saya butuh panduan pendaftaran akun iSIKHNAS',
@@ -293,6 +294,105 @@ describe('ChatbotService', () => {
 
       const nextMsg = await service.handleIncomingMessage(testJid, 'masih salah');
       expect(nextMsg).toBeNull();
+    });
+  });
+
+  describe('Hari & Jam Operasional Bot (Senin - Jumat 08.00 - 16.00 WIT)', () => {
+    it('isOperationalHours harus mengembalikan true pada hari kerja (Senin-Jumat) antara jam 08.00 - 15.59 WIT', () => {
+      vi.spyOn(service, 'isOperationalHours').mockRestore();
+
+      // Senin jam 08.00 WIT = Minggu 23.00 UTC
+      expect(service.isOperationalHours(new Date('2026-11-15T23:00:00Z'))).toBe(true);
+
+      // Senin jam 12.00 WIT = Senin 03.00 UTC
+      expect(service.isOperationalHours(new Date('2026-11-16T03:00:00Z'))).toBe(true);
+
+      // Jumat jam 15.59 WIT = Jumat 06.59 UTC
+      expect(service.isOperationalHours(new Date('2026-11-20T06:59:00Z'))).toBe(true);
+    });
+
+    it('isOperationalHours harus mengembalikan false di luar jam operasional atau akhir pekan', () => {
+      vi.spyOn(service, 'isOperationalHours').mockRestore();
+
+      // Senin jam 07.59 WIT (belum buka)
+      expect(service.isOperationalHours(new Date('2026-11-15T22:59:00Z'))).toBe(false);
+
+      // Senin jam 16.00 WIT (sudah tutup)
+      expect(service.isOperationalHours(new Date('2026-11-16T07:00:00Z'))).toBe(false);
+
+      // Sabtu jam 10.00 WIT (akhir pekan)
+      expect(service.isOperationalHours(new Date('2026-11-21T01:00:00Z'))).toBe(false);
+
+      // Minggu jam 12.00 WIT (akhir pekan)
+      expect(service.isOperationalHours(new Date('2026-11-22T03:00:00Z'))).toBe(false);
+    });
+
+    it('harus menjeda bot (return null) di luar jam operasional saat menerima pesan biasa (Halo)', async () => {
+      vi.spyOn(service, 'isOperationalHours').mockReturnValue(false);
+
+      const reply = await service.handleIncomingMessage(testJid, 'Halo', 'Budi');
+      expect(reply).toBeNull();
+    });
+
+    it('harus tetap merespon menu utama saat warga mengetik #menu di luar jam operasional', async () => {
+      vi.spyOn(service, 'isOperationalHours').mockReturnValue(false);
+
+      const reply = await service.handleIncomingMessage(testJid, '#menu', 'Budi');
+      expect(reply).not.toBeNull();
+      expect(reply).toContain('SI-LANTAS HEWAN MIMIKA');
+      expect(reply).toContain('1. *Informasi*');
+      expect(reply).toContain('2. *Bantuan*');
+    });
+
+    it('harus mengizinkan navigasi menu mandiri setelah warga mengetik #menu di luar jam operasional', async () => {
+      vi.spyOn(service, 'isOperationalHours').mockReturnValue(false);
+
+      // Warga membangunkan bot dengan #menu
+      await service.handleIncomingMessage(testJid, '#menu');
+
+      // Warga memilih angka 1 untuk melihat menu informasi
+      const infoReply = await service.handleIncomingMessage(testJid, '1');
+      expect(infoReply).toBe(CHATBOT_MENUS.MENU_INFORMASI);
+
+      // Warga memilih 1 lagi untuk melihat persyaratan
+      const reqReply = await service.handleIncomingMessage(testJid, '1');
+      expect(Array.isArray(reqReply)).toBe(true);
+      expect((reqReply as string[])[0]).toContain('Persyaratan pemasukan hewan');
+    });
+
+    it('mengabaikan salam lanjutan (misal "halo") saat berada di sesi menu di luar jam operasional', async () => {
+      vi.spyOn(service, 'isOperationalHours').mockReturnValue(false);
+
+      await service.handleIncomingMessage(testJid, '#menu');
+      const greetingReply = await service.handleIncomingMessage(testJid, 'halo');
+      expect(greetingReply).toBeNull();
+    });
+  });
+
+  describe('Format Nomor Telepon Indonesia (+62)', () => {
+    it('toPlus62 harus memformat nomor awalan 0, 62, atau digit polos menjadi +62...', () => {
+      expect(service.toPlus62('08123456789')).toBe('+628123456789');
+      expect(service.toPlus62('628123456789')).toBe('+628123456789');
+      expect(service.toPlus62('8123456789')).toBe('+628123456789');
+    });
+
+    it('formatPhoneNumber harus mengambil nomor WhatsApp dari JID dalam format +62', () => {
+      expect(service.formatPhoneNumber('628123456789@s.whatsapp.net')).toBe('+628123456789');
+      expect(service.formatPhoneNumber('123456789@lid')).toBeUndefined();
+    });
+
+    it('normalizePhone harus menggunakan nomor WhatsApp jika pengguna tidak mengisi nomor telepon', () => {
+      const detected = '+628123456789';
+      expect(service.normalizePhone('', detected)).toBe('+628123456789');
+      expect(service.normalizePhone('-', detected)).toBe('+628123456789');
+      expect(service.normalizePhone('   ', detected)).toBe('+628123456789');
+      expect(service.normalizePhone('Tidak ada', detected)).toBe('+628123456789');
+    });
+
+    it('normalizePhone harus memformat input pengguna ke +62 jika nomor valid diisi', () => {
+      expect(service.normalizePhone('0821-9988-7766', '+628123456789')).toBe('+6282199887766');
+      expect(service.normalizePhone('+62 821 9988 7766', '+628123456789')).toBe('+6282199887766');
+      expect(service.normalizePhone('6285211223344', '+628123456789')).toBe('+6285211223344');
     });
   });
 });

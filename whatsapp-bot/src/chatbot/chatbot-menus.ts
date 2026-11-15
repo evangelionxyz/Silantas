@@ -8,7 +8,7 @@ export const CHATBOT_MENUS = {
       `*LAYANAN INFORMASI & BANTUAN LALU LINTAS HEWAN*\n` +
       `*Dinas Peternakan dan Kesehatan Hewan Kabupaten Mimika*\n` +
       `*(SI-LANTAS HEWAN MIMIKA)*\n\n` +
-      `Halo ${cleanName ? `*${cleanName}*` : 'Bapak/Ibu'}, selamat datang di layanan WhatsApp SI-LANTAS HEWAN MIMIKA.\n\n` +
+      `Halo ${cleanName ? `Bapak/Ibu *${cleanName}*` : 'Bapak/Ibu'}, selamat datang di layanan WhatsApp SI-LANTAS HEWAN MIMIKA.\n\n` +
       `Silakan pilih jenis kebutuhan Anda dengan membalas angka *1* atau *2*:\n\n` +
       `1. *Informasi*\n` +
       `   (Persyaratan lalu lintas, pemeriksaan kesehatan, dan prosedur website Lalin.isikhnas)\n\n` +

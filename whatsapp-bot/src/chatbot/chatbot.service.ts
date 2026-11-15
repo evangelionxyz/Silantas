@@ -14,6 +14,15 @@ export class ChatbotService {
   private readonly adminCooldownHours = Number(process.env.ADMIN_COOLDOWN_HOURS ?? 4);
 
   /**
+   * Pengaturan hari & jam operasional (Waktu Indonesia Timur / WIT / UTC+9)
+   * Hari kerja: Senin - Jumat (Monday - Friday)
+   * Jam: 08.00 - 16.00 WIT
+   */
+  private readonly operationalStartHour = Number(process.env.OPERATIONAL_START_HOUR ?? 8);
+  private readonly operationalEndHour = Number(process.env.OPERATIONAL_END_HOUR ?? 16);
+  private readonly operationalTzOffset = Number(process.env.OPERATIONAL_TIMEZONE_OFFSET ?? 9);
+
+  /**
    * Penyimpanan riwayat pesan untuk proteksi rate limiting per JID.
    */
   private readonly rateLimits = new Map<string, number[]>();
@@ -30,11 +39,28 @@ export class ChatbotService {
   }
 
   /**
-   * Mengubah format JID WhatsApp menjadi nomor telepon lokal yang valid.
+   * Mengonversi digit nomor telepon menjadi format internasional Indonesia (+62).
+   * Contoh:
+   * 08123456789 -> +628123456789
+   * 628123456789 -> +628123456789
+   * 8123456789 -> +628123456789
+   */
+  public toPlus62(digits: string): string {
+    if (digits.startsWith('62')) {
+      return `+${digits}`;
+    }
+    if (digits.startsWith('0')) {
+      return `+62${digits.slice(1)}`;
+    }
+    return `+62${digits}`;
+  }
+
+  /**
+   * Mengubah format JID WhatsApp menjadi format nomor telepon Indonesia (+62).
    * Jika JID merupakan akun privasi/LID (@lid), mengembalikan undefined
    * karena LID bukan nomor telepon yang dapat dihubungi.
    */
-  private formatPhoneNumber(jid: string): string | undefined {
+  public formatPhoneNumber(jid: string): string | undefined {
     if (jid.includes('@lid') || jid.includes('lid')) {
       return undefined;
     }
@@ -46,22 +72,26 @@ export class ChatbotService {
       return undefined;
     }
 
-    if (digits.startsWith('62')) {
-      return '0' + digits.slice(2);
-    }
-
-    return digits.startsWith('0') ? digits : '0' + digits;
+    return this.toPlus62(digits);
   }
 
-  private normalizePhone(rawPhone: string, detectedPhone?: string): string {
+  /**
+   * Menormalisasi nomor telepon ke format Indonesia (+62).
+   * Jika pengguna tidak mencantumkan nomor telepon, otomatis menggunakan nomor WhatsApp terdeteksi.
+   */
+  public normalizePhone(rawPhone: string, detectedPhone?: string): string {
     const phoneDigits = rawPhone.replace(/\D/g, '');
     if (phoneDigits.length >= 8 && phoneDigits.length <= 16) {
-      if (phoneDigits.startsWith('62')) {
-        return '0' + phoneDigits.slice(2);
-      }
-      return phoneDigits.startsWith('0') ? phoneDigits : '0' + phoneDigits;
+      return this.toPlus62(phoneDigits);
     }
-    return detectedPhone || 'Tidak disertakan';
+    if (detectedPhone) {
+      const detectedDigits = detectedPhone.replace(/\D/g, '');
+      if (detectedDigits.length >= 8) {
+        return this.toPlus62(detectedDigits);
+      }
+      return detectedPhone;
+    }
+    return 'Tidak disertakan';
   }
 
   private parseLabeledTemplate(
@@ -214,8 +244,28 @@ export class ChatbotService {
     this.logger.log(`Admin interlock aktif untuk ${jid}. Bot akan jeda selama ${this.adminCooldownHours} jam.`);
   }
 
+  /**
+   * Mengecek apakah saat ini berada dalam hari & jam operasional layanan:
+   * Hari: Senin - Jumat (Monday - Friday)
+   * Jam: 08.00 - 16.00 WIT (Waktu Indonesia Timur / UTC+9)
+   */
+  public isOperationalHours(currentDate = new Date()): boolean {
+    const witTimestamp = currentDate.getTime() + this.operationalTzOffset * 60 * 60 * 1000;
+    const witDate = new Date(witTimestamp);
+
+    const day = witDate.getUTCDay(); // 0 = Minggu, 1 = Senin, ..., 5 = Jumat, 6 = Sabtu
+    const isOperationalDay = day >= 1 && day <= 5;
+    if (!isOperationalDay) {
+      return false;
+    }
+
+    const hour = witDate.getUTCHours();
+    return hour >= this.operationalStartHour && hour < this.operationalEndHour;
+  }
+
   private resetToMainMenu(session: UserSession): string {
-    session.metadata = {};
+    const savedOffHoursUntil = session.metadata?.offHoursMenuUntil;
+    session.metadata = savedOffHoursUntil ? { offHoursMenuUntil: savedOffHoursUntil } : {};
     session.state = ChatSessionState.MAIN_MENU;
     session.invalidAttempts = 0;
     session.lastBotReplyAt = Date.now();
@@ -224,7 +274,8 @@ export class ChatbotService {
   }
 
   private enterMenuInformasi(session: UserSession): string {
-    session.metadata = {};
+    const savedOffHoursUntil = session.metadata?.offHoursMenuUntil;
+    session.metadata = savedOffHoursUntil ? { offHoursMenuUntil: savedOffHoursUntil } : {};
     session.state = ChatSessionState.MENU_INFORMASI;
     session.invalidAttempts = 0;
     session.lastBotReplyAt = Date.now();
@@ -234,7 +285,11 @@ export class ChatbotService {
 
   private enterMenuBantuan(jid: string, session: UserSession): string[] {
     const detectedPhone = this.formatPhoneNumber(jid);
-    session.metadata = { detectedPhone };
+    const savedOffHoursUntil = session.metadata?.offHoursMenuUntil;
+    session.metadata = {
+      detectedPhone,
+      ...(savedOffHoursUntil ? { offHoursMenuUntil: savedOffHoursUntil } : {}),
+    };
     session.state = ChatSessionState.AWAITING_BANTUAN_MESSAGE;
     session.invalidAttempts = 0;
     session.lastBotReplyAt = Date.now();
@@ -260,7 +315,11 @@ export class ChatbotService {
 
       case '2': {
         const detectedPhone = this.formatPhoneNumber(jid);
-        session.metadata = { detectedPhone };
+        const savedOffHoursUntil = session.metadata?.offHoursMenuUntil;
+        session.metadata = {
+          detectedPhone,
+          ...(savedOffHoursUntil ? { offHoursMenuUntil: savedOffHoursUntil } : {}),
+        };
         session.state = ChatSessionState.AWAITING_INSPECTION_TEMPLATE;
         session.invalidAttempts = 0;
         session.lastBotReplyAt = Date.now();
@@ -334,6 +393,59 @@ export class ChatbotService {
       return null;
     }
 
+    // 3. Cek Hari & Jam Operasional (Senin - Jumat, 08.00 - 16.00 WIT)
+    // WhatsApp Business otomatis menangani Away message di luar jam kerja.
+    // Bot dijeda penuh KECUALI warga mengetik command #menu untuk akses menu mandiri.
+    const isOperational = this.isOperationalHours();
+    if (!isOperational) {
+      const session = this.sessionStore.getSession(jid);
+      const isOffHoursMenuSessionActive =
+        session.metadata?.offHoursMenuUntil &&
+        Date.now() <= Number(session.metadata.offHoursMenuUntil);
+
+      if (lower === '#menu' || lower === 'menu') {
+        this.logger.log(
+          `[Off-Hours] Warga pada ${jid} meminta menu mandiri dengan command '${text}' di luar jam operasional.`,
+        );
+        this.sessionStore.resetAdminCooldown(jid);
+        if (senderName && !session.name && senderName.trim() !== '.') {
+          session.name = senderName.trim();
+        }
+        session.metadata = {
+          ...session.metadata,
+          offHoursMenuUntil: Date.now() + 15 * 60 * 1000,
+        };
+        return this.resetToMainMenu(session);
+      }
+
+      // Jika bukan #menu dan tidak ada sesi menu mandiri yang aktif, jeda bot (hening / return null)
+      if (!isOffHoursMenuSessionActive) {
+        this.logger.debug(
+          `[Off-Hours Ignored] Pesan dari ${jid} diabaikan karena di luar jam operasional (Senin-Jumat 08.00-16.00 WIT). Away message ditangani oleh WhatsApp Business.`,
+        );
+        return null;
+      }
+
+      // Jika dalam sesi menu aktif tapi mengirim salam pembuka baru (misal: "halo"), abaikan agar tidak spam
+      const isGreeting =
+        lower === 'halo' ||
+        lower === 'hai' ||
+        lower === 'p' ||
+        lower.startsWith('halo admin') ||
+        lower.startsWith('selamat') ||
+        lower.startsWith('assalam');
+
+      if (isGreeting) {
+        return null;
+      }
+
+      // Perpanjang sesi menu aktif setiap kali warga berinteraksi memilih menu yang valid
+      session.metadata = {
+        ...session.metadata,
+        offHoursMenuUntil: Date.now() + 15 * 60 * 1000,
+      };
+    }
+
     const session = this.sessionStore.getSession(jid);
     if (senderName && !session.name && senderName.trim() !== '.') {
       session.name = senderName.trim();
@@ -346,9 +458,12 @@ export class ChatbotService {
         return this.resetToMainMenu(session);
       }
 
+      const detectedPhone =
+        (session.metadata?.detectedPhone as string | undefined) || this.formatPhoneNumber(jid);
+
       const parsed = this.parseInspectionTemplate(
         text,
-        session.metadata?.detectedPhone as string | undefined,
+        detectedPhone,
         session.name,
       );
 
@@ -387,9 +502,12 @@ export class ChatbotService {
         return 'Silakan tuliskan kebutuhan atau kendala Anda secara singkat agar petugas kami dapat segera membantu:';
       }
 
+      const detectedPhone =
+        (session.metadata?.detectedPhone as string | undefined) || this.formatPhoneNumber(jid);
+
       const parsed = this.parseBantuanMessage(
         text,
-        session.metadata?.detectedPhone as string | undefined,
+        detectedPhone,
         session.name,
       );
 
