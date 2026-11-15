@@ -101,7 +101,7 @@ export const DocsHome: React.FC = () => {
                                     </blockquote>
 
                                     <p className="text-sm sm:text-base text-[#dcfce7] leading-relaxed mt-4">
-                                        Portal informasi dan pengawasan terpadu lalu lintas hewan hidup, bahan asal hewan (BAH), serta hasil bahan asal hewan (HBAH) pada pintu pemasukan dan pengeluaran resmi {SUANGGI_BRAND.agency}.
+                                        Portal Informasi dan Pengawasan Terpadu {SUANGGI_BRAND.agency} terkait Lalu Lintas Hewan, Olahannya Masuk dan Keluar Kabupaten Mimika.
                                     </p>
                                 </div>
 
