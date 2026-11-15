@@ -368,7 +368,7 @@ export const DocsHome: React.FC = () => {
                                 {SUANGGI_BRAND.agency}
                             </h3>
                             <p className="text-sm text-[#374151] mt-1">
-                                Kompleks Perkantoran Pemerintah Daerah Kabupaten Mimika, Jl. Cenderawasih SP 3, Timika, Papua Tengah 99910.
+                                Jalan Poros SP2-SP5, Kelurahan Minabua, Distrik Mimika Baru, Kabupaten Mimika, Papua Tengah 99910.
                             </p>
                         </div>
                     </div>
