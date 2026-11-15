@@ -8,11 +8,56 @@ import { SUANGGI_BRAND } from '../../constants/brand';
 const profileTocItems: TocItem[] = [
   { id: 'tentang-sistem', title: 'Tentang SUANGGI CARI KO' },
   { id: 'makna-filosofi', title: 'Makna & Akronim SUANGGI' },
-  { id: 'tujuan-sistem', title: 'Tujuan & Manfaat Utama' },
+  { id: 'manfaat-aplikasi', title: 'Manfaat Aplikasi' },
   { id: 'pilar-operasional', title: '4 Pilar Operasional' },
   { id: 'tata-kelola-dokumen', title: 'Tertib Dokumen: SV & SKKH' },
   { id: 'landasan-hukum', title: 'Landasan Hukum & Instansi' },
   { id: 'layanan-kontak', title: 'Saluran Layanan Publik' },
+];
+
+const appBenefits = [
+  {
+    code: '01',
+    title: 'Pemutakhiran Data',
+    desc: 'Memudahkan pembaruan data lalu lintas hewan, produk hewan, dan olahannya secara berkala.',
+    badgeClass: 'bg-[#dcfce7] text-[#15803d]',
+  },
+  {
+    code: '02',
+    title: 'Pencatatan Terstruktur',
+    desc: 'Mengelola data hewan dan produk hewan yang masuk maupun keluar Kabupaten Mimika.',
+    badgeClass: 'bg-[#e0f2fe] text-[#0369a1]',
+  },
+  {
+    code: '03',
+    title: 'Efisiensi Kerja Petugas',
+    desc: 'Mempercepat proses input, pencarian, pemantauan, dan rekapitulasi data.',
+    badgeClass: 'bg-[#fef3c7] text-[#b45309]',
+  },
+  {
+    code: '04',
+    title: 'Pendataan Pemohon',
+    desc: 'Mempermudah pengelolaan identitas pemohon dan penghubung SI-LANTAS HEWAN MIMIKA.',
+    badgeClass: 'bg-[#ccfbf1] text-[#0f766e]',
+  },
+  {
+    code: '05',
+    title: 'Akurasi Informasi',
+    desc: 'Mengurangi risiko kesalahan pencatatan dan duplikasi data.',
+    badgeClass: 'bg-[#dcfce7] text-[#15803d]',
+  },
+  {
+    code: '06',
+    title: 'Dukungan Pengawasan',
+    desc: 'Membantu petugas memperoleh informasi sebagai bahan pemantauan dan pengawasan lalu lintas hewan.',
+    badgeClass: 'bg-[#e0f2fe] text-[#0369a1]',
+  },
+  {
+    code: '07',
+    title: 'Pelaporan Lebih Mudah',
+    desc: 'Mempermudah penyusunan laporan dan penyediaan data terkini sebagai dasar evaluasi dan pengambilan keputusan.',
+    badgeClass: 'bg-[#fef3c7] text-[#b45309]',
+  },
 ];
 
 const acronymBreakdown = [
@@ -101,39 +146,38 @@ export const ProfilePage: React.FC = () => {
             </div>
 
             <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white mb-3 leading-tight">
-              Mengenal {SUANGGI_BRAND.name}
+              {SUANGGI_BRAND.name}
             </h1>
             <p className="text-base sm:text-xl font-bold text-[#bbf7d0] mb-4 leading-snug">
-              {SUANGGI_BRAND.fullName}
+              Aplikasi Pemutakhiran Data Lalu Lintas Hewan, Produk Hewan, dan Olahannya Kabupaten Mimika
             </p>
 
             <div className="p-3.5 bg-[#0f3923] border-l-4 border-[#f59e0b] text-sm sm:text-base font-semibold text-[#fef3c7] mb-6">
-              &ldquo;{SUANGGI_BRAND.slogan}&rdquo;
+              &ldquo;Suanggi Cari Ko, Data Terupdate, Pengawasan Lebih Mudah, Lalu Lintas Hewan Lebih Terkendali.&rdquo;
             </div>
 
             <p className="text-sm sm:text-base text-[#dcfce7] leading-relaxed max-w-3xl m-0">
-              Sistem informasi manajemen terpadu yang dibangun oleh {SUANGGI_BRAND.agency} untuk
-              mengawal biosekuriti daerah, mewujudkan Satu Data Peternakan yang akurat, serta memodernisasi
-              pengawasan arus niaga komoditas peternakan di pintu-pintu masuk dan keluar Kabupaten Mimika,
-              Papua Tengah.
+              Suanggi Cari Ko merupakan aplikasi digital yang dikembangkan oleh {SUANGGI_BRAND.agency} untuk
+              mendukung pemutakhiran dan pengelolaan data lalu lintas hewan, produk hewan, dan olahannya yang
+              masuk maupun keluar dari wilayah Kabupaten Mimika, serta pendataan pemohon atau penghubung layanan
+              SI-LANTAS HEWAN MIMIKA.
             </p>
           </section>
 
           {/* Section 1: Tentang Sistem */}
           <section id="tentang-sistem" className="mb-12">
-            <h2>1. Tentang Sistem SUANGGI CARI KO</h2>
+            <h2>1. Tentang SUANGGI CARI KO</h2>
             <p>
-              Kabupaten Mimika memiliki posisi strategis sebagai pintu gerbang logistik utama di wilayah
-              Papua Tengah melalui <strong>Pelabuhan Pomako</strong> dan <strong>Bandara Internasional Mozes Kilangin</strong>.
-              Tingginya volume mobilitas orang dan barang, terutama komoditas hewan hidup, bahan asal hewan (BAH)
-              seperti daging beku dan telur, serta hasil bahan asal hewan (HBAH), menuntut pengawasan
-              kesehatan veteriner yang tangguh, cepat, dan terdokumentasi rapi.
+              <strong>Suanggi Cari Ko</strong> merupakan aplikasi digital yang dikembangkan untuk mendukung
+              pemutakhiran dan pengelolaan data lalu lintas hewan, produk hewan, dan olahannya yang masuk maupun
+              keluar dari wilayah Kabupaten Mimika. Aplikasi ini juga menyediakan pendataan pemohon atau
+              penghubung layanan <strong>SI-LANTAS HEWAN MIMIKA</strong>.
             </p>
             <p>
-              <strong>{SUANGGI_BRAND.name}</strong> hadir sebagai solusi transformasi digital pelayanan
-              pemerintah daerah. Sistem ini menghubungkan petugas teknis lapangan, dokter hewan berwenang,
-              pelaku usaha ternak, hingga pengambil kebijakan pimpinan dinas dalam satu ekosistem data yang
-              terbuka, transparan, dan dapat dipertanggungjawabkan (auditable).
+              Aplikasi ini bertujuan mempermudah petugas dalam menginput, memantau, memperbarui, dan merekap
+              data secara cepat, akurat, dan terintegrasi. Dengan adanya <strong>Suanggi Cari Ko</strong>, proses
+              pencatatan yang sebelumnya dilakukan secara manual dapat dikelola secara lebih praktis dan
+              sistematis sehingga data selalu tersedia dalam kondisi terbaru.
             </p>
 
             <div className="not-prose my-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -239,76 +283,30 @@ export const ProfilePage: React.FC = () => {
             </div>
           </section>
 
-          {/* Section 3: Tujuan & Manfaat Utama */}
-          <section id="tujuan-sistem" className="mb-12">
-            <h2>3. Tujuan &amp; Manfaat Sistem</h2>
+          {/* Section 3: Manfaat Aplikasi */}
+          <section id="manfaat-aplikasi" className="mb-12">
+            <h2>3. Manfaat Aplikasi</h2>
             <p>
-              Penerapan sistem ini memiliki sasaran strategis bagi ketahanan pangan, perlindungan ekonomi
-              peternak lokal, dan kesehatan masyarakat:
+              Penerapan <strong>Suanggi Cari Ko</strong> memberikan manfaat langsung bagi pengelolaan data,
+              efisiensi petugas, dan pengawasan lalu lintas hewan di Kabupaten Mimika:
             </p>
 
-            <div className="not-prose space-y-4 my-6">
-              <div className="flex gap-4 p-4 border border-[#d1d5db] bg-white">
-                <div className="w-9 h-9 shrink-0 bg-[#dcfce7] text-[#15803d] font-bold text-sm flex items-center justify-center">
-                  01
+            <div className="not-prose space-y-3.5 my-6">
+              {appBenefits.map((benefit) => (
+                <div key={benefit.code} className="flex gap-4 p-4 border border-[#d1d5db] bg-white">
+                  <div className={`w-9 h-9 shrink-0 font-bold text-sm flex items-center justify-center ${benefit.badgeClass}`}>
+                    {benefit.code}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm sm:text-base text-[#111827] m-0">
+                      {benefit.title}
+                    </h4>
+                    <p className="text-xs sm:text-sm text-[#4b5563] mt-1 mb-0 leading-relaxed">
+                      {benefit.desc}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-bold text-sm sm:text-base text-[#111827] m-0">
-                    Benteng Biosekuriti &amp; Pencegahan Penyakit Hewan Menular (PHMS)
-                  </h4>
-                  <p className="text-xs sm:text-sm text-[#4b5563] mt-1 mb-0 leading-relaxed">
-                    Menjaga Mimika dari bahaya penyakit hewan berbahaya seperti Penyakit Mulut dan Kuku (PMK),
-                    Demam Babi Afrika (African Swine Fever / ASF), Flu Burung (Avian Influenza), dan Rabies.
-                    Setiap komoditas yang masuk wajib disertai dokumen kesehatan resmi dari daerah asal.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-4 p-4 border border-[#d1d5db] bg-white">
-                <div className="w-9 h-9 shrink-0 bg-[#e0f2fe] text-[#0369a1] font-bold text-sm flex items-center justify-center">
-                  02
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm sm:text-base text-[#111827] m-0">
-                    Jaminan Keamanan Produk Pangan Asal Ternak (Kesmavet)
-                  </h4>
-                  <p className="text-xs sm:text-sm text-[#4b5563] mt-1 mb-0 leading-relaxed">
-                    Memastikan daging beku, karkas, susu, telur, dan olahannya yang beredar di Mimika memenuhi
-                    standar <strong>ASUH (Aman, Sehat, Utuh, dan Halal)</strong> serta terjaga dalam rantai dingin
-                    (cold chain) selama pengiriman.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-4 p-4 border border-[#d1d5db] bg-white">
-                <div className="w-9 h-9 shrink-0 bg-[#fef3c7] text-[#b45309] font-bold text-sm flex items-center justify-center">
-                  03
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm sm:text-base text-[#111827] m-0">
-                    Kalkulasi Otomatis Neraca Pangan Peternakan Daerah
-                  </h4>
-                  <p className="text-xs sm:text-sm text-[#4b5563] mt-1 mb-0 leading-relaxed">
-                    Menghitung secara langsung total volume masuk, keluar, dan ketersediaan pasokan ternak di Mimika
-                    untuk mendukung pengambilan kebijakan stabilisasi pasokan dan harga daging menjelang hari raya.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-4 p-4 border border-[#d1d5db] bg-white">
-                <div className="w-9 h-9 shrink-0 bg-[#ccfbf1] text-[#0f766e] font-bold text-sm flex items-center justify-center">
-                  04
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm sm:text-base text-[#111827] m-0">
-                    Transparansi Pelayanan &amp; Respon Cepat Aspirasi Warga
-                  </h4>
-                  <p className="text-xs sm:text-sm text-[#4b5563] mt-1 mb-0 leading-relaxed">
-                    Memangkas birokrasi berbelit. Masyarakat dan peternak dapat berkonsultasi, mengajukan informasi,
-                    atau melaporkan keluhan melalui posko WhatsApp pelayanan yang terhubung langsung dengan petugas piket.
-                  </p>
-                </div>
-              </div>
+              ))}
             </div>
           </section>
 
@@ -490,21 +488,6 @@ export const ProfilePage: React.FC = () => {
             </p>
 
             <div className="not-prose grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-              <Link
-                to="/persyaratan"
-                className="p-4 bg-white border border-[#d0d7de] hover:border-[#15803d] transition-all group flex flex-col justify-between"
-              >
-                <div>
-                  <span className="text-xs font-bold uppercase text-[#15803d]">Panduan Resmi</span>
-                  <div className="font-bold text-sm sm:text-base text-[#1f2328] group-hover:text-[#15803d] mt-1">
-                    Panduan Persyaratan Dokumen &rarr;
-                  </div>
-                  <p className="text-xs text-[#57606a] mt-1 mb-0 leading-relaxed">
-                    Syarat teknis hewan hidup, daging segar, beku, dan produk olahan peternakan.
-                  </p>
-                </div>
-              </Link>
-
               <Link
                 to="/konsultasi"
                 className="p-4 bg-[#f0fdf4] border border-[#86efac] hover:border-[#15803d] transition-all group flex flex-col justify-between"

@@ -2,6 +2,18 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { randomUUID } from 'crypto';
 import pg from 'pg';
 
+export type RecapServiceType = 'INFORMASI' | 'BANTUAN';
+
+export interface CreateWhatsappRecapDto {
+  reporterName: string;
+  reporterPhone: string;
+  address?: string;
+  serviceType: RecapServiceType;
+  description: string;
+  notes?: string;
+  ticketId?: string;
+}
+
 export interface CreateComplaintDto {
   reporterName: string;
   reporterPhone: string;
@@ -55,20 +67,25 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Menyimpan aduan keluhan warga secara otomatis ke tabel silantas.whatsapp_recaps.
-   * Ditandai dengan service_type = 'BANTUAN' dan status = 'BARU'.
+   * Menyimpan permohonan informasi atau bantuan warga ke tabel silantas.whatsapp_recaps.
    */
-  async createComplaintRecap(data: CreateComplaintDto): Promise<ComplaintResult> {
+  async createWhatsappRecap(data: CreateWhatsappRecapDto): Promise<ComplaintResult> {
     const id = randomUUID();
     const shortCode = id.slice(0, 8).toUpperCase();
-    const ticketNo = data.ticketId || `ADU-${shortCode}`;
+    const prefix = data.serviceType === 'INFORMASI' ? 'INF' : 'ADU';
+    const ticketNo = data.ticketId || `${prefix}-${shortCode}`;
     const address = data.address?.trim() || 'Kabupaten Mimika';
+    const defaultNote =
+      data.serviceType === 'INFORMASI'
+        ? 'Permohonan Informasi via WhatsApp Bot'
+        : 'Permohonan Bantuan via WhatsApp Bot';
+    const notes = data.notes?.trim() || defaultNote;
     const now = new Date();
 
     const query = `
       INSERT INTO silantas.whatsapp_recaps
       (id, ticket_id, reporter_name, reporter_phone, address, service_type, description, status, recorded_by, notes, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, 'BANTUAN', $6, 'BARU', 'Bot WhatsApp (Otomatis)', 'Aduan Masuk via WhatsApp Bot', $7, $8)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 'BARU', 'Bot WhatsApp (Otomatis)', $8, $9, $10)
       RETURNING id;
     `;
 
@@ -78,7 +95,9 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       data.reporterName || 'Warga (Tanpa Nama)',
       data.reporterPhone || '',
       address,
+      data.serviceType,
       data.description,
+      notes,
       now,
       now,
     ];
@@ -86,12 +105,24 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     try {
       if (this.pool) {
         await this.pool.query(query, values);
-        this.logger.log(`Keluhan berhasil disimpan ke database. ID: ${id}, Tiket: ${ticketNo}, Pelapor: ${data.reporterName}`);
+        this.logger.log(
+          `Rekapan ${data.serviceType} berhasil disimpan. ID: ${id}, Tiket: ${ticketNo}, Pelapor: ${data.reporterName}`,
+        );
       }
     } catch (err) {
       this.logger.error(`Gagal menyimpan rekapan ke database: ${(err as Error).message}`);
     }
 
     return { id, ticketNo };
+  }
+
+  /**
+   * Menyimpan aduan keluhan warga secara otomatis ke tabel silantas.whatsapp_recaps.
+   */
+  async createComplaintRecap(data: CreateComplaintDto): Promise<ComplaintResult> {
+    return this.createWhatsappRecap({
+      ...data,
+      serviceType: 'BANTUAN',
+    });
   }
 }

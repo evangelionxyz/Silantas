@@ -92,27 +92,9 @@ export const DocsSidebar: React.FC<DocsSidebarProps> = ({
           </button>
           {openSections.services && (
             <div className="mt-1 space-y-1 border-l-2 border-[#bbf7d0] ml-3 pl-1.5">
-              <NavLink to="/persyaratan" className={navItemClass} onClick={handleLinkClick}>
-                <span className="w-5 h-5 bg-[#dcfce7] text-[#15803d] text-xs font-bold flex items-center justify-center shrink-0">
-                  1
-                </span>
-                <span>Persyaratan Lalu Lintas</span>
-              </NavLink>
-              <NavLink to="/pemeriksaan" className={navItemClass} onClick={handleLinkClick}>
-                <span className="w-5 h-5 bg-[#e0f2fe] text-[#0369a1] text-xs font-bold flex items-center justify-center shrink-0">
-                  2
-                </span>
-                <span>Pemeriksaan & SKKH</span>
-              </NavLink>
-              <NavLink to="/isikhnas" className={navItemClass} onClick={handleLinkClick}>
-                <span className="w-5 h-5 bg-[#fef3c7] text-[#b45309] text-xs font-bold flex items-center justify-center shrink-0">
-                  3
-                </span>
-                <span>Status Integrasi iSIKHNAS</span>
-              </NavLink>
               <NavLink to="/konsultasi" className={navItemClass} onClick={handleLinkClick}>
                 <span className="w-5 h-5 bg-[#ccfbf1] text-[#0f766e] text-xs font-bold flex items-center justify-center shrink-0">
-                  4
+                  1
                 </span>
                 <span>Konsultasi WhatsApp</span>
               </NavLink>

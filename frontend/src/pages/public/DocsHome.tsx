@@ -57,16 +57,10 @@ export const DocsHome: React.FC = () => {
 
                 <div className="mt-6 pt-5 border-t border-[#166534] flex flex-wrap items-center gap-3">
                   <Link
-                    to="/persyaratan"
+                    to="/about"
                     className="px-4 py-2.5 text-sm font-bold bg-[#f59e0b] hover:bg-[#d97706] text-[#1f2328] transition-colors shadow-xs"
                   >
-                    Panduan Persyaratan Dokumen
-                  </Link>
-                  <Link
-                    to="/pemeriksaan"
-                    className="px-4 py-2.5 text-sm font-semibold bg-[#166534] hover:bg-[#15803d] text-white border border-[#4ade80]/40 transition-colors"
-                  >
-                    Prosedur Pemeriksaan &amp; SKKH
+                    Profil &amp; Tentang {SUANGGI_BRAND.name}
                   </Link>
                   <Link
                     to="/konsultasi"
@@ -214,76 +208,30 @@ export const DocsHome: React.FC = () => {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Card 1 */}
+              {/* Profil & Tentang */}
               <Link
-                to="/persyaratan"
+                to="/about"
                 className="group border border-[#86efac] bg-white hover:bg-[#f0fdf4]/60 p-5 transition-colors flex flex-col justify-between shadow-2xs"
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <span className="px-2.5 py-0.5 text-xs font-bold bg-[#dcfce7] text-[#14532d]">
-                      Panduan 01 &bull; Administrasi
+                      Profil &amp; Tentang
                     </span>
                     <span className="text-xs font-bold text-[#15803d] group-hover:underline">
-                      Buka panduan
+                      Buka profil
                     </span>
                   </div>
                   <h3 className="text-lg font-extrabold text-[#14532d] group-hover:text-[#15803d]">
-                    Persyaratan Lalu Lintas Hewan &amp; Produk Olahan
+                    Profil &amp; Makna {SUANGGI_BRAND.name} ({SUANGGI_BRAND.motto})
                   </h3>
                   <p className="text-sm text-[#4b5563] mt-2 leading-relaxed">
-                    Daftar lengkap dokumen administrasi, izin pemasukan (impor) dan pengeluaran (ekspor) untuk ternak besar, unggas, daging beku, telur, dan produk olahan.
+                    Informasi mengenai penyelenggara layanan, dasar hukum, serta peran {SUANGGI_BRAND.name} dalam pengawasan lalu lintas hewan di Kabupaten Mimika.
                   </p>
                 </div>
               </Link>
 
-              {/* Card 2 */}
-              <Link
-                to="/pemeriksaan"
-                className="group border border-[#7dd3fc] bg-white hover:bg-[#f0f9ff]/60 p-5 transition-colors flex flex-col justify-between shadow-2xs"
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="px-2.5 py-0.5 text-xs font-bold bg-[#e0f2fe] text-[#0369a1]">
-                      Panduan 02 &bull; Veteriner
-                    </span>
-                    <span className="text-xs font-bold text-[#0369a1] group-hover:underline">
-                      Buka panduan
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-extrabold text-[#0c4a6e] group-hover:text-[#0369a1]">
-                    Pemeriksaan Kesehatan Hewan &amp; Penerbitan SKKH
-                  </h3>
-                  <p className="text-sm text-[#4b5563] mt-2 leading-relaxed">
-                    Standar operasional prosedur pemeriksaan klinis, pengujian sampel laboratorium, tindakan karantina di pos pengawasan, dan penerbitan Surat Keterangan Kesehatan Hewan.
-                  </p>
-                </div>
-              </Link>
-
-              {/* Card 3 */}
-              <Link
-                to="/isikhnas"
-                className="group border border-[#fcd34d] bg-white hover:bg-[#fffbeb]/60 p-5 transition-colors flex flex-col justify-between shadow-2xs"
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="px-2.5 py-0.5 text-xs font-bold bg-[#fef3c7] text-[#92400e]">
-                      Panduan 03 &bull; Integrasi Data
-                    </span>
-                    <span className="text-xs font-bold text-[#b45309] group-hover:underline">
-                      Buka status
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-extrabold text-[#78350f] group-hover:text-[#b45309]">
-                    Status Portal Nasional &amp; Pencatatan Mandiri {SUANGGI_BRAND.name}
-                  </h3>
-                  <p className="text-sm text-[#4b5563] mt-2 leading-relaxed">
-                    Informasi status operasional portal lalu lintas nasional iSIKHNAS serta alur verifikasi dan pemuktahiran data melalui sistem {SUANGGI_BRAND.name} Kabupaten Mimika.
-                  </p>
-                </div>
-              </Link>
-
-              {/* Card 4 */}
+              {/* Konsultasi */}
               <Link
                 to="/konsultasi"
                 className="group border border-[#5eead4] bg-white hover:bg-[#f0fdfa]/60 p-5 transition-colors flex flex-col justify-between shadow-2xs"
@@ -291,7 +239,7 @@ export const DocsHome: React.FC = () => {
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <span className="px-2.5 py-0.5 text-xs font-bold bg-[#ccfbf1] text-[#115e59]">
-                      Panduan 04 &bull; Layanan Cepat
+                      Layanan Cepat
                     </span>
                     <span className="text-xs font-bold text-[#0f766e] group-hover:underline">
                       Buka kontak

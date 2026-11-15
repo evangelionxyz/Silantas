@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { useAuth } from '../../context/AuthContext';
 import { SUANGGI_BRAND } from '../../constants/brand';
 import {
@@ -106,6 +107,8 @@ export const WhatsappRecapPage: React.FC = () => {
   const [editingItem, setEditingItem] = useState<WhatsappRecapItem | null>(null);
   const [viewingItem, setViewingItem] = useState<WhatsappRecapItem | null>(null);
   const [previewImage, setPreviewImage] = useState<{ url: string; title: string } | null>(null);
+  const [recapToDelete, setRecapToDelete] = useState<WhatsappRecapItem | null>(null);
+  const [deletingRecap, setDeletingRecap] = useState<boolean>(false);
 
   // Form input states
   const [formData, setFormData] = useState({
@@ -379,19 +382,21 @@ export const WhatsappRecapPage: React.FC = () => {
     setIsModalOpen(false);
   };
 
-  const handleDeleteItem = async (id: string, name: string) => {
-    if (window.confirm(`Hapus rekapan WhatsApp dari "${name}"? Dokumen dan lampiran di server akan ikut terhapus.`)) {
-      try {
-        await deleteWhatsappRecap(id);
-      } catch (e) {
-        console.warn('Gagal hapus di backend:', e);
-      }
-
-      setRecaps((prev) => prev.filter((it) => it.id !== id));
-      if (viewingItem?.id === id) {
-        setViewingItem(null);
-      }
+  const confirmDeleteItem = async () => {
+    if (!recapToDelete || deletingRecap) return;
+    setDeletingRecap(true);
+    try {
+      await deleteWhatsappRecap(recapToDelete.id);
+    } catch (e) {
+      console.warn('Gagal hapus di backend:', e);
     }
+
+    setRecaps((prev) => prev.filter((it) => it.id !== recapToDelete.id));
+    if (viewingItem?.id === recapToDelete.id) {
+      setViewingItem(null);
+    }
+    setRecapToDelete(null);
+    setDeletingRecap(false);
   };
 
   const handleUpdateStatus = async (id: string, newStatus: 'BARU' | 'DIPROSES' | 'SELESAI') => {
@@ -606,7 +611,7 @@ export const WhatsappRecapPage: React.FC = () => {
           <table className="w-full min-w-[950px] text-left text-sm text-[#1f2328]">
             <thead className="bg-[#f6f8fa] border-b border-[#d0d7de] font-semibold text-[#57606a] text-xs uppercase tracking-wider">
               <tr>
-                <th className="py-3 px-3.5 w-44">Waktu / Tiket / ID</th>
+                <th className="py-3 px-3.5 w-44">Waktu / Tiket</th>
                 <th className="py-3 px-3.5 w-56">Pelapor &amp; Kontak</th>
                 <th className="py-3 px-3.5 w-48">Alamat</th>
                 <th className="py-3 px-3.5 w-32">Jenis Layanan</th>
@@ -636,15 +641,13 @@ export const WhatsappRecapPage: React.FC = () => {
                             <span>{item.ticketId}</span>
                           </div>
                         )}
-                        <div className="text-[10px] text-[#57606a] truncate max-w-[150px]" title={item.id}>{item.id}</div>
                       </td>
 
                       {/* Pelapor & Kontak */}
                       <td className="py-3 px-3.5">
                         <div className="font-bold text-[#1f2328]">{item.reporterName}</div>
                         {item.reporterPhone && (
-                          <div className="text-xs text-[#0969da] font-mono mt-0.5 flex items-center gap-1">
-                            <span>&#128222;</span>
+                          <div className="text-sm font-semibold text-[#0969da] font-mono mt-0.5 flex items-center gap-1">
                             <span>{item.reporterPhone}</span>
                           </div>
                         )}
@@ -742,7 +745,7 @@ export const WhatsappRecapPage: React.FC = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleDeleteItem(item.id, item.reporterName)}
+                          onClick={() => setRecapToDelete(item)}
                           className="text-xs text-[#cf222e] hover:underline font-semibold cursor-pointer"
                         >
                           Hapus
@@ -1240,6 +1243,42 @@ export const WhatsappRecapPage: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ConfirmModal
+        isOpen={!!recapToDelete}
+        title="Hapus Rekapan WhatsApp?"
+        description="Dokumen dan lampiran tangkapan layar yang terkait pada server akan ikut terhapus."
+        confirmLabel="Ya, Hapus Rekapan"
+        loadingLabel="Menghapus..."
+        loading={deletingRecap}
+        onCancel={() => setRecapToDelete(null)}
+        onConfirm={confirmDeleteItem}
+      >
+        {recapToDelete && (
+          <div className="p-3 bg-[#f6f8fa] border border-[#d0d7de] space-y-1.5 text-xs">
+            {recapToDelete.ticketId && (
+              <div className="flex justify-between gap-2">
+                <span className="text-[#57606a]">Nomor Tiket:</span>
+                <span className="font-mono font-bold text-[#1f2328]">{recapToDelete.ticketId}</span>
+              </div>
+            )}
+            <div className="flex justify-between gap-2">
+              <span className="text-[#57606a]">Pelapor:</span>
+              <span className="font-semibold text-[#1f2328]">{recapToDelete.reporterName}</span>
+            </div>
+            <div className="flex justify-between gap-2">
+              <span className="text-[#57606a]">Jenis Layanan:</span>
+              <span className="font-semibold text-[#1f2328]">
+                {recapToDelete.serviceType === 'INFORMASI' ? 'Informasi' : 'Bantuan'}
+              </span>
+            </div>
+            <div className="flex justify-between gap-2">
+              <span className="text-[#57606a]">Waktu:</span>
+              <span className="text-[#1f2328]">{recapToDelete.date}</span>
+            </div>
+          </div>
+        )}
+      </ConfirmModal>
     </motion.div>
   );
 };

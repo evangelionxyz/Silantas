@@ -11,9 +11,6 @@ interface DocsHeaderProps {
 const publicLinks = [
   { label: 'Beranda', to: '/', end: true },
   { label: 'Profil & Tentang', to: '/about' },
-  { label: 'Persyaratan', to: '/persyaratan' },
-  { label: 'Pemeriksaan', to: '/pemeriksaan' },
-  { label: 'iSIKHNAS', to: '/isikhnas' },
   { label: 'Konsultasi', to: '/konsultasi' },
 ];
 

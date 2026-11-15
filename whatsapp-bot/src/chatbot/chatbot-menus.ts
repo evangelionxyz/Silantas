@@ -1,134 +1,124 @@
+export const ADMIN_WHATSAPP_CONTACT = '+6281141112269';
+
 export const CHATBOT_MENUS = {
   GREETING_HEADER: (name?: string, webUrl?: string) => {
     const cleanUrl = (webUrl || process.env.FRONTEND_WEB_URL || 'https://silantas.vercel.app').replace(/\/+$/, '');
     const cleanName = name && name.trim() !== '.' ? name.trim() : '';
     return (
-      `*LAYANAN INFORMASI LALU LINTAS HEWAN & TERNAK*\n` +
+      `*LAYANAN INFORMASI & BANTUAN LALU LINTAS HEWAN*\n` +
       `*Dinas Peternakan dan Kesehatan Hewan Kabupaten Mimika*\n` +
-      `*(SUANGGI CARI KO)*\n\n` +
-      `Halo ${cleanName ? `*${cleanName}*` : 'Bapak/Ibu'}, selamat datang di layanan informasi dan pengaduan lalu lintas hewan serta produk olahannya.\n\n` +
-      `Silakan balas dengan *ANGKA (1 - 4)* sesuai layanan yang Anda butuhkan:\n\n` +
-      `1. *Persyaratan Pemasukan Hewan & Produk Masuk*\n` +
-      `   (Izin masuk sapi, kambing, babi, unggas, daging beku, telur ke Mimika)\n\n` +
-      `2. *Pengeluaran Hewan & Penerbitan SKKH*\n` +
-      `   (Pemeriksaan kesehatan fisik ternak & rekomendasi pengeluaran)\n\n` +
-      `3. *Ketentuan Produk Olahan & Rantai Dingin*\n` +
-      `   (Standar NKV, sertifikasi halal, pengawasan Pelabuhan Pomako & Bandara Mozes Kilangin)\n\n` +
-      `4. *Lapor Keluhan / Aduan Masyarakat & Penyakit Ternak*\n` +
-      `   (Pencatatan resmi aduan kendala pelayanan atau laporan ternak sakit ke dashboard)\n\n` +
+      `*(SI-LANTAS HEWAN MIMIKA)*\n\n` +
+      `Halo ${cleanName ? `*${cleanName}*` : 'Bapak/Ibu'}, selamat datang di layanan WhatsApp SI-LANTAS HEWAN MIMIKA.\n\n` +
+      `Silakan pilih jenis kebutuhan Anda dengan membalas angka *1* atau *2*:\n\n` +
+      `1. *Informasi*\n` +
+      `   (Persyaratan lalu lintas, pemeriksaan kesehatan, dan prosedur website Lalin.isikhnas)\n\n` +
+      `2. *Bantuan*\n` +
+      `   (Konsultasi dan komunikasi dengan Admin SI-LANTAS HEWAN MIMIKA)\n\n` +
       `Portal Informasi: ${cleanUrl}\n` +
-      `──────────────────────\n` +
+      `\n` +
       `Ketik *0*, *MENU*, atau *#MENU* kapan saja untuk kembali ke menu utama.`
     );
   },
 
-  SUBMENU_1_PEMASUKAN:
-    `*PERSYARATAN PEMASUKAN HEWAN & PRODUK (ARUS MASUK)*\n\n` +
-    `Untuk memasukkan hewan/ternak hidup atau bahan pangan asal hewan ke wilayah Kabupaten Mimika, pemohon wajib melengkapi berkas:\n\n` +
-    `*A. Hewan Hidup / Ternak Potong & Bibit:*\n` +
-    `- KTP / NIB Pemohon atau Perusahaan.\n` +
-    `- Surat Permohonan Rekomendasi Pemasukan ke Kepala Dinas Peternakan & Keswan Kab. Mimika.\n` +
-    `- Sertifikat Veteriner (SV) / SKKH dari Otoritas Veteriner daerah asal (berlaku maks. 7 hari).\n` +
-    `- Hasil Uji Laboratorium bebas penyakit strategis (PMK untuk ruminansia, ASF untuk babi, Avian Influenza untuk unggas, Rabies untuk HPR).\n` +
-    `- Surat Rekomendasi Pengeluaran dari dinas peternakan daerah asal.\n\n` +
-    `*B. Daging Beku & Telur Konsumsi:*\n` +
-    `- Sertifikat Nomor Kontrol Veteriner (NKV) dari unit usaha/RPH asal.\n` +
-    `- Sertifikat Halal (untuk produk daging yang dipersyaratkan).\n` +
-    `- Sertifikat Sanitasi Produk Hewan & Sertifikat Pelepasan Karantina.\n\n` +
-    `*Titik Pemeriksaan Pintu Masuk:*\n` +
-    `Pelabuhan Laut Pomako & Bandara Mozes Kilangin Timika.\n\n` +
-    `──────────────────────\n` +
-    `Ketik *0* untuk kembali ke Menu Utama, atau *4* untuk menyampaikan keluhan.`,
+  MENU_INFORMASI:
+    `*LAYANAN INFORMASI*\n\n` +
+    `Silakan balas dengan angka *(1 - 3)* sesuai informasi yang Anda butuhkan:\n\n` +
+    `1. Informasi persyaratan pemasukan dan pengeluaran hewan, produk hewan, serta olahannya.\n` +
+    `2. Informasi pemeriksaan kesehatan hewan, produk hewan, dan olahannya yang akan dilalulintaskan.\n` +
+    `3. Informasi prosedur penggunaan website Lalin.isikhnas.\n\n` +
+    `Ketik *0* untuk kembali ke Menu Utama.`,
 
-  SUBMENU_2_PENGELUARAN:
-    `*PENGELUARAN HEWAN & PENERBITAN SKKH (ARUS KELUAR)*\n\n` +
-    `Prosedur permohonan Surat Keterangan Kesehatan Hewan (SKKH) dan Rekomendasi Pengeluaran:\n\n` +
-    `1. Mengajukan surat permohonan pemeriksaan ke Dinas Peternakan & Keswan Kab. Mimika.\n` +
-    `2. Melampirkan identitas pemilik (KTP) dan data ternak (jumlah, jenis, jenis kelamin, umur, tanda pengenal/ear-tag jika ada).\n` +
-    `3. Petugas medik/paramedik veteriner dinas akan melakukan pemeriksaan klinis langsung di kandang/lokasi penampungan.\n` +
-    `4. Apabila hewan dinyatakan sehat dan memenuhi persyaratan teknis, SKKH dan Rekomendasi Pengeluaran diterbitkan (1–2 hari kerja).\n` +
-    `5. Masa berlaku SKKH pengeluaran adalah 7 (tujuh) hari kerja sejak tanggal diterbitkan.\n\n` +
-    `──────────────────────\n` +
-    `Ketik *0* untuk kembali ke Menu Utama, atau *4* untuk menyampaikan keluhan.`,
+  SUBMENU_INFORMASI_1_CHAT_1:
+    `*INFORMASI PERSYARATAN PEMASUKAN DAN PENGELUARAN HEWAN, PRODUK HEWAN, DAN OLAHANNYA DI KABUPATEN MIMIKA*\n\n` +
+    `*Tujuan persyaratan:*\n` +
+    `Memastikan setiap hewan dan produk hewan yang dilalulintaskan memenuhi persyaratan kesehatan, keamanan, dan ketentuan karantina sehingga dapat mencegah penyebaran penyakit hewan serta menjaga keamanan pangan masyarakat.\n\n` +
+    `*1. Persyaratan pemasukan hewan, Produk hewan ke Kabupaten Mimika*\n` +
+    `Bagi masyarakat atau pelaku usaha yang akan memasukkan hewan, Produk hewan ke Kabupaten Mimika, perlu mempersiapkan:\n` +
+    `1. Fotokopi KTP atau identitas pemohon.\n` +
+    `2. Surat permohonan pemasukan hewan, produk hewan.\n` +
+    `3. Informasi jenis dan jumlah hewan, produk hewan yang akan dimasukkan.\n` +
+    `4. Informasi asal daerah dan tujuan pemasukan.\n` +
+    `5. Informasi produsen atau unit usaha asal.\n` +
+    `6. Kemasan dan label produk yang sesuai ketentuan.\n` +
+    `7. Sertifikat Veteriner atau Surat Keterangan Kesehatan Hewan, Surat Keterangan Kesehatan Produk Hewan sesuai jenis produk dan ketentuan yang berlaku daerah asal.\n` +
+    `8. Rekomendasi pemasukan dari Otoritas Veteriner daerah tujuan apabila dipersyaratkan.\n` +
+    `9. Produk hewan meliputi daging sapi, daging babi, daging ayam, telur, susu, serta produk olahan seperti sosis, bakso, nugget, keju, dan produk lainnya.\n` +
+    `10. Semua proses permohonan dimulai dari rekomendasi pemasukan hingga Sertifikat Veteriner diterbitkan dalam sistem lalin.isikhnas.go.id., dan dapat dipandu oleh petugas SI-LANTAS HEWAN MIMIKA melalui pusat kontak whatsapp ${ADMIN_WHATSAPP_CONTACT}.`,
 
-  SUBMENU_3_RANTAI_DINGIN:
-    `*PENGAWASAN PRODUK OLAHAN & RANTAI DINGIN*\n\n` +
-    `Standar keamanan pangan asal hewan (Aman, Sehat, Utuh, dan Halal) di Kabupaten Mimika:\n\n` +
-    `- Standar Suhu Rantai Dingin:\n` +
-    `  * Daging & jeroan beku wajib disimpan pada suhu minimal -18°C.\n` +
-    `  * Daging segar/dingin (chilled) pada suhu 0°C sampai 4°C.\n` +
-    `- Kelengkapan Pengiriman:\n` +
-    `  * Kontainer reefer berpendingin dengan pengukur suhu otomatis (data logger).\n` +
-    `  * Memiliki Sertifikat Sanitasi Produk Hewan dari daerah asal.\n` +
-    `- Posko Pengawasan Lapangan:\n` +
-    `  Petugas melakukan inspeksi fisik kontainer dan uji organoleptik saat pembongkaran di Pelabuhan Pomako.\n\n` +
-    `──────────────────────\n` +
-    `Ketik *0* untuk kembali ke Menu Utama, atau *4* untuk menyampaikan keluhan.`,
+  SUBMENU_INFORMASI_1_CHAT_2:
+    `*2. Persyaratan pengeluaran hewan, produk hewan dari Kabupaten Mimika*\n` +
+    `Bagi masyarakat atau pelaku usaha yang akan mengeluarkan hewan, produk hewan dari Kabupaten Mimika, perlu mempersiapkan:\n` +
+    `1. Fotokopi KTP atau identitas pemohon.\n` +
+    `2. Surat permohonan pengeluaran hewan, produk hewan.\n` +
+    `3. Informasi jenis dan jumlah hewan, produk hewan.\n` +
+    `4. Informasi daerah tujuan pengiriman.\n` +
+    `5. Dokumen kepemilikan atau bukti asal hewan, produk hewan apabila diperlukan.\n` +
+    `6. Pemeriksaan kesehatan hewan, produk hewan oleh petugas berwenang dari Dinas Peternakan dan Kesehatan Hewan Kabupaten Mimika.\n` +
+    `7. Sertifikat Veteriner atau Surat Keterangan Kesehatan Hewan, Surat Keterangan Kesehatan Produk Hewan sesuai jenis produk dan ketentuan yang berlaku daerah asal yaitu Kabupaten Mimika Propinsi Papua Tengah.\n` +
+    `8. Rekomendasi pengeluaran dan pemasukan sesuai ketentuan wilayah asal dan tujuan.\n` +
+    `9. Produk hewan meliputi daging sapi, daging babi, daging ayam, telur, susu, serta produk olahan seperti sosis, bakso, nugget, keju, dan produk lainnya.\n` +
+    `10. Semua proses permohonan dimulai dari rekomendasi pemasukan hingga Sertifikat Veteriner diterbitkan dalam sistem lalin.isikhnas.go.id., dan dapat dipandu oleh petugas SI-LANTAS HEWAN MIMIKA melalui pusat kontak whatsapp ${ADMIN_WHATSAPP_CONTACT}.\n\n` +
+    `Ketik *0* untuk kembali ke Menu Utama.`,
 
-  COMPLAINT_CHAT_1: 'Silahkan isi detail dibawah ini',
+  SUBMENU_INFORMASI_2_CHAT_1:
+    `Silakan lengkapi template data di bawah ini untuk keperluan informasi pemeriksaan kesehatan hewan, produk hewan, dan olahannya yang akan dilalulintaskan:`,
 
-  COMPLAINT_CHAT_2:
-    `Nama pemilik:\n` +
-    `Nomor telepon:\n` +
-    `Alamat lengkap:\n` +
-    `Jumlah hewan:\n` +
-    `Keluhan:`,
+  SUBMENU_INFORMASI_2_CHAT_2:
+    `1. Nama pemohon:\n` +
+    `2. Alamat:\n` +
+    `3. No HP yang bisa dihubungi:\n` +
+    `4. Jenis dan jumlah hewan/produk:`,
 
-  COMPLAINT_STEP_1_NAME:
-    `*LAYANAN ADUAN & KELUHAN MASYARAKAT*\n` +
-    `*Dinas Peternakan dan Kesehatan Hewan Kabupaten Mimika*\n\n` +
-    `Layanan ini untuk menyampaikan kendala pelayanan, keluhan perizinan lalu lintas ternak, atau laporan darurat penyakit hewan.\n\n` +
-    `*Langkah 1 dari 3:*\n` +
-    `Silakan ketik *Nama Lengkap Anda* (wajib):\n\n` +
-    `──────────────────────\n` +
-    `Ketik *0* untuk membatalkan dan kembali ke Menu Utama.`,
+  SUBMENU_INFORMASI_3_ISIKHNAS:
+    `*PROSEDUR PENGGUNAAN WEBSITE LALIN.ISIKHNAS*\n\n` +
+    `1. Silahkan buat ID di web : iSIKHNAS - Lalu Lintas HPM https://share.google/KJDES3yGAFbIrpuhA\n` +
+    `2. Isi Profil secara lengkap (silahkan WA apabila butuh panduan petugas)\n` +
+    `3. Buat Permohonan Rekomendasi Pemasukan Daerah Tujuan Hewan,Produk Hewan;\n` +
+    `4. Buat Permohonan Rekomendasi Pengeluaran Daerah Asal Hewan,Produk Hewan;\n` +
+    `5. Buat Permohonan SKKH/SKKPH Daerah Asal Hewan,Produk Hewan;\n` +
+    `6. Buat Permohonan Sertifikat Veteriner Daerah Asal Hewan,Produk Hewan\n` +
+    `7. Setiap Proses harus ditunggu hingga disetujui oleh Admin lalin.isikhnas.go.id Propinsi Papua Tengah\n` +
+    `8. Apabila Si Pemohon masih kesulitan maka dapat dipandu oleh petugas SI-LANTAS HEWAN MIMIKA melalui pusat kontak whatsapp ${ADMIN_WHATSAPP_CONTACT}\n\n` +
+    `Ketik *0* untuk kembali ke Menu Utama.`,
 
-  COMPLAINT_STEP_2_PHONE: (name: string, detectedPhone?: string) => {
-    const hint = detectedPhone
-      ? `\n(Ketik *OK* untuk menggunakan nomor WhatsApp ini: *${detectedPhone}*)`
-      : `\n(Contoh: 081240000000)`;
+  MENU_BANTUAN_CHAT_1:
+    `Anda butuh bantuan? Baik, kami akan pandu Anda oleh petugas SI-LANTAS HEWAN MIMIKA melalui pusat kontak WhatsApp ${ADMIN_WHATSAPP_CONTACT}.\n\n` +
+    `Silakan lengkapi template data di bawah ini agar keluhan atau kendala Anda dapat segera ditindaklanjuti:`,
+
+  MENU_BANTUAN_CHAT_2:
+    `1. Nama:\n` +
+    `2. Alamat:\n` +
+    `3. No HP yang bisa dihubungi:\n` +
+    `4. Keluhan/Kendala:`,
+
+  REQUEST_CONFIRMATION: (
+    ticketNo: string,
+    serviceType: 'INFORMASI' | 'BANTUAN',
+    reporterName: string,
+    phone: string,
+    address?: string,
+  ) => {
+    const serviceLabel = serviceType === 'INFORMASI' ? 'Informasi' : 'Bantuan';
     return (
-      `Halo Bapak/Ibu *${name}*.\n\n` +
-      `*Langkah 2 dari 3:*\n` +
-      `Silakan masukkan *Nomor Telepon / WhatsApp Aktif* yang dapat dihubungi oleh petugas:\n` +
-      `(Bisa nomor pribadi Anda atau nomor penanggung jawab di lokasi)${hint}\n\n` +
-      `──────────────────────\n` +
-      `Ketik *0* untuk membatalkan.`
+      `*PERMOHONAN ${serviceLabel.toUpperCase()} DITERIMA*\n\n` +
+      `Nomor Tiket: *${ticketNo}*\n` +
+      `Jenis Layanan: *${serviceLabel}*\n` +
+      `Nama: *${reporterName}*\n` +
+      `No. HP: *${phone}*\n` +
+      `Alamat: *${address || 'Kabupaten Mimika'}*\n\n` +
+      `Terima kasih telah menghubungi SI-LANTAS HEWAN MIMIKA. Petugas kami akan segera meninjau dan menghubungi Anda kembali di percakapan ini.\n\n` +
+      `Ketik *0* atau *MENU* kapan saja jika ingin menampilkan kembali menu utama.`
     );
   },
 
-  COMPLAINT_STEP_3_DESC: (phone: string) =>
-    `Nomor kontak tersimpan: *${phone}*\n\n` +
-    `*Langkah 3 dari 3:*\n` +
-    `Silakan ketik *Isi Aduan atau Keluhan Anda* secara jelas:\n` +
-    `(Jelaskan lokasi distrik/kampung, jenis ternak, atau kendala pelayanan yang dialami)\n\n` +
-    `──────────────────────\n` +
-    `Ketik *0* untuk membatalkan.`,
-
-  COMPLAINT_INVALID_NAME:
-    `Nama yang dimasukkan tidak valid atau terlalu singkat.\n` +
-    `Silakan ketik Nama Lengkap Anda (minimal 2 huruf):`,
-
-  COMPLAINT_INVALID_PHONE:
-    `Nomor telepon tidak valid.\n` +
-    `Silakan masukkan nomor HP/WhatsApp yang benar (minimal 8 angka, contoh: 081240000000):`,
-
-  COMPLAINT_CONFIRMATION: (ticketNo: string, reporterName: string, phone: string, address?: string) =>
-    `*BUKTI PENCATATAN ADUAN MASYARAKAT*\n\n` +
-    `Nomor Tiket: *${ticketNo}*` +
-    `\nNama Pelapor: *${reporterName}*` +
-    `\nNomor Kontak: *${phone}*` +
-    `\nWilayah: *${address || 'Kabupaten Mimika'}*` +
-    `\nStatus: *BARU (Menunggu Tindak Lanjut Petugas)*\n\n` +
-    `Laporan Anda telah berhasil masuk ke antrean Dashboard Petugas Dinas Peternakan dan Kesehatan Hewan Kabupaten Mimika.\n\n` +
-    `Petugas kami akan segera meninjau dan merespons langsung di percakapan ini. Chatbot otomatis dinonaktifkan sementara agar komunikasi dengan petugas berjalan lancar.\n\n` +
-    `──────────────────────\n` +
-    `Ketik *0* atau *MENU* kapan saja jika ingin menampilkan kembali menu bot.`,
-
-  INVALID_OPTION_HINT:
+  INVALID_OPTION_HINT_MAIN:
     `Pilihan tidak dikenali.\n` +
-    `Silakan balas dengan angka *1, 2, 3, atau 4* sesuai menu, atau ketik *0* untuk menampilkan Menu Utama.`,
+    `Silakan balas dengan angka *1* (Informasi) atau *2* (Bantuan), atau ketik *0* untuk menampilkan Menu Utama.`,
+
+  INVALID_OPTION_HINT_INFORMASI:
+    `Pilihan tidak dikenali.\n` +
+    `Silakan balas dengan angka *1*, *2*, atau *3* sesuai layanan informasi yang Anda butuhkan, atau ketik *0* untuk kembali ke Menu Utama.`,
 
   INVALID_LIMIT_REACHED:
-    `Pesan Anda telah kami teruskan ke petugas Dinas Peternakan. Petugas kami akan segera membalas pada jam operasional kerja. Terima kasih telah menghubungi kami.`,
+    `Pesan Anda telah kami teruskan ke petugas SI-LANTAS HEWAN MIMIKA. Petugas kami akan segera membalas pada jam operasional kerja. Terima kasih telah menghubungi kami.`,
 };

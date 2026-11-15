@@ -12,7 +12,11 @@ describe('ChatbotService', () => {
   const testJid = '628123456789@s.whatsapp.net';
 
   const mockDatabaseService = {
-    createComplaintRecap: vi.fn().mockImplementation(async (_data) => ({
+    createWhatsappRecap: vi.fn().mockImplementation(async (data) => ({
+      id: 'mock-uuid-1234',
+      ticketNo: data.serviceType === 'INFORMASI' ? 'INF-TEST1234' : 'ADU-TEST1234',
+    })),
+    createComplaintRecap: vi.fn().mockImplementation(async () => ({
       id: 'mock-uuid-1234',
       ticketNo: 'ADU-TEST1234',
     })),
@@ -44,116 +48,153 @@ describe('ChatbotService', () => {
     expect(databaseService).toBeDefined();
   });
 
-  describe('Menu Navigasi & Opsi Layanan (4 Menu)', () => {
-    it('harus membalas dengan Menu Utama pada pesan pembuka dan menyertakan URL env', async () => {
+  describe('Menu Utama (Informasi & Bantuan) dan Submenu Layanan', () => {
+    it('harus membalas dengan Menu Utama (1. Informasi, 2. Bantuan) dan menyertakan URL env', async () => {
       const reply = await service.handleIncomingMessage(testJid, 'Halo', 'Budi');
       expect(reply).toBeDefined();
-      expect(reply).toContain('LAYANAN INFORMASI LALU LINTAS HEWAN & TERNAK');
-      expect(reply).toContain('SUANGGI CARI KO');
-      expect(reply).toContain('Persyaratan Pemasukan Hewan & Produk Masuk');
-      expect(reply).toContain('Lapor Keluhan / Aduan Masyarakat & Penyakit Ternak');
+      expect(reply).toContain('SI-LANTAS HEWAN MIMIKA');
+      expect(reply).toContain('1. *Informasi*');
+      expect(reply).toContain('2. *Bantuan*');
       expect(reply).toContain('https://silantas.vercel.app');
     });
 
-    it('harus membuka Submenu 1 (Pemasukan) saat memilih angka 1', async () => {
+    it('harus membuka Menu Informasi saat memilih angka 1', async () => {
       await service.handleIncomingMessage(testJid, 'Halo');
       const reply = await service.handleIncomingMessage(testJid, '1');
 
-      expect(reply).toBe(CHATBOT_MENUS.SUBMENU_1_PEMASUKAN);
-      expect(reply).toContain('Sertifikat Veteriner (SV)');
-      expect(reply).toContain('PMK untuk ruminansia');
+      expect(reply).toBe(CHATBOT_MENUS.MENU_INFORMASI);
+      expect(sessionStore.getSession(testJid).state).toBe(ChatSessionState.MENU_INFORMASI);
+      expect(reply).toContain('persyaratan pemasukan dan pengeluaran');
+      expect(reply).toContain('pemeriksaan kesehatan hewan');
+      expect(reply).toContain('website Lalin.isikhnas');
     });
 
-    it('harus membuka Submenu 2 (Pengeluaran & SKKH) saat memilih angka 2', async () => {
+    it('harus menampilkan balasan 2 pesan persyaratan pemasukan dan pengeluaran (Layanan 1) saat memilih 1 di Menu Informasi', async () => {
       await service.handleIncomingMessage(testJid, 'Halo');
-      const reply = await service.handleIncomingMessage(testJid, '2');
+      await service.handleIncomingMessage(testJid, '1');
+      const reply = await service.handleIncomingMessage(testJid, '1');
 
-      expect(reply).toBe(CHATBOT_MENUS.SUBMENU_2_PENGELUARAN);
-      expect(reply).toContain('pemeriksaan klinis langsung');
-      expect(reply).toContain('Masa berlaku SKKH');
+      expect(Array.isArray(reply)).toBe(true);
+      expect((reply as string[])[0]).toBe(CHATBOT_MENUS.SUBMENU_INFORMASI_1_CHAT_1);
+      expect((reply as string[])[0]).toContain('Persyaratan pemasukan hewan');
+      expect((reply as string[])[1]).toBe(CHATBOT_MENUS.SUBMENU_INFORMASI_1_CHAT_2);
+      expect((reply as string[])[1]).toContain('Persyaratan pengeluaran hewan');
+      expect(sessionStore.getSession(testJid).state).toBe(ChatSessionState.SUBMENU_INFORMASI_PERSYARATAN);
     });
 
-    it('harus membuka Submenu 3 (Rantai Dingin & NKV) saat memilih angka 3', async () => {
-      await service.handleIncomingMessage(testJid, 'Halo');
-      const reply = await service.handleIncomingMessage(testJid, '3');
-
-      expect(reply).toBe(CHATBOT_MENUS.SUBMENU_3_RANTAI_DINGIN);
-      expect(reply).toContain('-18°C');
-      expect(reply).toContain('Pelabuhan Pomako');
-    });
-
-    it('harus mengirimkan 2 pesan berurutan (instruksi & template) saat memilih opsi 4 dan memparsing balasan warga', async () => {
-      // 1. Masuk menu
+    it('harus mengirimkan 2 pesan template untuk Layanan 2 dan menyimpan rekapan INFORMASI', async () => {
       await service.handleIncomingMessage(testJid, 'Halo', 'Budi');
+      await service.handleIncomingMessage(testJid, '1');
 
-      // 2. Pilih menu 4 -> Kirim 2 chat berurutan
-      const stepReply = await service.handleIncomingMessage(testJid, '4');
+      const stepReply = await service.handleIncomingMessage(testJid, '2');
       expect(Array.isArray(stepReply)).toBe(true);
-      expect((stepReply as string[])[0]).toBe(CHATBOT_MENUS.COMPLAINT_CHAT_1);
-      expect((stepReply as string[])[1]).toBe(CHATBOT_MENUS.COMPLAINT_CHAT_2);
-      expect(sessionStore.getSession(testJid).state).toBe(ChatSessionState.AWAITING_COMPLAINT_TEMPLATE);
+      expect((stepReply as string[])[0]).toBe(CHATBOT_MENUS.SUBMENU_INFORMASI_2_CHAT_1);
+      expect((stepReply as string[])[1]).toBe(CHATBOT_MENUS.SUBMENU_INFORMASI_2_CHAT_2);
+      expect(sessionStore.getSession(testJid).state).toBe(ChatSessionState.AWAITING_INSPECTION_TEMPLATE);
 
-      // 3. Warga mengisi template dan mengirimkan kembali
       const filledTemplate =
-        `Nama pemilik: Yohanes Maturbongs\n` +
-        `Nomor telepon: 082199887766\n` +
-        `Alamat lengkap: Kampung Naena Muktipura (SP 6)\n` +
-        `Jumlah hewan: 5 ekor babi\n` +
-        `Keluhan: Demam tinggi dan tidak mau makan sejak kemarin`;
+        `1. Nama pemohon: Yohanes Maturbongs\n` +
+        `2. Alamat: Kampung Naena Muktipura (SP 6)\n` +
+        `3. No HP yang bisa dihubungi: 082199887766\n` +
+        `4. Jenis dan jumlah hewan/produk: 5 ekor babi`;
 
       const confirmReply = await service.handleIncomingMessage(testJid, filledTemplate);
 
-      // Verifikasi database service menerima hasil parsing template yang tepat
-      expect(mockDatabaseService.createComplaintRecap).toHaveBeenCalledWith({
+      expect(mockDatabaseService.createWhatsappRecap).toHaveBeenCalledWith({
         reporterName: 'Yohanes Maturbongs',
         reporterPhone: '082199887766',
         address: 'Kampung Naena Muktipura (SP 6)',
-        description: 'Jumlah Hewan: 5 ekor babi\nKeluhan: Demam tinggi dan tidak mau makan sejak kemarin',
+        serviceType: 'INFORMASI',
+        description: 'Permohonan Pemeriksaan Kesehatan - Jenis & Jumlah Hewan/Produk: 5 ekor babi',
       });
 
-      // Verifikasi bukti tiket aduan
-      expect(confirmReply).toContain('BUKTI PENCATATAN ADUAN MASYARAKAT');
-      expect(confirmReply).toContain('ADU-TEST1234');
+      expect(confirmReply).toContain('PERMOHONAN INFORMASI DITERIMA');
+      expect(confirmReply).toContain('INF-TEST1234');
       expect(confirmReply).toContain('Yohanes Maturbongs');
-      expect(confirmReply).toContain('082199887766');
-      expect(confirmReply).toContain('Kampung Naena Muktipura (SP 6)');
+      expect(confirmReply).not.toMatch(/database|dashboard/i);
 
-      // State beralih ke WAITING_FOR_ADMIN dan admin cooldown aktif
       const sessionAfter = sessionStore.getSession(testJid);
       expect(sessionAfter.state).toBe(ChatSessionState.WAITING_FOR_ADMIN);
       expect(sessionAfter.adminLastRepliedAt).toBeDefined();
 
-      // Pesan lanjutan dari warga diabaikan agar admin menindaklanjuti
       const followUp = await service.handleIncomingMessage(testJid, 'Mohon segera dibalas ya');
       expect(followUp).toBeNull();
     });
 
-    it('bisa menggunakan nomor telepon terdeteksi dan default alamat jika dikosongkan pada template', async () => {
+    it('bisa menggunakan nomor terdeteksi jika No HP kosong pada template Layanan 2', async () => {
       await service.handleIncomingMessage(testJid, 'Halo');
-      await service.handleIncomingMessage(testJid, '4');
+      await service.handleIncomingMessage(testJid, '1');
+      await service.handleIncomingMessage(testJid, '2');
 
       const filledWithMissing =
-        `Nama pemilik: Mama Maria Omaleng\n` +
-        `Nomor telepon:\n` +
-        `Alamat lengkap:\n` +
-        `Jumlah hewan: 2 ekor sapi\n` +
-        `Keluhan: Nafsu makan berkurang`;
+        `1. Nama pemohon: Mama Maria Omaleng\n` +
+        `2. Alamat:\n` +
+        `3. No HP yang bisa dihubungi:\n` +
+        `4. Jenis dan jumlah hewan/produk: 2 ekor sapi`;
 
       await service.handleIncomingMessage(testJid, filledWithMissing);
 
-      expect(mockDatabaseService.createComplaintRecap).toHaveBeenCalledWith({
+      expect(mockDatabaseService.createWhatsappRecap).toHaveBeenCalledWith({
         reporterName: 'Mama Maria Omaleng',
         reporterPhone: '08123456789',
         address: 'Kabupaten Mimika',
-        description: 'Jumlah Hewan: 2 ekor sapi\nKeluhan: Nafsu makan berkurang',
+        serviceType: 'INFORMASI',
+        description: 'Permohonan Pemeriksaan Kesehatan - Jenis & Jumlah Hewan/Produk: 2 ekor sapi',
       });
     });
 
-    it('harus kembali ke Menu Utama saat mengetik 0 dari submenu', async () => {
+    it('harus menampilkan panduan Lalin.isikhnas (Layanan 3) saat memilih 3 di Menu Informasi', async () => {
+      await service.handleIncomingMessage(testJid, 'Halo');
       await service.handleIncomingMessage(testJid, '1');
+      const reply = await service.handleIncomingMessage(testJid, '3');
+
+      expect(reply).toBe(CHATBOT_MENUS.SUBMENU_INFORMASI_3_ISIKHNAS);
+      expect(reply).toContain('https://share.google/KJDES3yGAFbIrpuhA');
+      expect(reply).toContain('+6281141112269');
+      expect(sessionStore.getSession(testJid).state).toBe(ChatSessionState.SUBMENU_INFORMASI_ISIKHNAS);
+    });
+
+    it('harus mengirimkan 2 pesan template Bantuan dan menyimpan rekapan BANTUAN', async () => {
+      await service.handleIncomingMessage(testJid, 'Halo', 'Budi');
+      const promptReply = await service.handleIncomingMessage(testJid, '2');
+
+      expect(Array.isArray(promptReply)).toBe(true);
+      expect((promptReply as string[])[0]).toBe(CHATBOT_MENUS.MENU_BANTUAN_CHAT_1);
+      expect((promptReply as string[])[0]).toContain('+6281141112269');
+      expect((promptReply as string[])[1]).toBe(CHATBOT_MENUS.MENU_BANTUAN_CHAT_2);
+      expect(sessionStore.getSession(testJid).state).toBe(ChatSessionState.AWAITING_BANTUAN_MESSAGE);
+
+      const confirmReply = await service.handleIncomingMessage(
+        testJid,
+        '1. Nama: Budi Santoso\n' +
+          '2. Alamat: SP 2 Timika\n' +
+          '3. No HP yang bisa dihubungi: 081244556677\n' +
+          '4. Keluhan/Kendala: Saya butuh panduan pendaftaran akun iSIKHNAS',
+      );
+
+      expect(mockDatabaseService.createWhatsappRecap).toHaveBeenCalledWith({
+        reporterName: 'Budi Santoso',
+        reporterPhone: '081244556677',
+        address: 'SP 2 Timika',
+        serviceType: 'BANTUAN',
+        description: 'Saya butuh panduan pendaftaran akun iSIKHNAS',
+      });
+
+      expect(confirmReply).toContain('PERMOHONAN BANTUAN DITERIMA');
+      expect(confirmReply).toContain('ADU-TEST1234');
+      expect(confirmReply).not.toMatch(/database|dashboard/i);
+      expect(sessionStore.getSession(testJid).state).toBe(ChatSessionState.WAITING_FOR_ADMIN);
+    });
+
+    it('harus kembali ke Menu Utama saat mengetik 0 dari submenu', async () => {
+      await service.handleIncomingMessage(testJid, 'Halo');
+      await service.handleIncomingMessage(testJid, '1');
+      await service.handleIncomingMessage(testJid, '3');
       const reply = await service.handleIncomingMessage(testJid, '0');
 
-      expect(reply).toContain('LAYANAN INFORMASI LALU LINTAS HEWAN & TERNAK');
+      expect(reply).toContain('1. *Informasi*');
+      expect(reply).toContain('2. *Bantuan*');
+      expect(sessionStore.getSession(testJid).state).toBe(ChatSessionState.MAIN_MENU);
     });
   });
 
@@ -177,7 +218,7 @@ describe('ChatbotService', () => {
 
       const reply = await service.handleIncomingMessage(testJid, 'Halo, saya mau tanya lagi');
       expect(reply).not.toBeNull();
-      expect(reply).toContain('LAYANAN INFORMASI LALU LINTAS HEWAN & TERNAK');
+      expect(reply).toContain('1. *Informasi*');
     });
 
     it('tetap membisu jika waktu baru berjalan 2 jam (< 4 jam)', async () => {
@@ -191,7 +232,7 @@ describe('ChatbotService', () => {
       expect(reply).toBeNull();
     });
 
-    it('harus memunculkan kembali menu jika warga mengetik command #menu atau menu saat masih dalam cooldown admin', async () => {
+    it('harus memunculkan kembali menu jika warga mengetik command #menu saat masih dalam cooldown admin', async () => {
       const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
       const session = sessionStore.getSession(testJid);
       session.adminLastRepliedAt = tenMinutesAgo;
@@ -200,14 +241,14 @@ describe('ChatbotService', () => {
 
       const reply = await service.handleIncomingMessage(testJid, '#menu');
       expect(reply).not.toBeNull();
-      expect(reply).toContain('LAYANAN INFORMASI LALU LINTAS HEWAN & TERNAK');
+      expect(reply).toContain('1. *Informasi*');
 
       const updatedSession = sessionStore.getSession(testJid);
       expect(updatedSession.state).toBe(ChatSessionState.MAIN_MENU);
       expect(updatedSession.adminLastRepliedAt).toBeUndefined();
 
-      const sub1 = await service.handleIncomingMessage(testJid, '1');
-      expect(sub1).toBe(CHATBOT_MENUS.SUBMENU_1_PEMASUKAN);
+      const infoMenu = await service.handleIncomingMessage(testJid, '1');
+      expect(infoMenu).toBe(CHATBOT_MENUS.MENU_INFORMASI);
     });
 
     it('harus memunculkan kembali menu jika warga mengetik 0 saat masih dalam cooldown admin', async () => {
@@ -219,16 +260,24 @@ describe('ChatbotService', () => {
 
       const reply = await service.handleIncomingMessage(testJid, '0');
       expect(reply).not.toBeNull();
-      expect(reply).toContain('LAYANAN INFORMASI LALU LINTAS HEWAN & TERNAK');
+      expect(reply).toContain('1. *Informasi*');
     });
   });
 
   describe('Proteksi Anti-Spam & Input Tidak Valid', () => {
-    it('memberikan petunjuk ramah saat input tidak valid < 3 kali', async () => {
+    it('memberikan petunjuk ramah saat input tidak valid di menu utama < 3 kali', async () => {
       await service.handleIncomingMessage(testJid, 'Halo');
       const invalid1 = await service.handleIncomingMessage(testJid, 'xyz123');
 
-      expect(invalid1).toBe(CHATBOT_MENUS.INVALID_OPTION_HINT);
+      expect(invalid1).toBe(CHATBOT_MENUS.INVALID_OPTION_HINT_MAIN);
+    });
+
+    it('memberikan petunjuk ramah saat input tidak valid di menu informasi < 3 kali', async () => {
+      await service.handleIncomingMessage(testJid, 'Halo');
+      await service.handleIncomingMessage(testJid, '1');
+      const invalid1 = await service.handleIncomingMessage(testJid, '4');
+
+      expect(invalid1).toBe(CHATBOT_MENUS.INVALID_OPTION_HINT_INFORMASI);
     });
 
     it('menghentikan spam dan mengalihkan ke admin setelah 3 kali input salah berturut-turut', async () => {

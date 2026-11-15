@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { useAuth } from '../../context/AuthContext';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { createUser, deleteUser, fetchUsers, updateUser, type User } from '../../services/api';
@@ -14,6 +15,11 @@ export const UserManagementPage: React.FC = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
+
+  // Delete Confirmation Modal State
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [deletingUser, setDeletingUser] = useState<boolean>(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Lock background scroll when modal is open
   useBodyScrollLock(isModalOpen);
@@ -78,15 +84,23 @@ export const UserManagementPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (u: User) => {
-    if (!window.confirm(`Yakin ingin menonaktifkan/menghapus pengguna ${u.fullName} (@${u.username})?`)) {
-      return;
-    }
+  const openDeleteModal = (u: User) => {
+    setDeleteError(null);
+    setUserToDelete(u);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete || deletingUser) return;
+    setDeletingUser(true);
+    setDeleteError(null);
     try {
-      await deleteUser(u.id);
+      await deleteUser(userToDelete.id);
+      setUserToDelete(null);
       loadUsers();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Gagal menghapus pengguna');
+      setDeleteError(err instanceof Error ? err.message : 'Gagal menghapus pengguna');
+    } finally {
+      setDeletingUser(false);
     }
   };
 
@@ -289,7 +303,7 @@ export const UserManagementPage: React.FC = () => {
                       {u.id !== currentUser?.id && (
                         <button
                           type="button"
-                          onClick={() => handleDelete(u)}
+                          onClick={() => openDeleteModal(u)}
                           className="text-xs text-[#cf222e] hover:underline font-semibold cursor-pointer"
                         >
                           Hapus
@@ -468,6 +482,38 @@ export const UserManagementPage: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ConfirmModal
+        isOpen={!!userToDelete}
+        title="Hapus Pengguna?"
+        description="Pengguna yang dihapus atau dinonaktifkan tidak lagi memiliki akses ke portal internal."
+        confirmLabel="Ya, Hapus Pengguna"
+        loadingLabel="Menghapus..."
+        loading={deletingUser}
+        error={deleteError}
+        onCancel={() => {
+          setUserToDelete(null);
+          setDeleteError(null);
+        }}
+        onConfirm={confirmDeleteUser}
+      >
+        {userToDelete && (
+          <div className="p-3 bg-[#f6f8fa] border border-[#d0d7de] space-y-1.5 text-xs">
+            <div className="flex justify-between gap-2">
+              <span className="text-[#57606a]">Nama Lengkap:</span>
+              <span className="font-semibold text-[#1f2328]">{userToDelete.fullName}</span>
+            </div>
+            <div className="flex justify-between gap-2">
+              <span className="text-[#57606a]">Username:</span>
+              <span className="font-mono font-bold text-[#1f2328]">@{userToDelete.username}</span>
+            </div>
+            <div className="flex justify-between gap-2">
+              <span className="text-[#57606a]">Peran:</span>
+              <span className="font-mono uppercase text-[#1f2328]">{userToDelete.role}</span>
+            </div>
+          </div>
+        )}
+      </ConfirmModal>
     </motion.div>
   );
 };

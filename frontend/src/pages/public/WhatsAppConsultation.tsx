@@ -6,22 +6,39 @@ import { fetchWhatsappConfig, type WhatsappConfig } from '../../services/api';
 
 export const WhatsAppConsultation: React.FC = () => {
     const [config, setConfig] = useState<WhatsappConfig>({
-        whatsappNumber: '6281240000000',
+        whatsappNumber: '',
         whatsappMessage: SUANGGI_BRAND.defaultWhatsappMessage,
         agencyName: SUANGGI_BRAND.agency,
     });
+    const [isLoadingConfig, setIsLoadingConfig] = useState<boolean>(true);
+    const [configError, setConfigError] = useState<boolean>(false);
     const [selectedTopic, setSelectedTopic] = useState<string>('Umum');
     const [customApplicantName, setCustomApplicantName] = useState<string>('');
 
     useEffect(() => {
+        let cancelled = false;
+
         fetchWhatsappConfig()
             .then((res) => {
+                if (cancelled) return;
                 setConfig({
                     ...res,
                     whatsappMessage: res.whatsappMessage.replace(/SI-LANTAS HEWAN MIMIKA|SI-LANTAS/gi, SUANGGI_BRAND.name),
                 });
             })
-            .catch(() => { });
+            .catch(() => {
+                if (cancelled) return;
+                setConfigError(true);
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setIsLoadingConfig(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     const templates: { [key: string]: string } = {
@@ -32,6 +49,7 @@ export const WhatsAppConsultation: React.FC = () => {
     };
 
     const handleOpenWhatsApp = () => {
+        if (isLoadingConfig || !config.whatsappNumber) return;
         const baseMsg = templates[selectedTopic] || config.whatsappMessage;
         const fullMsg = customApplicantName
             ? `${baseMsg}\n\nNama Pemohon: ${customApplicantName}`
@@ -72,8 +90,25 @@ export const WhatsAppConsultation: React.FC = () => {
                                 <span className="text-xs uppercase tracking-wider font-extrabold">
                                     Nomor Resmi Pelayanan WhatsApp
                                 </span>
-                                <div className="text-2xl sm:text-3xl font-mono font-extrabold text-[#14532d] mt-1">
-                                    +{config.whatsappNumber}
+                                <div className="mt-1 min-h-9 flex items-center">
+                                    {isLoadingConfig ? (
+                                        <span
+                                            className="inline-flex items-center gap-2.5 text-sm font-semibold text-[#57606a]"
+                                            role="status"
+                                            aria-label="Memuat nomor resmi pelayanan WhatsApp"
+                                        >
+                                            <span className="inline-block h-6 w-6 rounded-full border-2 border-[#15803d] border-t-transparent animate-spin" />
+                                            <span>Memuat nomor resmi...</span>
+                                        </span>
+                                    ) : configError || !config.whatsappNumber ? (
+                                        <span className="text-sm font-semibold text-[#cf222e]">
+                                            Nomor resmi belum tersedia saat ini. Silakan muat ulang halaman.
+                                        </span>
+                                    ) : (
+                                        <span className="text-2xl sm:text-3xl font-mono font-extrabold text-[#14532d]">
+                                            +{config.whatsappNumber}
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="text-xs sm:text-sm font-semibold flex items-center gap-2 mt-2">
                                     <span>Jam Pelayanan: Senin - Jumat (08.00 - 16.00 WIT)</span>
@@ -82,8 +117,9 @@ export const WhatsAppConsultation: React.FC = () => {
 
                             <button
                                 type="button"
+                                disabled={isLoadingConfig || !config.whatsappNumber}
                                 onClick={handleOpenWhatsApp}
-                                className="px-5 py-3 text-sm font-bold text-white bg-[#15803d] hover:bg-[#14532d] transition-colors flex items-center justify-center gap-2 shadow-xs shrink-0"
+                                className="px-5 py-3 text-sm font-bold text-white bg-[#15803d] hover:bg-[#14532d] transition-colors flex items-center justify-center gap-2 shadow-xs shrink-0 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                             >
                                 <span>Mulai Chatting WhatsApp</span>
                             </button>
@@ -130,8 +166,9 @@ export const WhatsAppConsultation: React.FC = () => {
                             />
                             <button
                                 type="button"
+                                disabled={isLoadingConfig || !config.whatsappNumber}
                                 onClick={handleOpenWhatsApp}
-                                className="px-6 p-3 text-sm font-bold text-white bg-[#14532d] hover:bg-[#15803d] transition-colors"
+                                className="px-6 p-3 text-sm font-bold text-white bg-[#14532d] hover:bg-[#15803d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                             >
                                 Kirim Pesan ke WhatsApp Admin {SUANGGI_BRAND.name}
                             </button>

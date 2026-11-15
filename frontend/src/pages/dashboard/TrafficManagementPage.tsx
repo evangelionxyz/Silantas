@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { useAuth } from '../../context/AuthContext';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import {
@@ -63,8 +64,8 @@ export const TrafficManagementPage: React.FC = () => {
     const [recordToDelete, setRecordToDelete] = useState<TrafficRecord | null>(null);
     const [deletingRecord, setDeletingRecord] = useState<boolean>(false);
 
-    // Lock background scroll when any modal is open
-    useBodyScrollLock(isModalOpen || !!viewingRecord || !!previewImage || !!recordToDelete);
+    // Lock background scroll when any modal is open (ConfirmModal manages its own scroll lock)
+    useBodyScrollLock(isModalOpen || !!viewingRecord || !!previewImage);
 
     // Form State
     const [quantityInput, setQuantityInput] = useState<string>('1');
@@ -1659,102 +1660,47 @@ export const TrafficManagementPage: React.FC = () => {
             </AnimatePresence>
 
             {/* Delete Record Confirmation Modal */}
-            <AnimatePresence>
+            <ConfirmModal
+                isOpen={!!recordToDelete}
+                title="Hapus Catatan Lalu Lintas?"
+                description="Tindakan ini permanen dan akan dicatat secara otomatis dalam log audit sistem."
+                confirmLabel="Ya, Hapus Catatan"
+                loadingLabel="Menghapus..."
+                loading={deletingRecord}
+                onCancel={() => setRecordToDelete(null)}
+                onConfirm={confirmDeleteRecord}
+            >
                 {recordToDelete && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15 }}
-                        className="no-print fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4"
-                        role="dialog"
-                        aria-modal="true"
-                    >
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.96, y: 8 }}
-                            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                            className="bg-white border border-[#d0d7de] shadow-2xl max-w-md w-full p-5 sm:p-6 space-y-4"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div className="flex items-start gap-3.5">
-                                <div className="p-2.5 bg-[#ffebe9] border border-[#ff8182]/40 rounded-full shrink-0 text-[#cf222e]">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                        />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-base text-[#1f2328]">Hapus Catatan Lalu Lintas?</h3>
-                                    <p className="text-xs text-[#57606a] mt-0.5">
-                                        Tindakan ini permanen dan akan dicatat secara otomatis dalam log audit sistem.
-                                    </p>
-                                </div>
+                    <div className="p-3 bg-[#f6f8fa] border border-[#d0d7de] space-y-1.5 text-xs">
+                        <div className="flex justify-between">
+                            <span className="text-[#57606a]">Nomor Dokumen:</span>
+                            <span className="font-mono font-bold text-[#1f2328]">{recordToDelete.recordNumber}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-[#57606a]">Komoditas:</span>
+                            <span className="font-semibold text-[#1f2328]">
+                                {recordToDelete.itemName} ({recordToDelete.quantity.toLocaleString('id-ID')} {recordToDelete.unit})
+                            </span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-[#57606a]">Rute &amp; Moda:</span>
+                            <span className="text-[#1f2328]">
+                                {recordToDelete.origin} &rarr; {recordToDelete.destination} ({recordToDelete.transportType})
+                            </span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-[#57606a]">Tanggal:</span>
+                            <span className="text-[#1f2328]">{recordToDelete.trafficDate}</span>
+                        </div>
+                        {recordToDelete.attachments && recordToDelete.attachments.length > 0 && (
+                            <div className="pt-1.5 border-t border-[#d0d7de] text-[11px] text-[#cf222e] flex items-center gap-1 font-medium">
+                                <span>&#9888;</span>
+                                <span>{recordToDelete.attachments.length} berkas fisik lampiran di server akan ikut terhapus.</span>
                             </div>
-
-                            <div className="p-3 bg-[#f6f8fa] border border-[#d0d7de] space-y-1.5 text-xs">
-                                <div className="flex justify-between">
-                                    <span className="text-[#57606a]">Nomor Dokumen:</span>
-                                    <span className="font-mono font-bold text-[#1f2328]">{recordToDelete.recordNumber}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-[#57606a]">Komoditas:</span>
-                                    <span className="font-semibold text-[#1f2328]">
-                                        {recordToDelete.itemName} ({recordToDelete.quantity.toLocaleString('id-ID')} {recordToDelete.unit})
-                                    </span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-[#57606a]">Rute &amp; Moda:</span>
-                                    <span className="text-[#1f2328]">
-                                        {recordToDelete.origin} &rarr; {recordToDelete.destination} ({recordToDelete.transportType})
-                                    </span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-[#57606a]">Tanggal:</span>
-                                    <span className="text-[#1f2328]">{recordToDelete.trafficDate}</span>
-                                </div>
-                                {recordToDelete.attachments && recordToDelete.attachments.length > 0 && (
-                                    <div className="pt-1.5 border-t border-[#d0d7de] text-[11px] text-[#cf222e] flex items-center gap-1 font-medium">
-                                        <span>&#9888;</span>
-                                        <span>{recordToDelete.attachments.length} berkas fisik lampiran di server akan ikut terhapus.</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="flex items-center justify-end gap-2.5 pt-2">
-                                <button
-                                    type="button"
-                                    disabled={deletingRecord}
-                                    onClick={() => setRecordToDelete(null)}
-                                    className="px-4 py-2 border border-[#d0d7de] text-xs font-semibold text-[#1f2328] hover:bg-[#f6f8fa] transition-colors cursor-pointer disabled:opacity-50"
-                                >
-                                    Batal
-                                </button>
-                                <button
-                                    type="button"
-                                    disabled={deletingRecord}
-                                    onClick={confirmDeleteRecord}
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#cf222e] hover:bg-[#a40e26] transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
-                                >
-                                    {deletingRecord ? (
-                                        <>
-                                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                            <span>Menghapus...</span>
-                                        </>
-                                    ) : (
-                                        <span>Ya, Hapus Catatan</span>
-                                    )}
-                                </button>
-                            </div>
-                        </motion.div>
-                    </motion.div>
+                        )}
+                    </div>
                 )}
-            </AnimatePresence>
+            </ConfirmModal>
         </motion.div>
     );
 };

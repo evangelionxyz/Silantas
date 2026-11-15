@@ -10,9 +10,6 @@ import { SummaryCalculationsPage } from './pages/dashboard/SummaryCalculationsPa
 import { TrafficManagementPage } from './pages/dashboard/TrafficManagementPage';
 import { UserManagementPage } from './pages/dashboard/UserManagementPage';
 import { DocsHome } from './pages/public/DocsHome';
-import { HealthCheckDoc } from './pages/public/HealthCheckDoc';
-import { IsikhnasStatusDoc } from './pages/public/IsikhnasStatusDoc';
-import { RequirementsDoc } from './pages/public/RequirementsDoc';
 import { WhatsAppConsultation } from './pages/public/WhatsAppConsultation';
 import { PublicLayout } from './components/layout/PublicLayout';
 import { ProfilePage } from './pages/public/ProfilePage';
@@ -26,9 +23,6 @@ function App() {
           <Route element={<PublicLayout />}>
             <Route path="/" element={<DocsHome />} />
             <Route path="/about" element={<ProfilePage />} />
-            <Route path="/persyaratan" element={<RequirementsDoc />} />
-            <Route path="/pemeriksaan" element={<HealthCheckDoc />} />
-            <Route path="/isikhnas" element={<IsikhnasStatusDoc />} />
             <Route path="/konsultasi" element={<WhatsAppConsultation />} />
           </Route>
 
