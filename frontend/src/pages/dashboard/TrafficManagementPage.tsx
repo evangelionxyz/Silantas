@@ -174,8 +174,18 @@ export const TrafficManagementPage: React.FC = () => {
         setExistingAttachments(rec.attachments || []);
         setAttachmentIdsToDelete([]);
         setQuantityInput(String(rec.quantity));
+
+        let recNum = rec.recordNumber;
+        let healthCert = rec.healthCertificateNo || '';
+
+        // Backward compatibility for legacy EXPORT records where recordNumber held the SKKH/SKKHP
+        if (rec.trafficType === 'EXPORT' && !healthCert && (recNum.startsWith('SKKH') || recNum.startsWith('SKKHP'))) {
+            healthCert = recNum;
+            recNum = `SV/MMK/${new Date().getFullYear()}/${Math.floor(1000 + Math.random() * 9000)}`;
+        }
+
         setFormData({
-            recordNumber: rec.recordNumber,
+            recordNumber: recNum,
             trafficType: rec.trafficType,
             category: rec.category,
             itemName: rec.itemName,
@@ -185,7 +195,7 @@ export const TrafficManagementPage: React.FC = () => {
             destination: rec.destination,
             transportType: rec.transportType,
             applicantName: rec.applicantName,
-            healthCertificateNo: rec.healthCertificateNo || '',
+            healthCertificateNo: healthCert,
             inspectionStatus: rec.inspectionStatus,
             notes: rec.notes || '',
             trafficDate: rec.trafficDate,
@@ -241,7 +251,7 @@ export const TrafficManagementPage: React.FC = () => {
 
             if (totalRemaining < 1) {
                 setModalError(
-                    'Untuk lalu lintas Keluar (EXPORT), dokumen SKKH/SKKHP wajib terlampir (minimal 1 dokumen). Harap unggah berkas baru terlebih dahulu sebelum menghapus dokumen ini.'
+                    'Untuk lalu lintas Keluar (EXPORT), dokumen SV dan SKKH/SKKHP wajib terlampir (minimal 1 dokumen). Harap unggah berkas baru terlebih dahulu sebelum menghapus dokumen ini.'
                 );
                 return;
             }
@@ -275,7 +285,25 @@ export const TrafficManagementPage: React.FC = () => {
             return;
         }
 
-        // Untuk komoditas Keluar (EXPORT), dokumen SKKH/SKKHP wajib dilampirkan (minimal 1 berkas aktif)
+        if (!formData.recordNumber.trim()) {
+            setModalError(
+                formData.trafficType === 'IMPORT'
+                    ? 'Nomor Sertifikat Veteriner (SV) Asal wajib diisi.'
+                    : 'Nomor Sertifikat Veteriner (SV) wajib diisi.'
+            );
+            return;
+        }
+
+        if (formData.trafficType === 'EXPORT' && !formData.healthCertificateNo.trim()) {
+            setModalError(
+                formData.category === 'HEWAN_HIDUP'
+                    ? 'Untuk pengeluaran (EXPORT), Nomor Dokumen SKKH wajib diisi.'
+                    : 'Untuk pengeluaran (EXPORT), Nomor Dokumen SKKHP wajib diisi.'
+            );
+            return;
+        }
+
+        // Untuk komoditas Keluar (EXPORT), dokumen SV & SKKH/SKKHP wajib dilampirkan (minimal 1 berkas aktif)
         const activeExistingDocs = existingAttachments.filter(
             (a) => !attachmentIdsToDelete.includes(a.id)
         );
@@ -283,13 +311,17 @@ export const TrafficManagementPage: React.FC = () => {
 
         if (formData.trafficType === 'EXPORT' && totalActiveDocs < 1) {
             setModalError(
-                'Untuk pengeluaran (EXPORT), berkas dokumen SKKH/SKKHP wajib dilampirkan (minimal 1 berkas).'
+                'Untuk pengeluaran (EXPORT), berkas dokumen SV dan SKKH/SKKHP wajib dilampirkan (minimal 1 berkas).'
             );
             return;
         }
 
         setSubmitting(true);
-        const payload = { ...formData, quantity: parsedQuantity };
+        const payload = {
+            ...formData,
+            quantity: parsedQuantity,
+            healthCertificateNo: formData.trafficType === 'EXPORT' ? formData.healthCertificateNo.trim() : undefined,
+        };
 
         try {
             let recordId = editingRecord?.id;
@@ -508,14 +540,24 @@ export const TrafficManagementPage: React.FC = () => {
                                         <tr key={r.id} className="hover:bg-[#f6f8fa]/70 transition-colors">
                                             <td className="py-3 px-3.5 font-mono text-xs">
                                                 <div className="font-semibold text-[#1f2328]">{r.trafficDate}</div>
-                                                <div className="flex items-center gap-1.5 mt-0.5">
-                                                    <span className="text-[#57606a] font-medium truncate max-w-[130px]">{r.recordNumber}</span>
-                                                    {r.attachments && r.attachments.length > 0 && (
+                                                <div className="flex flex-col gap-0.5 mt-0.5">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-[#57606a] font-medium truncate max-w-[130px]" title={`SV: ${r.recordNumber}`}>{r.recordNumber}</span>
+                                                        {r.attachments && r.attachments.length > 0 && (
+                                                            <span
+                                                                title={`${r.attachments.length} berkas lampiran terlampir`}
+                                                                className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-[#ddf4ff] text-[#0969da] border border-[#54aeff]/40 shrink-0"
+                                                            >
+                                                                &#128206; {r.attachments.length}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {r.trafficType === 'EXPORT' && r.healthCertificateNo && (
                                                         <span
-                                                            title={`${r.attachments.length} berkas lampiran terlampir`}
-                                                            className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-[#ddf4ff] text-[#0969da] border border-[#54aeff]/40 shrink-0"
+                                                            className="text-[11px] text-[#0969da] font-medium truncate max-w-[130px]"
+                                                            title={`${r.category === 'HEWAN_HIDUP' ? 'SKKH' : 'SKKHP'}: ${r.healthCertificateNo}`}
                                                         >
-                                                            &#128206; {r.attachments.length}
+                                                            {r.healthCertificateNo}
                                                         </span>
                                                     )}
                                                 </div>
@@ -697,10 +739,21 @@ export const TrafficManagementPage: React.FC = () => {
                                 <div className="text-center font-bold text-sm underline uppercase pt-2">
                                     {viewingRecord.trafficType === 'IMPORT'
                                         ? 'Surat Verifikasi Pemasukan Komoditas & Sertifikat Veteriner (SV)'
-                                        : 'Surat Keterangan Pengawasan Lalu Lintas (SKKH / SKKHP)'}
+                                        : 'Surat Keterangan Pengawasan Lalu Lintas (SV & SKKH / SKKHP)'}
                                 </div>
                                 <div className="text-center font-mono text-xs sm:text-sm text-[#57606a]">
-                                    {viewingRecord.trafficType === 'IMPORT' ? 'Nomor Dokumen SV Asal' : 'Nomor Dokumen SKKH/SKKHP'}: {viewingRecord.recordNumber}
+                                    {viewingRecord.trafficType === 'IMPORT' ? (
+                                        <span>Nomor Dokumen SV Asal: {viewingRecord.recordNumber}</span>
+                                    ) : (
+                                        <span>
+                                            Nomor SV: {viewingRecord.recordNumber}
+                                            {viewingRecord.healthCertificateNo
+                                                ? ` • No. ${
+                                                      viewingRecord.category === 'HEWAN_HIDUP' ? 'SKKH' : 'SKKHP'
+                                                  }: ${viewingRecord.healthCertificateNo}`
+                                                : ''}
+                                        </span>
+                                    )}
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-4 pt-3 border-t border-[#d0d7de]">
@@ -714,6 +767,31 @@ export const TrafficManagementPage: React.FC = () => {
                                         <div className="text-[#57606a] text-xs uppercase font-bold">Tanggal Kegiatan:</div>
                                         <div className="font-mono text-sm mt-0.5">{viewingRecord.trafficDate}</div>
                                     </div>
+
+                                    <div>
+                                        <div className="text-[#57606a] text-xs uppercase font-bold">
+                                            {viewingRecord.trafficType === 'IMPORT' ? 'Nomor SV Asal:' : 'Nomor Sertifikat Veteriner (SV):'}
+                                        </div>
+                                        <div className="font-mono text-sm font-semibold mt-0.5">{viewingRecord.recordNumber}</div>
+                                    </div>
+
+                                    {viewingRecord.trafficType === 'EXPORT' ? (
+                                        <div>
+                                            <div className="text-[#57606a] text-xs uppercase font-bold">
+                                                {viewingRecord.category === 'HEWAN_HIDUP' ? 'Nomor Dokumen SKKH:' : 'Nomor Dokumen SKKHP:'}
+                                            </div>
+                                            <div className="font-mono text-sm font-semibold text-[#0969da] mt-0.5">
+                                                {viewingRecord.healthCertificateNo || '-'}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <div className="text-[#57606a] text-xs uppercase font-bold">Dokumen Kesehatan:</div>
+                                            <div className="text-sm font-medium text-[#1a7f37] mt-0.5">
+                                                SV Asal Terverifikasi (SKKH Tidak Diperlukan)
+                                            </div>
+                                        </div>
+                                    )}
 
                                     <div>
                                         <div className="text-[#57606a] text-xs uppercase font-bold">Nama Komoditas:</div>
@@ -770,7 +848,7 @@ export const TrafficManagementPage: React.FC = () => {
                                                     : 'Menunggu (PENDING)'}
                                         </span>
                                     </div>
-                                    {viewingRecord.healthCertificateNo && (
+                                    {viewingRecord.healthCertificateNo && viewingRecord.trafficType !== 'EXPORT' && (
                                         <div className="text-xs sm:text-sm">
                                             <span className="text-[#57606a]">No. Dokumen Karantina: </span>
                                             <span className="font-mono font-semibold">{viewingRecord.healthCertificateNo}</span>
@@ -949,7 +1027,7 @@ export const TrafficManagementPage: React.FC = () => {
                                                 : 'Ubah Data Lalu Lintas'
                                         : formData.trafficType === 'IMPORT'
                                             ? 'Catat Pemasukan Hewan / Produk (SV Asal)'
-                                            : 'Catat Pengeluaran Hewan / Produk (SKKH/SKKHP)'}
+                                            : 'Catat Pengeluaran Hewan / Produk (SV & SKKH/SKKHP)'}
                                 </h3>
                                 <button
                                     type="button"
@@ -969,35 +1047,50 @@ export const TrafficManagementPage: React.FC = () => {
                                 )}
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* Baris 1: Tipe Lalu Lintas & Tanggal Lalu Lintas */}
                                     <div>
                                         <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">
-                                            {formData.trafficType === 'IMPORT' ? (
-                                                <span>
-                                                    Nomor Sertifikat Veteriner (SV) Asal
-                                                </span>
-                                            ) : (
-                                                <span>
-                                                    Nomor Dokumen SKKH / SKKHP
-                                                </span>
-                                            )}
+                                            Tipe Lalu Lintas
                                         </label>
-                                        <input
-                                            type="text"
-                                            required
-                                            value={formData.recordNumber}
-                                            onChange={(e) => setFormData({ ...formData, recordNumber: e.target.value })}
-                                            placeholder={
-                                                formData.trafficType === 'IMPORT'
-                                                    ? 'misal: SV/04/DISNAK-JATIM/2026 atau No. SV Asal'
-                                                    : 'misal: SKKH/MMK/2026/0129 atau SKKHP/MMK/2026/0045'
-                                            }
+                                        <select
+                                            value={formData.trafficType}
+                                            onChange={(e) => {
+                                                const newType = e.target.value as 'IMPORT' | 'EXPORT';
+                                                let newRecNum = formData.recordNumber;
+                                                let newHealthCert = formData.healthCertificateNo;
+
+                                                if (!editingRecord) {
+                                                    const curYear = new Date().getFullYear();
+                                                    const randId = Math.floor(1000 + Math.random() * 9000);
+                                                    if (newType === 'IMPORT') {
+                                                        if (!newRecNum.startsWith('SV/')) {
+                                                            newRecNum = `SV/${curYear}/${randId}`;
+                                                        }
+                                                        newHealthCert = '';
+                                                    } else {
+                                                        if (!newRecNum.startsWith('SV/')) {
+                                                            newRecNum = `SV/MMK/${curYear}/${randId}`;
+                                                        }
+                                                        if (!newHealthCert || newHealthCert.trim() === '') {
+                                                            newHealthCert =
+                                                                formData.category === 'HEWAN_HIDUP'
+                                                                    ? `SKKH/MMK/${curYear}/${randId}`
+                                                                    : `SKKHP/MMK/${curYear}/${randId}`;
+                                                        }
+                                                    }
+                                                }
+                                                setFormData({
+                                                    ...formData,
+                                                    trafficType: newType,
+                                                    recordNumber: newRecNum,
+                                                    healthCertificateNo: newHealthCert,
+                                                });
+                                            }}
                                             className="w-full px-3 py-2 text-sm border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                                        />
-                                        <div className="text-[11px] text-[#57606a] mt-1">
-                                            {formData.trafficType === 'IMPORT'
-                                                ? 'Pemasukan: cantumkan nomor SV resmi dari dinas peternakan daerah asal.'
-                                                : 'Pengeluaran: cantumkan nomor SKKH/SKKHP resmi yang diterbitkan oleh Dinas Kab. Mimika.'}
-                                        </div>
+                                        >
+                                            <option value="IMPORT">Masuk (IMPORT ke Mimika) &bull; SV Asal</option>
+                                            <option value="EXPORT">Keluar (EXPORT dari Mimika) &bull; Wajib SV &amp; SKKH/SKKHP</option>
+                                        </select>
                                     </div>
 
                                     <div>
@@ -1013,52 +1106,118 @@ export const TrafficManagementPage: React.FC = () => {
                                         />
                                     </div>
 
-                                    <div>
-                                        <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">
-                                            Tipe Lalu Lintas
-                                        </label>
-                                        <select
-                                            value={formData.trafficType}
-                                            onChange={(e) => {
-                                                const newType = e.target.value as 'IMPORT' | 'EXPORT';
-                                                let newRecNum = formData.recordNumber;
-                                                if (!editingRecord) {
-                                                    if (newType === 'IMPORT' && newRecNum.startsWith('SKKH/')) {
-                                                        newRecNum = `SV/${new Date().getFullYear()}/${Math.floor(1000 + Math.random() * 9000)}`;
-                                                    } else if (newType === 'EXPORT' && newRecNum.startsWith('SV/')) {
-                                                        newRecNum = `SKKH/MMK/${new Date().getFullYear()}/${Math.floor(1000 + Math.random() * 9000)}`;
-                                                    }
-                                                }
-                                                setFormData({
-                                                    ...formData,
-                                                    trafficType: newType,
-                                                    recordNumber: newRecNum,
-                                                });
-                                            }}
-                                            className="w-full px-3 py-2 text-sm border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                                        >
-                                            <option value="IMPORT">Masuk (IMPORT ke Mimika) &bull; SV Asal</option>
-                                            <option value="EXPORT">Keluar (EXPORT dari Mimika) &bull; Wajib SKKH/SKKHP</option>
-                                        </select>
-                                    </div>
+                                    {/* Baris 2: Dokumen Perizinan (SV Asal untuk Masuk; SV & SKKH/SKKHP untuk Keluar) */}
+                                    {formData.trafficType === 'IMPORT' ? (
+                                        <div className="sm:col-span-2">
+                                            <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">
+                                                Nomor Sertifikat Veteriner (SV) Asal
+                                            </label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={formData.recordNumber}
+                                                onChange={(e) => setFormData({ ...formData, recordNumber: e.target.value })}
+                                                placeholder="misal: SV/04/DISNAK-JATIM/2026 atau No. SV Asal"
+                                                className="w-full px-3 py-2 text-sm border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                                            />
+                                            <div className="text-[11px] text-[#57606a] mt-1">
+                                                Pemasukan: cantumkan nomor SV resmi dari dinas peternakan daerah asal (SKKH tidak diperlukan, hanya SV asal).
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div>
+                                                <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">
+                                                    Nomor Sertifikat Veteriner (SV)
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    value={formData.recordNumber}
+                                                    onChange={(e) => setFormData({ ...formData, recordNumber: e.target.value })}
+                                                    placeholder="misal: SV/MMK/2026/0129"
+                                                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                                                />
+                                                <div className="text-[11px] text-[#57606a] mt-1">
+                                                    Pengeluaran: nomor SV resmi yang diterbitkan oleh Dinas Kab. Mimika.
+                                                </div>
+                                            </div>
 
+                                            <div>
+                                                <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">
+                                                    {formData.category === 'HEWAN_HIDUP'
+                                                        ? 'Nomor Dokumen SKKH'
+                                                        : 'Nomor Dokumen SKKHP'}
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    value={formData.healthCertificateNo}
+                                                    onChange={(e) => setFormData({ ...formData, healthCertificateNo: e.target.value })}
+                                                    placeholder={
+                                                        formData.category === 'HEWAN_HIDUP'
+                                                            ? 'misal: 524/0129/SKKH/DISNAK/2026'
+                                                            : 'misal: 524/0045/SKKHP/DISNAK/2026'
+                                                    }
+                                                    className="w-full px-3 py-2 text-sm border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                                                />
+                                                <div className="text-[11px] text-[#57606a] mt-1">
+                                                    {formData.category === 'HEWAN_HIDUP'
+                                                        ? 'Surat Keterangan Kesehatan Hewan resmi dari Dinas Kab. Mimika.'
+                                                        : 'Surat Keterangan Kesehatan Produk Hewan resmi dari Dinas Kab. Mimika.'}
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {/* Baris 3: Kategori Komoditas & Status Pemeriksaan Kesehatan */}
                                     <div>
                                         <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">
                                             Kategori Komoditas
                                         </label>
                                         <select
                                             value={formData.category}
-                                            onChange={(e) =>
+                                            onChange={(e) => {
+                                                const newCat = e.target.value as 'HEWAN_HIDUP' | 'PRODUK_HEWAN' | 'OLAHAN_PRODUK_HEWAN';
+                                                let newHealthCert = formData.healthCertificateNo;
+                                                if (!editingRecord && formData.trafficType === 'EXPORT') {
+                                                    if (newCat === 'HEWAN_HIDUP' && newHealthCert.startsWith('SKKHP/')) {
+                                                        newHealthCert = newHealthCert.replace('SKKHP/', 'SKKH/');
+                                                    } else if (newCat !== 'HEWAN_HIDUP' && newHealthCert.startsWith('SKKH/')) {
+                                                        newHealthCert = newHealthCert.replace('SKKH/', 'SKKHP/');
+                                                    }
+                                                }
                                                 setFormData({
                                                     ...formData,
-                                                    category: e.target.value as 'HEWAN_HIDUP' | 'PRODUK_HEWAN' | 'OLAHAN_PRODUK_HEWAN',
-                                                })
-                                            }
+                                                    category: newCat,
+                                                    healthCertificateNo: newHealthCert,
+                                                });
+                                            }}
                                             className="w-full px-3 py-2 text-sm border border-[#d0d7de] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
                                         >
                                             <option value="HEWAN_HIDUP">Hewan Hidup (Sapi, Kambing, Babi, dll)</option>
                                             <option value="PRODUK_HEWAN">Produk Hewan (Daging Segar/Beku, Telur, dll)</option>
                                             <option value="OLAHAN_PRODUK_HEWAN">Produk Olahan (Sosis, Bakso, Kornet, dll)</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">
+                                            Status Pemeriksaan Kesehatan
+                                        </label>
+                                        <select
+                                            value={formData.inspectionStatus}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    inspectionStatus: e.target.value as 'PENDING' | 'INSPECTED_PASS' | 'INSPECTED_REJECT',
+                                                })
+                                            }
+                                            className="w-full px-3 py-2 text-sm border border-[#d0d7de] bg-white text-[#1f2328] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
+                                        >
+                                            <option value="PENDING">Menunggu Pemeriksaan (PENDING)</option>
+                                            <option value="INSPECTED_PASS">Lulus Inspeksi (PASS)</option>
+                                            <option value="INSPECTED_REJECT">Ditolak / Karantina (REJECT)</option>
                                         </select>
                                     </div>
 
@@ -1272,45 +1431,6 @@ export const TrafficManagementPage: React.FC = () => {
                                         />
                                     </div>
 
-                                    <div>
-                                        <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">
-                                            Status Pemeriksaan Kesehatan
-                                        </label>
-                                        <select
-                                            value={formData.inspectionStatus}
-                                            onChange={(e) =>
-                                                setFormData({
-                                                    ...formData,
-                                                    inspectionStatus: e.target.value as 'PENDING' | 'INSPECTED_PASS' | 'INSPECTED_REJECT',
-                                                })
-                                            }
-                                            className="w-full px-3 py-2 text-sm border border-[#d0d7de] bg-white text-[#1f2328] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                                        >
-                                            <option value="PENDING">Menunggu Pemeriksaan (PENDING)</option>
-                                            <option value="INSPECTED_PASS">Lulus Inspeksi (PASS)</option>
-                                            <option value="INSPECTED_REJECT">Ditolak / Karantina (REJECT)</option>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">
-                                            {formData.trafficType === 'IMPORT'
-                                                ? 'Nomor Sertifikat Pelepasan Karantina Asal'
-                                                : 'Nomor Register Rekomendasi Pengeluaran'}
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={formData.healthCertificateNo}
-                                            onChange={(e) => setFormData({ ...formData, healthCertificateNo: e.target.value })}
-                                            placeholder={
-                                                formData.trafficType === 'IMPORT'
-                                                    ? 'misal: KH-11/2026/08912 atau No. Karantina Masuk'
-                                                    : 'misal: REG/SKKH-EXP/MMK/2026/001'
-                                            }
-                                            className="w-full px-3 py-2 text-sm border border-[#d0d7de] bg-white text-[#1f2328] focus:outline-none focus:ring-2 focus:ring-[#0969da]/30 focus:border-[#0969da]"
-                                        />
-                                    </div>
-
                                     <div className="sm:col-span-2">
                                         <label className="block font-semibold text-[#1f2328] mb-1.5 text-xs uppercase tracking-wide">
                                             {formData.trafficType === 'IMPORT'
@@ -1341,7 +1461,7 @@ export const TrafficManagementPage: React.FC = () => {
                                                     </div>
                                                 ) : (
                                                     <div className="flex flex-col">
-                                                        <label>Lampiran Dokumen SKKH / SKKHP Resmi</label>
+                                                        <label>Lampiran Dokumen SV &amp; SKKH / SKKHP Resmi</label>
                                                         <label className="text-[#cf222e] font-bold text-[11px] normal-case">* Wajib Diunggah (Mandatory)</label>
                                                     </div>
                                                 )}
@@ -1574,12 +1694,12 @@ export const TrafficManagementPage: React.FC = () => {
                                                 <div className="text-xs font-semibold text-[#1f2328]">
                                                     {formData.trafficType === 'IMPORT'
                                                         ? 'Lampirkan Berkas Sertifikat Veteriner (SV) Asal'
-                                                        : 'Unggah Berkas Dokumen SKKH / SKKHP Resmi (Wajib)'}
+                                                        : 'Unggah Berkas Dokumen SV & SKKH / SKKHP Resmi (Wajib)'}
                                                 </div>
                                                 <div className="text-[11px] text-[#57606a]">
                                                     {formData.trafficType === 'IMPORT'
                                                         ? 'Tarik & lepas berkas SV asal atau pilih dari perangkat (PDF/JPG/PNG/WEBP)'
-                                                        : 'Tarik & lepas berkas SKKH/SKKHP atau pilih dari perangkat (PDF/JPG/PNG/WEBP)'}
+                                                        : 'Tarik & lepas berkas SV & SKKH/SKKHP atau pilih dari perangkat (PDF/JPG/PNG/WEBP)'}
                                                 </div>
                                             </div>
                                         </div>
@@ -1673,9 +1793,19 @@ export const TrafficManagementPage: React.FC = () => {
                 {recordToDelete && (
                     <div className="p-3 bg-[#f6f8fa] border border-[#d0d7de] space-y-1.5 text-xs">
                         <div className="flex justify-between">
-                            <span className="text-[#57606a]">Nomor Dokumen:</span>
+                            <span className="text-[#57606a]">
+                                {recordToDelete.trafficType === 'IMPORT' ? 'Nomor Dokumen SV Asal:' : 'Nomor SV:'}
+                            </span>
                             <span className="font-mono font-bold text-[#1f2328]">{recordToDelete.recordNumber}</span>
                         </div>
+                        {recordToDelete.trafficType === 'EXPORT' && recordToDelete.healthCertificateNo && (
+                            <div className="flex justify-between">
+                                <span className="text-[#57606a]">
+                                    {recordToDelete.category === 'HEWAN_HIDUP' ? 'No. SKKH:' : 'No. SKKHP:'}
+                                </span>
+                                <span className="font-mono font-bold text-[#0969da]">{recordToDelete.healthCertificateNo}</span>
+                            </div>
+                        )}
                         <div className="flex justify-between">
                             <span className="text-[#57606a]">Komoditas:</span>
                             <span className="font-semibold text-[#1f2328]">
