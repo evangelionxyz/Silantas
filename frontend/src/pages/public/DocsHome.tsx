@@ -23,7 +23,7 @@ const GALLERY_SLIDES = [
         id: 'live-animals',
         url: PUBLIC_COMMODITY_IMAGES.liveAnimals.url,
         alt: PUBLIC_COMMODITY_IMAGES.liveAnimals.alt,
-        caption: 'Konsultasi Dokter Hewan',
+        caption: 'Konsultasi',
         categoryLabel: 'Pemeriksaan SKKH',
         width: PUBLIC_COMMODITY_IMAGES.liveAnimals.width,
         height: PUBLIC_COMMODITY_IMAGES.liveAnimals.height,
