@@ -25,7 +25,10 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
    * Buffer debounce untuk pesan beruntun dari pengguna (misal: "halo", "pak", "mau tanya").
    */
   private readonly debounceTimers = new Map<string, NodeJS.Timeout>();
-  private readonly messageBuffers = new Map<string, { texts: string[]; pushName?: string }>();
+  private readonly messageBuffers = new Map<
+    string,
+    { texts: string[]; pushName?: string; altJid?: string }
+  >();
   private readonly debounceMs = 1500;
 
   constructor(private readonly chatbotService: ChatbotService) {}
@@ -108,7 +111,13 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
         if (!text) continue;
 
         const pushName = msg.pushName || undefined;
-        this.enqueueIncomingMessage(jid, text, pushName);
+        const altJid =
+          (msg.key as any)?.remoteJidAlt ||
+          (msg.key as any)?.participantAlt ||
+          (msg as any)?.participant ||
+          undefined;
+
+        this.enqueueIncomingMessage(jid, text, pushName, altJid);
       }
     });
   }
@@ -116,10 +125,11 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
   /**
    * Menerapkan debouncing pesan beruntun dari pengguna agar tidak spam menu.
    */
-  private enqueueIncomingMessage(jid: string, text: string, pushName?: string) {
-    const existing = this.messageBuffers.get(jid) || { texts: [], pushName };
+  private enqueueIncomingMessage(jid: string, text: string, pushName?: string, altJid?: string) {
+    const existing = this.messageBuffers.get(jid) || { texts: [], pushName, altJid };
     existing.texts.push(text);
     if (pushName) existing.pushName = pushName;
+    if (altJid) existing.altJid = altJid;
     this.messageBuffers.set(jid, existing);
 
     if (this.debounceTimers.has(jid)) {
@@ -136,15 +146,15 @@ export class WhatsappService implements OnModuleInit, OnModuleDestroy {
         if (buffered && buffered.texts.length > 0) {
           // Ambil input terakhir yang dikirim pengguna dalam buffer
           const latestText = buffered.texts[buffered.texts.length - 1];
-          void this.processMessage(jid, latestText, buffered.pushName);
+          void this.processMessage(jid, latestText, buffered.pushName, buffered.altJid);
         }
       }, this.debounceMs),
     );
   }
 
-  private async processMessage(jid: string, text: string, pushName?: string) {
+  private async processMessage(jid: string, text: string, pushName?: string, altJid?: string) {
     try {
-      const reply = await this.chatbotService.handleIncomingMessage(jid, text, pushName);
+      const reply = await this.chatbotService.handleIncomingMessage(jid, text, pushName, altJid);
       if (!reply || !this.sock) return;
 
       const replies = Array.isArray(reply) ? reply : [reply];

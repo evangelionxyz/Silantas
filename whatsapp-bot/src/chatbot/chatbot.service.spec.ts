@@ -187,6 +187,27 @@ describe('ChatbotService', () => {
       expect(sessionStore.getSession(testJid).state).toBe(ChatSessionState.WAITING_FOR_ADMIN);
     });
 
+    it('harus fallback nomor HP ke pengirim saat ini jika warga hanya kirim teks singkat tanpa nomor', async () => {
+      await service.handleIncomingMessage(testJid, 'Halo', 'El');
+      await service.handleIncomingMessage(testJid, '2');
+
+      const confirmReply = await service.handleIncomingMessage(testJid, 'Tes');
+
+      expect(mockDatabaseService.createWhatsappRecap).toHaveBeenCalledWith({
+        reporterName: 'El',
+        reporterPhone: '+628123456789',
+        address: 'Kabupaten Mimika',
+        serviceType: 'BANTUAN',
+        description: 'Tes',
+      });
+
+      expect(confirmReply).toContain('PERMOHONAN BANTUAN DITERIMA');
+      expect(confirmReply).toContain('Nama: *El*');
+      expect(confirmReply).toContain('No. HP: *+628123456789*');
+      expect(confirmReply).not.toContain('Tidak disertakan');
+      expect(confirmReply).not.toContain('tidak disertai');
+    });
+
     it('harus kembali ke Menu Utama saat mengetik 0 dari submenu', async () => {
       await service.handleIncomingMessage(testJid, 'Halo');
       await service.handleIncomingMessage(testJid, '1');
@@ -378,7 +399,8 @@ describe('ChatbotService', () => {
 
     it('formatPhoneNumber harus mengambil nomor WhatsApp dari JID dalam format +62', () => {
       expect(service.formatPhoneNumber('628123456789@s.whatsapp.net')).toBe('+628123456789');
-      expect(service.formatPhoneNumber('123456789@lid')).toBeUndefined();
+      expect(service.formatPhoneNumber('628123456789:1@s.whatsapp.net')).toBe('+628123456789');
+      expect(service.formatPhoneNumber('123456789@lid', '628123456789@s.whatsapp.net')).toBe('+628123456789');
     });
 
     it('normalizePhone harus menggunakan nomor WhatsApp jika pengguna tidak mengisi nomor telepon', () => {
@@ -387,6 +409,9 @@ describe('ChatbotService', () => {
       expect(service.normalizePhone('-', detected)).toBe('+628123456789');
       expect(service.normalizePhone('   ', detected)).toBe('+628123456789');
       expect(service.normalizePhone('Tidak ada', detected)).toBe('+628123456789');
+      expect(service.normalizePhone('')).not.toContain('Tidak disertakan');
+      expect(service.normalizePhone('')).not.toContain('tidak disertai');
+      expect(service.normalizePhone('')).toBe('+62 (WhatsApp)');
     });
 
     it('normalizePhone harus memformat input pengguna ke +62 jika nomor valid diisi', () => {

@@ -1,4 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
+import fs from 'fs';
+import path from 'path';
 import { DatabaseService } from '../database/database.service.js';
 import { CHATBOT_MENUS } from './chatbot-menus.js';
 import { ChatbotSessionStore } from './chatbot-session.store.js';
@@ -56,42 +58,105 @@ export class ChatbotService {
   }
 
   /**
-   * Mengubah format JID WhatsApp menjadi format nomor telepon Indonesia (+62).
-   * Jika JID merupakan akun privasi/LID (@lid), mengembalikan undefined
-   * karena LID bukan nomor telepon yang dapat dihubungi.
+   * Mencari nomor telepon asli dari JID LID Baileys (lid-mapping-<lidUser>_reverse.json).
    */
-  public formatPhoneNumber(jid: string): string | undefined {
-    if (jid.includes('@lid') || jid.includes('lid')) {
-      return undefined;
+  public resolveLidToPhone(lidJid: string): string | undefined {
+    try {
+      const lidUser = lidJid.split('@')[0].split(':')[0].replace(/\D/g, '');
+      if (!lidUser) return undefined;
+
+      const candidateDirs = [
+        path.join(process.cwd(), 'auth_info'),
+        path.join(process.cwd(), 'whatsapp-bot', 'auth_info'),
+        path.resolve('auth_info'),
+      ];
+
+      for (const dir of candidateDirs) {
+        const filePath = path.join(dir, `lid-mapping-${lidUser}_reverse.json`);
+        if (fs.existsSync(filePath)) {
+          const content = fs.readFileSync(filePath, 'utf8').trim();
+          const parsed = JSON.parse(content);
+          if (parsed && typeof parsed === 'string') {
+            const digits = parsed.replace(/\D/g, '');
+            if (digits.length >= 8 && digits.length <= 16) {
+              return this.toPlus62(digits);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      this.logger.debug(`Gagal membaca pemetaan LID: ${(err as Error).message}`);
+    }
+    return undefined;
+  }
+
+  /**
+   * Mengubah format JID WhatsApp menjadi format nomor telepon Indonesia (+62).
+   * Mendukung akun standar (@s.whatsapp.net), akun privasi LID (@lid) via reverse mapping Baileys,
+   * serta alternatif altJid (remoteJidAlt / participantAlt).
+   */
+  public formatPhoneNumber(jid: string, altJid?: string): string | undefined {
+    if (!jid) return undefined;
+
+    // 1. Cek altJid jika disediakan dari Baileys (remoteJidAlt / participantAlt)
+    if (altJid && (altJid.includes('@s.whatsapp.net') || !altJid.includes('@lid'))) {
+      const rawAlt = altJid.split('@')[0].split(':')[0] || '';
+      const digitsAlt = rawAlt.replace(/\D/g, '');
+      if (digitsAlt.length >= 8 && digitsAlt.length <= 16) {
+        return this.toPlus62(digitsAlt);
+      }
     }
 
-    const raw = jid.split('@')[0] || '';
-    const digits = raw.replace(/\D/g, '');
-
-    if (digits.length < 9) {
-      return undefined;
+    // 2. Jika JID adalah akun standar WhatsApp (@s.whatsapp.net atau nomor telepon biasa)
+    if (jid.includes('@s.whatsapp.net') || !jid.includes('@lid')) {
+      const raw = jid.split('@')[0].split(':')[0] || '';
+      const digits = raw.replace(/\D/g, '');
+      if (digits.length >= 8 && digits.length <= 16) {
+        return this.toPlus62(digits);
+      }
     }
 
-    return this.toPlus62(digits);
+    // 3. Jika JID adalah akun LID (@lid), lakukan resolusi melalui pemetaan Baileys
+    if (jid.includes('@lid')) {
+      const resolved = this.resolveLidToPhone(jid);
+      if (resolved) {
+        return resolved;
+      }
+      if (altJid) {
+        const altResolved = this.resolveLidToPhone(altJid);
+        if (altResolved) {
+          return altResolved;
+        }
+      }
+    }
+
+    // 4. Fallback jika ada digit yang menyerupai nomor telepon
+    const fallbackDigits = jid.split('@')[0].split(':')[0].replace(/\D/g, '');
+    if (fallbackDigits.length >= 9 && fallbackDigits.length <= 15 && !jid.includes('@lid')) {
+      return this.toPlus62(fallbackDigits);
+    }
+
+    return undefined;
   }
 
   /**
    * Menormalisasi nomor telepon ke format Indonesia (+62).
-   * Jika pengguna tidak mencantumkan nomor telepon, otomatis menggunakan nomor WhatsApp terdeteksi.
+   * Selalu fallback ke nomor WhatsApp orang yang sedang chat saat ini (jangan pernah pakai 'Tidak disertakan').
    */
   public normalizePhone(rawPhone: string, detectedPhone?: string): string {
     const phoneDigits = rawPhone.replace(/\D/g, '');
     if (phoneDigits.length >= 8 && phoneDigits.length <= 16) {
       return this.toPlus62(phoneDigits);
     }
-    if (detectedPhone) {
+    if (detectedPhone && detectedPhone.trim()) {
       const detectedDigits = detectedPhone.replace(/\D/g, '');
       if (detectedDigits.length >= 8) {
         return this.toPlus62(detectedDigits);
       }
-      return detectedPhone;
+      return detectedPhone.trim();
     }
-    return 'Tidak disertakan';
+    // Fallback utama jika nomor telepon tidak berhasil diekstrak (jangan pakai 'Tidak disertakan')
+    return '+62 (WhatsApp)';
   }
 
   private parseLabeledTemplate(
@@ -99,6 +164,7 @@ export class ChatbotService {
     detailPattern: RegExp,
     detectedPhone?: string,
     fallbackName?: string,
+    jid?: string,
   ): {
     reporterName: string;
     reporterPhone: string;
@@ -153,7 +219,9 @@ export class ChatbotService {
           ? fallbackName.trim()
           : 'Warga (WhatsApp)';
 
-    const finalPhone = this.normalizePhone(phone, detectedPhone);
+    const effectiveDetectedPhone =
+      detectedPhone || (jid ? this.formatPhoneNumber(jid) : undefined);
+    const finalPhone = this.normalizePhone(phone, effectiveDetectedPhone);
     const finalAddress = address && address.length >= 2 ? address : 'Kabupaten Mimika';
 
     return {
@@ -176,6 +244,7 @@ export class ChatbotService {
     rawText: string,
     detectedPhone?: string,
     fallbackName?: string,
+    jid?: string,
   ): {
     reporterName: string;
     reporterPhone: string;
@@ -187,6 +256,7 @@ export class ChatbotService {
       /^(?:jenis\s*dan\s*jumlah\s*hewan\s*\/?\s*produk|jenis\s*dan\s*jumlah|jenis\s*hewan|jumlah\s*hewan|jumlah\s*ternak|komoditas|jumlah|keluhan|keterangan)\s*[:=]\s*(.*)$/i,
       detectedPhone,
       fallbackName,
+      jid,
     );
 
     const commodity = parsed.hasLabeledFields ? parsed.detail : rawText.trim();
@@ -213,6 +283,7 @@ export class ChatbotService {
     rawText: string,
     detectedPhone?: string,
     fallbackName?: string,
+    jid?: string,
   ): {
     reporterName: string;
     reporterPhone: string;
@@ -224,6 +295,7 @@ export class ChatbotService {
       /^(?:keluhan\s*\/?\s*kendala|kendala\s*\/?\s*keluhan|keluhan|keperluan|kendala|bantuan|laporan|masalah|keterangan|aduan)\s*[:=]\s*(.*)$/i,
       detectedPhone,
       fallbackName,
+      jid,
     );
 
     const description = parsed.hasLabeledFields && parsed.detail ? parsed.detail : rawText.trim();
@@ -283,11 +355,14 @@ export class ChatbotService {
     return CHATBOT_MENUS.MENU_INFORMASI;
   }
 
-  private enterMenuBantuan(jid: string, session: UserSession): string[] {
-    const detectedPhone = this.formatPhoneNumber(jid);
+  private enterMenuBantuan(jid: string, session: UserSession, altJid?: string): string[] {
+    const detectedPhone =
+      (session.metadata?.detectedPhone as string | undefined) ||
+      this.formatPhoneNumber(jid, altJid);
     const savedOffHoursUntil = session.metadata?.offHoursMenuUntil;
     session.metadata = {
-      detectedPhone,
+      ...session.metadata,
+      ...(detectedPhone ? { detectedPhone } : {}),
       ...(savedOffHoursUntil ? { offHoursMenuUntil: savedOffHoursUntil } : {}),
     };
     session.state = ChatSessionState.AWAITING_BANTUAN_MESSAGE;
@@ -301,6 +376,7 @@ export class ChatbotService {
     jid: string,
     session: UserSession,
     choice: string,
+    altJid?: string,
   ): string | string[] | null {
     switch (choice) {
       case '1':
@@ -314,10 +390,13 @@ export class ChatbotService {
         ];
 
       case '2': {
-        const detectedPhone = this.formatPhoneNumber(jid);
+        const detectedPhone =
+          (session.metadata?.detectedPhone as string | undefined) ||
+          this.formatPhoneNumber(jid, altJid);
         const savedOffHoursUntil = session.metadata?.offHoursMenuUntil;
         session.metadata = {
-          detectedPhone,
+          ...session.metadata,
+          ...(detectedPhone ? { detectedPhone } : {}),
           ...(savedOffHoursUntil ? { offHoursMenuUntil: savedOffHoursUntil } : {}),
         };
         session.state = ChatSessionState.AWAITING_INSPECTION_TEMPLATE;
@@ -351,6 +430,7 @@ export class ChatbotService {
     jid: string,
     rawText: string,
     senderName?: string,
+    altJid?: string,
   ): Promise<string | string[] | null> {
     const text = rawText.trim();
     if (!text) return null;
@@ -452,19 +532,32 @@ export class ChatbotService {
     }
     session.lastUserMessageAt = Date.now();
 
+    // Pastikan nomor HP terdeteksi dan tersimpan di metadata session
+    const detectedPhone =
+      (session.metadata?.detectedPhone as string | undefined) ||
+      this.formatPhoneNumber(jid, altJid);
+    if (detectedPhone && !session.metadata?.detectedPhone) {
+      session.metadata = {
+        ...session.metadata,
+        detectedPhone,
+      };
+    }
+
     // 3. Alur Pengisian Template Layanan 2 (Informasi Pemeriksaan Kesehatan -> serviceType: INFORMASI)
     if (session.state === ChatSessionState.AWAITING_INSPECTION_TEMPLATE) {
       if (isExplicitMenuCommand) {
         return this.resetToMainMenu(session);
       }
 
-      const detectedPhone =
-        (session.metadata?.detectedPhone as string | undefined) || this.formatPhoneNumber(jid);
+      const effectivePhone =
+        (session.metadata?.detectedPhone as string | undefined) ||
+        this.formatPhoneNumber(jid, altJid);
 
       const parsed = this.parseInspectionTemplate(
         text,
-        detectedPhone,
+        effectivePhone,
         session.name,
+        jid,
       );
 
       const result = await this.databaseService.createWhatsappRecap({
@@ -502,13 +595,15 @@ export class ChatbotService {
         return 'Silakan tuliskan kebutuhan atau kendala Anda secara singkat agar petugas kami dapat segera membantu:';
       }
 
-      const detectedPhone =
-        (session.metadata?.detectedPhone as string | undefined) || this.formatPhoneNumber(jid);
+      const effectivePhone =
+        (session.metadata?.detectedPhone as string | undefined) ||
+        this.formatPhoneNumber(jid, altJid);
 
       const parsed = this.parseBantuanMessage(
         text,
-        detectedPhone,
+        effectivePhone,
         session.name,
+        jid,
       );
 
       const result = await this.databaseService.createWhatsappRecap({
@@ -567,7 +662,7 @@ export class ChatbotService {
       session.state === ChatSessionState.SUBMENU_INFORMASI_PERSYARATAN ||
       session.state === ChatSessionState.SUBMENU_INFORMASI_ISIKHNAS
     ) {
-      const infoReply = this.handleInformasiSelection(jid, session, lower);
+      const infoReply = this.handleInformasiSelection(jid, session, lower, altJid);
       if (infoReply) {
         return infoReply;
       }
@@ -590,7 +685,7 @@ export class ChatbotService {
     }
 
     if (lower === '2' || lower === 'bantuan') {
-      return this.enterMenuBantuan(jid, session);
+      return this.enterMenuBantuan(jid, session, altJid);
     }
 
     // 9. Penanganan Input Tidak Valid (Anti-Loop Guard)
