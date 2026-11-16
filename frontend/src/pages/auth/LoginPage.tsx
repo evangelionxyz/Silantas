@@ -32,7 +32,7 @@ export const LoginPage: React.FC = () => {
         <img
             src={LOGIN_IMAGE.url}
             alt="Dokumentasi Pelayanan Peternakan Mimika 1"
-            className="p-4 object-contain w-full h-full"
+            className="object-contain w-full h-full"
           />
       </div>
 
