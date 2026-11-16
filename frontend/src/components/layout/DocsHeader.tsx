@@ -58,7 +58,11 @@ export const DocsHeader: React.FC<DocsHeaderProps> = ({ onToggleMobileMenu }) =>
               </button>
             )}
             <Link to="/" className="flex items-center gap-3.5 text-[#1d2b1f]">
-              <span className="flex h-12 w-12 items-center justify-center bg-[#174b2b] text-m font-extrabold tracking-tight text-white">{SUANGGI_BRAND.initials}</span>
+                <img
+                    src='/favicon.webp'
+                    alt={SUANGGI_BRAND.name}
+                    className="h-12 w-12"
+                />
               <span className="min-w-0 max-w-2xl">
                 <span className="block text-base font-extrabold leading-tight tracking-tight text-[#173d22] sm:text-[18px]">{SUANGGI_BRAND.name}</span>
                 <span className="hidden text-[12px] font-semibold leading-tight text-[#566056] xl:block">SISTEM UPDATE ARUS NIAGA DAN GERAK HEWAN, PRODUK HEWAN, DAN OLAHANNYA</span>

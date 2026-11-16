@@ -47,9 +47,11 @@ export const InternalHeader: React.FC<InternalHeaderProps> = ({ onToggleMobileSi
                     </button>
 
                     <Link to="/dashboard" className="flex items-center gap-2.5 text-[#1d2b1f]">
-                        <span className="flex h-12 w-12 shrink-0 items-center justify-center bg-[#174b2b] text-sm font-extrabold tracking-tight text-white">
-                            {SUANGGI_BRAND.initials}
-                        </span>
+                        <img
+                            src='/favicon.webp'
+                            alt={SUANGGI_BRAND.name}
+                            className="h-12 w-12"
+                        />
                         <span className="min-w-0">
                             <span className="block text-base font-extrabold leading-tight tracking-tight text-[#173d22] sm:text-[18px]">{SUANGGI_BRAND.name}</span>
                                             <span className="hidden text-[12px] font-semibold leading-tight text-[#566056] xl:block">SISTEM UPDATE ARUS NIAGA DAN GERAK HEWAN, PRODUK HEWAN, DAN OLAHANNYA</span>
