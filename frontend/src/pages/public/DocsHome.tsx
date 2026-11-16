@@ -24,7 +24,7 @@ const GALLERY_SLIDES = [
         url: PUBLIC_COMMODITY_IMAGES.liveAnimals.url,
         alt: PUBLIC_COMMODITY_IMAGES.liveAnimals.alt,
         caption: 'Konsultasi',
-        categoryLabel: 'Pemeriksaan SKKH',
+        categoryLabel: 'Hubungi Admin',
         width: PUBLIC_COMMODITY_IMAGES.liveAnimals.width,
         height: PUBLIC_COMMODITY_IMAGES.liveAnimals.height,
     },
